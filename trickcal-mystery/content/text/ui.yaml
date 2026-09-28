@@ -1,0 +1,275 @@
+# ═══════════════════════════════════════════════════════════════
+#  text/ui.yaml — 화면에 뜨는 모든 UI 문구
+# ───────────────────────────────────────────────────────────────
+#  - 버튼·메뉴처럼 뻔한 문구는 기본값을 채워 두었습니다. 트릭컬 말투로 바꾸고 싶으면 고치세요.
+#  - 분위기가 드러나는 문구(안내, 빈 화면, 확인 창 등)는 TODO 로 비워 두었습니다.
+#  - {name} 처럼 중괄호로 감싼 부분은 게임이 자동으로 채우는 자리입니다. 지우지 마세요.
+#  - %notebook% 처럼 퍼센트로 감싼 부분은 game.yaml 의 기능 이름으로 바뀝니다.
+# ═══════════════════════════════════════════════════════════════
+
+# ── 타이틀 화면 ──
+title:
+  new_game: 새로 시작
+  continue: 이어하기          # 가장 최근 저장에서 시작
+  load: 불러오기
+  settings: 설정
+  gallery: "%gallery%"
+  flowchart: "%flowchart%"    # 첫 파생 엔딩을 본 뒤에만 보임
+  synopsis: 이야기
+  credits: 크레딧
+  # Q: 아직 볼 수 없는 메뉴(잠긴 흐름도 등)에 마우스를 올리면 뭐라고 뜰까요?
+  locked_hint: TODO
+  # Q: 2회차 이상일 때 타이틀에 뭔가 달라지나요? 달라진다면 추가 문구는? (없으면 "")
+  new_game_plus_note: TODO
+
+# ── 게임 중 메뉴 (톱니바퀴 / ESC) ──
+menu:
+  save: 저장
+  load: 불러오기
+  backlog: 지난 대화
+  notebook: "%notebook%"
+  phone: "%phone%"
+  map: "%map%"
+  auto: 오토
+  skip: 스킵
+  settings: 설정
+  hide_ui: 창 숨기기
+  to_title: 타이틀로
+
+# ── 저장/불러오기 ──
+save:
+  title_save: 저장하기
+  title_load: 불러오기
+  empty_slot: 빈 슬롯
+  autosave: 자동 저장
+  checkpoint: "%checkpoint%"
+  slot_label: "{chapter} · {scene}"   # 슬롯에 표시되는 위치 (장 이름 · 장면 이름)
+  export: 파일로 내보내기
+  import: 파일에서 가져오기
+  saved: 저장했습니다.
+  loaded: 불러왔습니다.
+
+# ── 설정 ──
+settings:
+  title: 설정
+  text_speed: 글자 속도
+  auto_speed: 오토 속도
+  bgm: 배경음악
+  se: 효과음
+  skip_unread: 읽지 않은 대사도 스킵
+  fullscreen: 전체 화면
+  reset: 기본값으로
+  close: 닫기
+
+# ── 확인 창 ──
+#  예/아니오를 묻는 창입니다. 질문 문구는 분위기에 맞게 써 주세요.
+confirm:
+  yes: 예
+  no: 아니오
+  # Q: 저장 슬롯을 덮어쓸 때 묻는 말은?
+  overwrite: TODO
+  # Q: 타이틀로 돌아갈 때 묻는 말은? (저장하지 않은 진행은 사라짐)
+  to_title: TODO
+  # Q: 새로 시작할 때 이미 진행 중인 게임이 있으면 묻는 말은?
+  new_game: TODO
+  # Q: 체크포인트로 돌아갈 때 묻는 말은?
+  to_checkpoint: TODO
+  # Q: 엿보기를 하기 직전에 묻는 말은? (들킬 수도 있다는 경고)
+  snoop: TODO
+  # Q: 재판에서 증거를 제시하기 직전 "정말 이걸로?" 확인 문구는? (필요 없으면 "")
+  present: TODO
+
+# ── 알림 (화면 위에 잠깐 뜨는 작은 창) ──
+toast:
+  clue_get: "{name}을(를) %notebook%에 기록했다."
+  clue_update: "{name}의 내용이 바뀌었다."
+  # Q: 의심 표시를 했을 때 뜨는 말은?
+  suspect_marked: TODO
+  # Q: 의심 표시가 빗나갔을 때(아무것도 아닌 발언) 뜨는 말은?
+  suspect_wrong: TODO
+  affinity_up: "{name}의 %affinity%이(가) 올랐다."
+  affinity_down: "{name}의 %affinity%이(가) 내려갔다."
+  suspicion_up: "교주를 향한 %suspicion%이(가) 올랐다…"
+  suspicion_down: "%suspicion%이(가) 조금 누그러졌다."
+  new_message: "{name}에게서 메시지가 왔다."
+  checkpoint_saved: "%checkpoint% 저장"
+  # Q: 누군가 사라졌을 때(인원 체크 UI가 흑백이 될 때) 뜨는 말은?
+  member_vanished: TODO
+  # Q: 사라졌던 사람이 돌아왔을 때 뜨는 말은?
+  member_returned: TODO
+  conclusion_get: "%conclusion_card% 「{name}」을(를) 얻었다."
+
+# ── 대화 화면 ──
+dialogue:
+  # Q: 이름을 모르는 인물의 이름표는? (대본에서 ??? 로 쓰면 이 값이 표시)
+  unknown_speaker: "???"
+  # Q: 교주의 이름표에 뭐라고 표시할까요?
+  player_name: 교주
+  backlog_title: 지난 대화
+  backlog_empty: 아직 나눈 대화가 없다.
+  # Q: 선택지 제한 시간이 있을 때 표시하는 문구는?
+  choice_timer: TODO
+
+# ── 수첩 (증거 파일) ──
+notebook:
+  title: "%notebook%"
+  tab_evidence: "%notebook_tab_evidence%"
+  tab_people: "%notebook_tab_people%"
+  tab_suspects: "%notebook_tab_suspects%"
+  tab_conclusions: "%notebook_tab_conclusions%"
+  # Q: 증거 탭이 비어 있을 때 뜨는 말은?
+  empty_evidence: TODO
+  # Q: 의심 발언 탭이 비어 있을 때 뜨는 말은?
+  empty_suspects: TODO
+  # Q: 결론 탭이 비어 있을 때 뜨는 말은?
+  empty_conclusions: TODO
+  # Q: 인물 탭에서 사라진 사람 이름 옆에 붙는 표시는?
+  vanished_mark: TODO
+  close: 닫기
+
+# ── 조사 ──
+investigation:
+  title: "%investigation%"
+  move: 이동
+  open_map: "%map%"
+  checked: 조사 완료
+  # Q: 필수 단서를 아직 다 못 찾았는데 조사를 끝내려 할 때 뜨는 말은?
+  not_done: TODO
+  # Q: 필수 단서를 모두 찾았을 때 뜨는 말은?
+  all_found: TODO
+  finish: 조사 끝내기
+  # Q: 잠긴 방 문을 눌렀을 때 기본으로 뜨는 말은? (방마다 따로 정할 수도 있음)
+  locked_door: TODO
+  # Q: 아직 한 번도 안 가 본 방이 지도에 어떻게 표시될까요? (예: ???)
+  unknown_room: "???"
+
+# ── 추리 보드 ──
+board:
+  title: "%board%"
+  # Q: 보드 화면 위쪽에 뜨는 안내 문구는?
+  guide: TODO
+  select_card: 카드를 고르세요
+  confirm: 결론 내리기
+  # Q: 빈칸을 다 안 채우고 결론 내리기를 눌렀을 때?
+  incomplete: TODO
+  # Q: 틀렸을 때 기본으로 뜨는 말은? (보드마다 따로 대사를 쓸 수도 있음)
+  wrong: TODO
+  # Q: 맞혔을 때 기본으로 뜨는 말은?
+  correct: TODO
+
+# ── 휴대폰(무전기) ──
+phone:
+  title: "%phone%"
+  typing: 입력 중…
+  # Q: 삭제된 메시지 자리에 뜨는 문구는?
+  deleted: TODO
+  recover: "%recover%"
+  # Q: 복구에 성공했을 때 뜨는 말은?
+  recovered: TODO
+  snoop: "%snoop%"
+  # Q: 엿보기가 들켰을 때 화면에 뜨는 말은? (들킨 뒤 대사는 phone 파일에 따로)
+  snoop_caught: TODO
+  reply_timer: "{sec}초 안에 답장"
+  # Q: 답장 시간이 지나 버렸을 때 뜨는 말은?
+  reply_timeout: TODO
+  # Q: 대화방 목록이 비어 있을 때 뜨는 말은?
+  empty: TODO
+  # Q: 발신자 불명 메시지의 이름표는?
+  unknown_sender: TODO
+  back: 뒤로
+
+# ── 재판 ──
+trial:
+  voice: "%voice_meter%"
+  ask: "%action_ask%"
+  rebut: "%action_rebut%"
+  capture: "%action_capture%"
+  compare: "%action_compare%"
+  # Q: 대조할 두 번째 메시지를 고르라는 안내는?
+  compare_pick_second: TODO
+  # Q: 메시지를 먼저 고르지 않고 행동 버튼을 눌렀을 때 안내는?
+  select_first: TODO
+  # Q: 되물었지만 더 나올 말이 없을 때 뜨는 말은?
+  ask_nothing: TODO
+  # Q: 캡처할 수 없는 메시지(사라지지 않는 메시지)를 캡처하려 할 때?
+  capture_nothing: TODO
+  # Q: 반박에 쓸 증거를 고르는 창의 제목은?
+  choose_evidence: TODO
+  # Q: 역습 방어전에서 교주 편 증인을 고르는 창의 제목은?
+  choose_witness: TODO
+  pause: 일시정지
+  resume: 계속
+  # Q: 캡처해 둔 메시지 목록의 이름은?
+  captured_list: TODO
+  # Q: 틀렸을 때 발언권이 깎이며 뜨는 말은?
+  wrong: TODO
+  # Q: 발언권이 바닥났을 때 뜨는 말은?
+  voice_empty: TODO
+  whisper_new: "%whisper%이(가) 도착했다."
+  # 여론전
+  opinion_guide: 누구에게 어떤 %conclusion_card%를 보여줄까?
+  choose_target: 설득할 상대
+  choose_card: 보여줄 %conclusion_card%
+  persuaded: 설득됨
+  wavering: 흔들림
+  backfire: 역효과
+  unmoved: 요지부동
+  turn_left: "남은 턴 {n}"
+  # Q: 여론전 화면에서 각 캐릭터의 설득 성향을 보여줄까요? 보여준다면 표시 이름은? (숨기려면 "")
+  type_emotion: 감정파
+  type_evidence: 증거파
+  type_trust: 교주 신뢰파
+  vote_title: "%vote%"
+  # Q: 투표 화면 안내 문구는?
+  vote_guide: TODO
+  # Q: 동률이 나왔을 때 뜨는 문구는?
+  tie: TODO
+  # Q: 연장 토론 시작 문구는?
+  extension_start: TODO
+
+# ── 엔딩 ──
+ending:
+  # 엔딩 화면 위쪽 표시. {no} = 엔딩 번호, {type} = 종류
+  header: "ENDING {no}"
+  type_true: TRUE END
+  type_normal: NORMAL END
+  # Q: 파생(배드) 엔딩의 종류 표시를 뭐라고 할까요? (예: BAD END, 파생 결말)
+  type_branch: TODO
+  # Q: 처음 본 엔딩일 때 뜨는 말은?
+  new_unlock: TODO
+  back_to_checkpoint: "%checkpoint%(으)로 돌아가기"
+  to_title: 타이틀로
+  # Q: 첫 파생 엔딩을 본 직후 "흐름도가 열렸다"를 알리는 문구는?
+  flowchart_unlocked: TODO
+
+# ── 엔딩 갤러리 ──
+gallery:
+  title: "%gallery%"
+  locked: "???"
+  # Q: 잠긴 엔딩을 눌렀을 때 힌트 앞에 붙는 말은? (힌트 자체는 endings.yaml)
+  hint_prefix: TODO
+  progress: "{seen} / {total}"
+
+# ── 사건 흐름도 ──
+flowchart:
+  title: "%flowchart%"
+  # Q: 흐름도 화면 안내 문구는?
+  guide: TODO
+  jump: 이 지점으로 돌아가기
+  locked_node: "???"
+
+# ── 오류 ──
+error:
+  save_failed: 저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.
+  load_failed: 저장 파일을 불러오지 못했습니다.
+  bad_file: 올바른 저장 파일이 아닙니다.
+  old_version: 이전 버전의 저장 파일이라 일부 내용이 맞지 않을 수 있습니다.
+
+# ── 로딩 화면 한마디 ──
+# Q: 로딩 중에 무작위로 뜨는 팁·잡담을 쓰고 싶나요? (한 줄에 하나, 없으면 [] )
+loading_tips:
+  - TODO
+
+# ── 모바일 ──
+# Q: 휴대폰을 세로로 들고 있을 때 "가로로 돌려 주세요" 안내 문구는?
+rotate_hint: TODO

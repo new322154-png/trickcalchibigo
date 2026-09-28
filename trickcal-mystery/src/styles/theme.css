@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════════════════════════
+   theme.css — UI 스킨 (직접 만드실 UI 를 끼우는 곳)
+   ───────────────────────────────────────────────────────────────
+   1) 색·글꼴·크기는 아래 변수만 바꾸면 전체에 반영됩니다.
+   2) 이미지 UI 를 쓰려면 --img-… 변수에  url('/assets/ui/파일.png')  형식으로 넣으세요.
+      (none 이면 색으로 그림. public/assets/ui/ 폴더에 파일을 넣으면 /assets/ui/ 주소가 됩니다)
+   3) 9-slice(모서리가 늘어나지 않는 틀) 이미지는 --slice-… 값으로 모서리 크기(px)를 정합니다.
+   필요한 이미지 목록은 docs/03_UI_에셋_목록.md 에 있습니다.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 글꼴 ── */
+  --font-main: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-title: var(--font-main);
+  --font-size-dialogue: 38px;
+  --font-size-name: 34px;
+  --font-size-ui: 28px;
+
+  /* ── 기본 색 ── */
+  --bg: #1a1420;
+  --text: #fdf8f2;
+  --text-dim: #b9adc4;
+  --accent: #ffcf5a;          /* 강조 (선택, 결론, 버튼 테두리) */
+  --accent-2: #ff7eb6;        /* 보조 강조 */
+  --danger: #ff5a6e;          /* 의심도, 틀림 */
+  --good: #6fe0a8;
+  --name-default: #ffd6e8;    /* 이름표 기본 색 (캐릭터 color 가 없을 때) */
+
+  /* ── 대화창 ── */
+  --dlg-bg: rgba(24, 16, 32, 0.86);
+  --dlg-border: 3px solid rgba(255, 207, 90, 0.7);
+  --dlg-radius: 24px;
+  --img-dialogue: none;        /* 예: url('/assets/ui/dialogue_box.png') */
+  --slice-dialogue: 40;
+  --img-nameplate: none;       /* 예: url('/assets/ui/nameplate.png') */
+  --slice-nameplate: 24;
+
+  /* ── 버튼 ── */
+  --btn-bg: rgba(40, 28, 54, 0.92);
+  --btn-bg-hover: rgba(70, 48, 92, 0.95);
+  --btn-border: 2px solid rgba(255, 207, 90, 0.55);
+  --btn-radius: 14px;
+  --img-button: none;          /* 예: url('/assets/ui/button.png') */
+  --img-button-hover: none;
+  --slice-button: 20;
+
+  /* ── 선택지 ── */
+  --choice-bg: rgba(30, 20, 44, 0.92);
+  --choice-bg-hover: rgba(255, 207, 90, 0.95);
+  --choice-text-hover: #1a1420;
+  --img-choice: none;
+
+  /* ── 의심 버튼 ── */
+  --suspect-bg: #ff5a6e;
+  --img-suspect: none;         /* 예: url('/assets/ui/suspect_button.png') */
+
+  /* ── 창(모달) ── */
+  --modal-bg: rgba(22, 14, 30, 0.96);
+  --modal-border: 3px solid rgba(255, 207, 90, 0.6);
+  --img-modal: none;
+  --slice-modal: 48;
+
+  /* ── 휴대폰 ── */
+  --phone-frame: #111;
+  --phone-screen: #f4f1ec;
+  --phone-bubble-them: #ffffff;
+  --phone-bubble-me: #ffe28a;
+  --phone-text: #222;
+  --img-phone-frame: none;     /* 폰(무전기) 틀 이미지 */
+
+  /* ── 재판 ── */
+  --trial-bg: rgba(10, 6, 16, 0.78);
+  --trial-accent: #ff5a6e;
+  --img-trial-bg: none;
+
+  /* ── 인원 체크 ── */
+  --party-size: 64px;
+  --party-gone-filter: grayscale(1) brightness(0.55);
+
+  /* ── 효과 ── */
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}

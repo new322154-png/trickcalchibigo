@@ -1,0 +1,191 @@
+# ═══════════════════════════════════════════════════════════════
+#  text/tutorial.yaml — 기능 설명(튜토리얼)
+# ───────────────────────────────────────────────────────────────
+#  각 기능을 처음 쓸 때 한 번 뜨는 설명입니다. 대본에서  #tutorial:suspect  처럼
+#  태그를 달면 그 자리에서 뜨고, 이미 본 설명은 다시 뜨지 않습니다.
+#  수첩 → "도움말"에서 언제든 다시 볼 수 있어요.
+#
+#  공통 질문
+#   speaker: 누가 설명하나요?  캐릭터 id(예: elena) 를 쓰면 그 캐릭터가 대사로 설명하고,
+#            system 이라고 쓰면 설명 창(그림+글)으로 뜹니다.
+#   title:   설명 창 제목
+#   pages:   설명 내용. "- " 한 줄이 한 페이지(또는 대사 한 줄)입니다.
+#            캐릭터가 설명할 때는 "(웃음)대사" 처럼 앞에 감정을 붙일 수 있어요.
+#   image:   설명 그림 (public/assets/ui/tutorial/ 안의 파일 이름, 없으면 "")
+# ═══════════════════════════════════════════════════════════════
+
+# ── 기본 ──
+dialogue:
+  # Q: 대화 조작법(클릭으로 넘기기, 메뉴, 지난 대화)을 누가 어떻게 알려줄까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+# ── 조사·추리 ──
+suspect:
+  # Q: "%suspect_button%" 기능을 어떻게 설명할까요?
+  #    핵심: 수상한 발언에서 버튼을 누르면 수첩에 저장 / 나중에 증거와 맞으면 추궁 가능 /
+  #          아무 데나 누르면 상대가 기분 나빠하고 교주가 의심받음
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+notebook:
+  # Q: 수첩(증거·인물·의심 발언·결론 탭)을 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+investigation:
+  # Q: 조사 파트(화면 속 수상한 곳 누르기, 방 이동, 필수 단서)를 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+map:
+  # Q: 저택 지도(한 번 간 방은 바로 이동)를 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+board:
+  # Q: 추리 보드(빈칸에 카드 채우기, 결론 카드 얻기)를 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+# ── 휴대폰 ──
+phone:
+  # Q: 메신저(대화방, 답장 선택지)를 어떻게 설명할까요? 무전기가 되살아나는 장면과 겹쳐도 좋아요.
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+reply_timer:
+  # Q: 답장 제한 시간(시간 안에 안 고르면 무응답으로 처리)을 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+recover:
+  # Q: 삭제된 메시지 복구를 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+snoop:
+  # Q: 엿보기(강력한 단서지만 들키면 호감도 하락·의심도 상승)를 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+# ── 재판 ──
+trial_intro:
+  # Q: 재판 전체 규칙(3페이즈, 틀려도 체크포인트로 돌아올 수 있음)을 누가 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+trial_chat:
+  # Q: 단톡방 심리 조작법(되묻기, 반박, 캡처, 대조, 발언권)을 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+whisper:
+  # Q: 귓속말(진짜 힌트일 수도, 함정일 수도)을 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+trial_counter:
+  # Q: 역습 방어전(교주가 고발당함, 알리바이 증명)을 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+trial_opinion:
+  # Q: 최종 여론전(설득 성향 3종, 결론 카드, 역효과, 진범의 반론)을 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+vote:
+  # Q: 투표와 동률 규칙(연장 토론 1회, 그래도 동률이면 저택이 고른다)을 어떻게 설명할까요?
+  #    저택이 고른다는 사실을 처음부터 알려줄지, 숨길지도 정하세요.
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+# ── 관계·분기 ──
+affinity:
+  # Q: 호감도를 설명할까요, 아니면 숨겨진 수치로 둘까요? 설명한다면 내용은?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+suspicion:
+  # Q: 교주 의심도(수상한 행동을 하면 오르고, 높으면 재판에서 역으로 몰림)를 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+party_bar:
+  # Q: 인원 체크 UI(사라진 사람은 흑백)를 설명할까요? 설명 없이 보여주는 게 더 섬뜩할 수도 있어요.
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+checkpoint:
+  # Q: 파생 엔딩 후 체크포인트로 돌아오는 규칙을 어떻게 설명할까요? (첫 파생 엔딩 직후에 뜸)
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO
+
+flowchart:
+  # Q: 사건 흐름도(본 엔딩, 못 본 엔딩, 점프)를 어떻게 설명할까요?
+  speaker: TODO
+  title: TODO
+  image: ""
+  pages:
+    - TODO

@@ -1,0 +1,60 @@
+# ═══════════════════════════════════════════════════════════════
+#  board/ch1.yaml — 1장 추리 보드
+# ───────────────────────────────────────────────────────────────
+#  대본에서  #board:ch1_board  태그로 시작합니다.
+#  문장의 빈칸 [1] [2] … 에 카드를 끼워 가설을 완성하는 방식입니다.
+#
+#  빈칸에 들어갈 수 있는 카드 종류
+#   evidence  — 수첩의 단서 (evidence.yaml id)
+#   person    — 인물 (characters.yaml id)
+#   suspect   — 의심 표시해 둔 발언 (대본의 #suspect:id)
+#   word      — 이 보드에서만 쓰는 단어 카드 (아래 words 에 정의)
+#
+#  문장 하나를 맞히면 reward 의 결론 카드를 얻습니다.
+#  결론 카드는 재판 "최종 여론전"에서 논거로 쓰입니다.
+# ═══════════════════════════════════════════════════════════════
+
+ch1_board:
+  # Q: 보드 화면 제목은? (예: 실라는 어디로 사라졌나)
+  title: TODO
+  # Q: 보드 시작할 때 교주의 속마음이나 대사는?
+  intro:
+    - TODO
+
+  # 이 보드에서만 쓰는 단어 카드 (장소, 시간, 방법 등)
+  words:
+    example_word: TODO        # Q: 예) "한밤중", "식당 창문", "몰래"
+
+  sentences:
+    - id: s1
+      # Q: 첫 번째 가설 문장은? 빈칸은 [1], [2] 처럼 번호로 표시하세요.
+      # 예: "실라는 [1]에 [2]에서 사라졌다."
+      text: TODO
+      blanks:
+        1: { kind: word, answer: example_word }
+        2: { kind: evidence, answer: example_clue }
+      # Q: 이 문장을 맞혔을 때 교주의 대사/속마음은?
+      solved:
+        - TODO
+      # Q: 틀렸을 때 나오는 대사는? (비워 두면 ui.yaml 의 기본 문구)
+      wrong:
+        - TODO
+      reward: concl_example     # 얻는 결론 카드 id (아래 conclusions)
+
+  # Q: 모든 문장을 완성했을 때 나오는 대사는?
+  outro:
+    - TODO
+  on_complete: ch1_before_trial   # 보드가 끝나면 이어질 대본 knot
+
+# ── 결론 카드 ──
+#  kind 는 여론전에서 어떤 성향에게 잘 먹히는지를 정합니다.
+#   evidence — 증거파에게 강함 (물증 기반 논리)
+#   emotion  — 감정파에게 강함 (정황, 동기, 감정에 호소)
+#   trust    — 교주 신뢰파에게 강함 (교주의 판단 자체를 믿게 함)
+conclusions:
+  concl_example:
+    # Q: 결론 카드 이름은?
+    name: TODO
+    # Q: 결론 카드 설명(수첩과 여론전에서 보이는 글)은?
+    text: TODO
+    kind: evidence

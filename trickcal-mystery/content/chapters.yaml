@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════════════
+#  chapters.yaml — 장(챕터) 구성
+# ───────────────────────────────────────────────────────────────
+#  장 이름은 세이브 슬롯, 흐름도, 장 시작 화면에 쓰입니다.
+#  대본에서  #chapter:ch1  태그를 만나면 아래 title_card 가 화면에 뜹니다.
+#
+#  새 장을 만들 때:
+#   1) 아래에 ch2: 블록을 복사해 추가
+#   2) content/story/_장_템플릿 폴더를 복사해 content/story/ch2 로 이름 바꾸기
+#   3) content/story/main.ink 에 INCLUDE 줄 추가
+# ═══════════════════════════════════════════════════════════════
+
+# Q: 전체 몇 장으로 구성할 예정인가요? (작가용 메모, 나중에 바뀌어도 됨)
+planned_chapters: TODO
+
+prologue:
+  # Q: 프롤로그의 제목은?
+  title: TODO
+  # Q: 장 시작 화면에 뜨는 문구는? (없으면 "")
+  title_card: TODO
+  # (작가용) 이 장에서 일어나는 일 한 줄 요약
+  memo: 빵주 추락 → 저택 발견 → 무전기 먹통 → 머물기로 함
+
+ch1:
+  title: TODO
+  title_card: TODO
+  # Q: (작가용) 1장의 사건은 무엇인가요? 실종 / 바꿔치기 / 기억 상실 / 기타
+  incident: 실라 실종
+  # Q: (작가용) 1장의 진범(또는 사건을 일으킨 존재)은 누구인가요?
+  culprit: TODO
+  # Q: (작가용) 1장 트릭의 핵심 한 줄 요약은?
+  trick: TODO
+  # Q: (작가용) 1장이 끝날 때 남기는 "저택의 섬뜩한 단서"는?
+  mansion_hint: TODO
+  memo: TODO
+
+# ch2:
+#   title: TODO
+#   title_card: TODO
+#   incident: TODO
+#   culprit: TODO
+#   trick: TODO
+#   mansion_hint: TODO
+#   memo: TODO

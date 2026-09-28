@@ -1,0 +1,75 @@
+# ═══════════════════════════════════════════════════════════════
+#  investigations/ch1.yaml — 1장 조사 파트
+# ───────────────────────────────────────────────────────────────
+#  대본에서  #investigate:ch1_search  태그를 만나면 아래 조사가 시작됩니다.
+#  필수 단서를 모두 모으고 "조사 끝내기"를 누르면 on_complete 의 대본 위치로 이어집니다.
+#
+#  hotspots(조사 지점) 칸 설명
+#   id:       조사 지점 이름 (영문, 방 안에서 겹치지 않게)
+#   label:    마우스를 올렸을 때(모바일은 길게 눌렀을 때) 뜨는 이름
+#   rect:     배경 그림 위 위치 [가로%, 세로%, 너비%, 높이%]  — 디버그 메뉴 "조사 지점 보기"로 확인
+#   lines:    눌렀을 때 나오는 대사. "이름(감정): 대사" 형식. 이름 없이 쓰면 지문.
+#   again:    두 번째부터 나오는 대사 (없으면 lines 를 다시 보여줌)
+#   clue:     얻는 단서 id (evidence.yaml)
+#   knot:     대사가 복잡하면(선택지, 조건) lines 대신 ink 대본의 knot 이름을 적으세요
+#   needs:    이 flag 가 켜져 있어야 나타나는 지점
+#   people:   이 방에 서 있는 캐릭터 (말을 걸 수 있음) → people 칸에 따로
+# ═══════════════════════════════════════════════════════════════
+
+ch1_search:
+  # Q: 이 조사 파트의 제목은? (화면 위에 표시)
+  title: TODO
+  start_room: entrance
+  # 이번 조사에서 갈 수 있는 방 (locations.yaml 의 id)
+  rooms: [entrance, dining, kitchen, corridor, guest_rooms, study]
+  # 필수 단서: 이걸 모두 얻어야 조사를 끝낼 수 있음
+  required: [example_clue]
+  # Q: 조사 시작할 때 나오는 대사는? (누가 "흩어져서 찾아보자" 같은 말을 하나요?)
+  intro:
+    - TODO
+  # Q: 조사를 끝낼 때 나오는 대사는?
+  outro:
+    - TODO
+  on_complete: ch1_board          # 조사가 끝나면 이어질 대본 knot 이름
+
+  # ── 방별 조사 지점 ──
+  spots:
+    entrance:
+      hotspots:
+        - id: example_spot
+          label: TODO
+          rect: [40, 50, 15, 20]
+          lines:
+            - TODO
+          again:
+            - TODO
+          clue: example_clue
+      # 이 방에 있는 사람 (누르면 대화)
+      people:
+        - who: elena
+          emotion: normal
+          pos: right
+          # Q: 조사 중 이 방에서 엘레나에게 말을 걸면?
+          lines:
+            - TODO
+          # knot: ch1_talk_elena      # 선택지가 있는 대화라면 knot 사용
+
+    dining:
+      hotspots: []
+      people: []
+
+    kitchen:
+      hotspots: []
+      people: []
+
+    corridor:
+      hotspots: []
+      people: []
+
+    guest_rooms:
+      hotspots: []
+      people: []
+
+    study:
+      hotspots: []
+      people: []

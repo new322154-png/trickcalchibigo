@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════
+#  locations.yaml — 저택의 방(장소)
+# ───────────────────────────────────────────────────────────────
+#  여기에는 "방 자체"의 정보만 씁니다 (이름, 배경, 연결된 문, 지도 위치).
+#  방 안에서 무엇을 조사할 수 있는지는 장마다 다르니
+#  content/investigations/ch1.yaml 같은 조사 파일에 씁니다.
+#
+#  배경 그림:  public/assets/bg/{bg}.png  (또는 .jpg .webp)
+#  지도 그림:  public/assets/ui/map.png  — map_pos 는 지도 그림 위의 위치(%)
+#
+#  아래 방들은 "예시"입니다. id 와 이름을 마음대로 바꾸고, 필요 없으면 지우세요.
+# ═══════════════════════════════════════════════════════════════
+
+# Q: 저택에는 어떤 방들이 있나요? 층 구조는? (작가용 메모)
+# 예: 1층 — 현관 홀, 식당, 주방, 응접실 / 2층 — 객실 복도, 서재, 잠긴 방 / 바깥 — 정원, 추락한 빵주
+mansion_memo: TODO
+
+# Q: 섬 바깥(추락한 빵주, 해안 등)도 조사할 수 있나요? 있다면 아래에 방처럼 추가하세요.
+
+rooms:
+  entrance:
+    # Q: 방 이름은?
+    name: TODO
+    bg: entrance
+    floor: 1
+    map_pos: [50, 80]           # 지도 그림 위 위치 (가로 %, 세로 %)
+    doors: [dining, corridor]   # 이 방에서 바로 갈 수 있는 방 id
+    # Q: 처음 들어왔을 때 나오는 짧은 묘사나 대사는? (한 줄 = 한 대사, "이름(감정): 대사" 형식 가능)
+    first_enter:
+      - TODO
+
+  dining:
+    name: TODO
+    bg: dining
+    floor: 1
+    map_pos: [30, 60]
+    doors: [entrance, kitchen]
+    first_enter:
+      - TODO
+
+  kitchen:
+    name: TODO
+    bg: kitchen
+    floor: 1
+    map_pos: [15, 60]
+    doors: [dining]
+    first_enter:
+      - TODO
+
+  corridor:
+    name: TODO
+    bg: corridor
+    floor: 2
+    map_pos: [50, 40]
+    doors: [entrance, guest_rooms, study]
+    first_enter:
+      - TODO
+
+  guest_rooms:
+    name: TODO
+    bg: guest_rooms
+    floor: 2
+    map_pos: [75, 40]
+    doors: [corridor]
+    first_enter:
+      - TODO
+
+  study:
+    name: TODO
+    bg: study
+    floor: 2
+    map_pos: [30, 25]
+    doors: [corridor]
+    # 잠긴 방: flag 가 켜져 있어야 들어갈 수 있음 (대본에서 #flag:study_unlocked 로 켬)
+    locked_until: study_unlocked
+    # Q: 잠겨 있을 때 문을 누르면 나오는 대사는?
+    locked_text:
+      - TODO
+    first_enter:
+      - TODO

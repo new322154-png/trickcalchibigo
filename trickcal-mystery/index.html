@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a1420" />
+    <!-- 제목은 content/game.yaml 의 title 로 게임 시작 시 덮어쓴다 -->
+    <title>트릭컬 추리 팬게임</title>
+    <link rel="icon" href="./assets/ui/favicon.png" />
+  </head>
+  <body>
+    <!-- 16:9 고정 무대. 창 크기에 맞춰 통째로 확대/축소된다 (src/ui/stage.ts) -->
+    <div id="viewport">
+      <div id="stage">
+        <div id="loading">불러오는 중…</div>
+      </div>
+    </div>
+    <!-- 모바일 세로 모드 안내 -->
+    <div id="rotate-hint"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

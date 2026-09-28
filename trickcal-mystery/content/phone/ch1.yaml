@@ -1,0 +1,98 @@
+# ═══════════════════════════════════════════════════════════════
+#  phone/ch1.yaml — 1장 메신저 대화
+# ───────────────────────────────────────────────────────────────
+#  대본에서
+#   #phone:ch1_unknown_first   → 폰 화면을 열고 이 대화를 바로 진행
+#   #notify:ch1_unknown_first  → 알림만 띄우고 플레이어가 원할 때 열게 함
+#
+#  messages 칸 형식 (위에서 아래로 순서대로 진행)
+#   - from: 보낸 사람 (캐릭터 id / unknown / kyoju)
+#     text: 메시지 내용
+#     typing: "입력 중…"을 보여줄 시간(초). 생략하면 config 기본값
+#     delete_after: 이 초가 지나면 삭제됨 ("삭제된 메시지입니다" 로 바뀜)
+#     recoverable: true 면 나중에 "복구" 가능
+#     image: 사진 메시지 (public/assets/evidence/ 안 파일 이름)
+#     clue: 이 메시지를 보면 얻는 단서 id
+#
+#   - choice:            ← 교주가 답장을 고르는 자리
+#       timeout: 10      ← 제한 시간(초). 없으면 제한 없음
+#       options:
+#         - text: 선택지 문구
+#           send: 교주가 실제로 보내는 메시지 (생략하면 text 그대로)
+#           effects: ["affinity:erpin +1", "suspicion:+1", "flag:이름"]
+#           goto: 이동할 label (생략하면 바로 아래로)
+#       on_timeout:      ← 시간 안에 안 고르면
+#         effects: []
+#         goto: label
+#
+#   - label: 이름        ← goto 로 이동할 표시
+#   - end: true          ← 대화 끝
+# ═══════════════════════════════════════════════════════════════
+
+threads:
+  ch1_unknown_first:
+    with: unknown
+    # Q: 발신자 불명에게서 온 첫 메시지 대화는 어떻게 흘러가나요?
+    messages:
+      - from: unknown
+        text: TODO
+        typing: 2
+      - from: unknown
+        text: TODO
+        delete_after: 4
+        recoverable: true
+      - choice:
+          timeout: 15
+          options:
+            - text: TODO
+              effects: []
+              goto: reply_a
+            - text: TODO
+              effects: []
+              goto: reply_b
+          on_timeout:
+            effects: []
+            goto: silence
+      - label: reply_a
+      - from: unknown
+        text: TODO
+      - end: true
+      - label: reply_b
+      - from: unknown
+        text: TODO
+      - end: true
+      - label: silence
+      # Q: 교주가 대답하지 않았을 때 상대의 반응은?
+      - from: unknown
+        text: TODO
+      - end: true
+    # 대화가 끝나면 이어질 대본 knot (폰을 #phone 으로 열었을 때만. 없으면 원래 대본으로 복귀)
+    on_end: ""
+
+  ch1_party_night:
+    with: party         # 단체 대화방
+    # Q: 첫날 밤 단톡방에서는 어떤 대화가 오가나요?
+    messages:
+      - from: erpin
+        text: TODO
+      - end: true
+
+# ── 엿보기 ──
+#  다른 캐릭터의 기기 속 대화. 수첩/폰의 %snoop% 메뉴에서 열 수 있습니다.
+#   owner:   기기 주인
+#   needs:   이 flag 가 켜져야 엿볼 수 있음
+#   caught:  never(안 들킴) / always(항상 들킴) / 숫자(들킬 확률 %)
+#   들키면 characters.yaml 의 snoop_caught 반응이 나오고 flag "caught_엿보기id" 가 켜집니다.
+#   → 대본에서  {flag("caught_ch1_snoop_example"): …}  처럼 나중에 반응을 쓸 수 있어요.
+snoop:
+  ch1_snoop_example:
+    owner: elena
+    needs: ""
+    caught: 50
+    # Q: 엿봤을 때 보이는 대화는? (from 이 여러 명일 수 있음)
+    messages:
+      - from: elena
+        text: TODO
+      - from: sila
+        text: TODO
+        clue: ""

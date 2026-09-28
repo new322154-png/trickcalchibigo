@@ -1,0 +1,75 @@
+# ═══════════════════════════════════════════════════════════════
+#  config.yaml — 수치와 동작 설정
+# ───────────────────────────────────────────────────────────────
+#  글이 아니라 "숫자"를 정하는 곳입니다. 전부 기본값이 들어 있어서
+#  비워 둬도 게임은 돌아갑니다. 플레이해 보면서 조정하세요.
+#  게임 안 디버그 메뉴(F9 또는 화면 왼쪽 위 5번 탭)에서도 임시로 바꿔 볼 수 있어요.
+# ═══════════════════════════════════════════════════════════════
+
+# ── 화면·대화 ──
+screen:
+  width: 1920             # 16:9 기준 해상도. UI 에셋도 이 크기 기준으로 만드세요.
+  height: 1080
+
+text:
+  speed: 35               # 1초에 나오는 글자 수 (설정 메뉴 기본값)
+  auto_delay: 1.2         # 오토 모드에서 한 줄 다 나온 뒤 기다리는 초
+  skip_unread: false      # 읽지 않은 대사도 스킵할지 (설정 메뉴 기본값)
+
+characters:
+  ext: gif                # 캐릭터 파일 확장자: gif / webp / png
+  talk_suffix: _talk      # 말하는 모션 파일 꼬리표. smile_talk.gif 가 있으면 대사 출력 중에만 사용
+  default_emotion: normal
+  dim_listeners: true     # 말하지 않는 캐릭터를 살짝 어둡게
+
+# ── 조사·추리 ──
+suspect:
+  # 의심 표시가 틀렸을 때 (#suspect 태그가 없는 발언에 표시했을 때)
+  wrong_affinity: -1      # 그 발언을 한 캐릭터의 호감도 변화
+  wrong_suspicion: 1      # 교주 의심도 변화
+  max_marks: 20           # 수첩에 담아 둘 수 있는 최대 개수
+
+# ── 휴대폰 ──
+phone:
+  default_typing: 1.2     # "입력 중…" 표시 기본 시간(초)
+  default_reply_timeout: 0  # 기본 답장 제한 시간. 0 = 제한 없음 (메시지마다 따로 지정 가능)
+  snoop_caught_suspicion: 2 # 엿보기를 들켰을 때 의심도 증가
+  snoop_caught_affinity: -2 # 엿보기를 들켰을 때 기기 주인 호감도 변화
+
+# ── 관계 ──
+affinity:
+  min: -10
+  max: 10
+  show_numbers: false     # 호감도 숫자를 화면에 보여줄지 (false 면 하트/아이콘만)
+  show_change_toast: true # 호감도가 바뀔 때 알림을 띄울지
+
+suspicion:
+  max: 10
+  show_meter: true        # 교주 의심도 게이지를 화면에 보여줄지
+
+# 교주 신뢰파는 처음부터 높게 시작 (characters.yaml 의 start_affinity 가 우선)
+start_affinity_default: 0
+
+# ── 재판 ──
+trial:
+  chat_speed: 2.5           # 단톡방 메시지 사이 간격(초)
+  capture_window: 3.0       # 사라지는 메시지 기본 유지 시간(초)
+  allow_pause: true         # 단톡방 심리 도중 일시정지 허용
+  voice_max: 5              # 발언권 게이지 최대치
+  voice_penalty: 1          # 틀린 행동 1번에 줄어드는 양
+  wrong_suspicion: 1        # 틀린 반박 1번에 오르는 교주 의심도
+  counter_threshold: 6      # 이 의심도 이상이면 역습 방어전 발동
+  opinion_turns: 3          # 여론전 기본 턴 수
+  # 설득 성향별 반응 배율 (논거 카드의 종류와 캐릭터 성향이 맞으면 크게 움직임)
+  persuasion:
+    emotion:  { emotion: 2, evidence: 1, trust: 0 }   # 감정파
+    evidence: { emotion: 0, evidence: 2, trust: 0 }   # 증거파
+    trust:    { emotion: 1, evidence: 1, trust: 2 }   # 교주 신뢰파 (+ 호감도 보정)
+  trust_affinity_bonus: 0.2  # 교주 신뢰파: 호감도 1당 추가 설득력
+  trust_suspicion_penalty: 0.3 # 교주 신뢰파: 교주 의심도 1당 설득력 감소
+  backfire_threshold: -1     # 이 값 이하로 계산되면 역효과
+
+# ── 저장 ──
+save:
+  slots: 12
+  autosave: true           # 장이 바뀔 때 자동 저장

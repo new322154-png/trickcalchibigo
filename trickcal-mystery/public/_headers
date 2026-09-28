@@ -1,0 +1,8 @@
+# Cloudflare Pages 캐시 설정
+# 이미지·음악은 일주일 캐시 (파일 내용을 바꿀 땐 파일 이름도 바꾸는 게 안전)
+/assets/*
+  Cache-Control: public, max-age=604800
+
+# 게임 코드(해시가 붙은 파일)는 영구 캐시
+/build/*
+  Cache-Control: public, max-age=31536000, immutable

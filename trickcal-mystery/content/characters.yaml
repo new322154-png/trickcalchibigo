@@ -1,0 +1,239 @@
+# ═══════════════════════════════════════════════════════════════
+#  characters.yaml — 등장인물
+# ───────────────────────────────────────────────────────────────
+#  id(영문)는 파일 이름과 대본 태그에 쓰는 이름이라 바꾸지 마세요.
+#  대본에서는 한글 이름으로 "에르핀: 대사" 처럼 쓰면 됩니다.
+#
+#  캐릭터 그림 파일 위치:  public/assets/characters/{id}/{감정}.gif
+#    예) public/assets/characters/erpin/smile.gif
+#    말하는 모션이 따로 있으면  smile_talk.gif  도 넣어 두세요 (대사 출력 중에만 재생)
+#
+#  ── 각 칸에 대한 공통 질문 ──
+#  color:        이름표 색깔 (#RRGGBB). 캐릭터 이미지 색에 맞추면 좋아요.
+#  profile:      수첩 "인물" 탭에 뜨는 소개글. 장마다 바뀌게 하려면 profile_by_chapter 에.
+#  voice_note:   (작가용 메모, 게임에 안 나옴) 1인칭, 말투, 입버릇, 교주를 부르는 호칭.
+#                대사를 수십만 자 쓰다 보면 말투가 흔들리니 여기 적어 두면 좋아요.
+#  emotions:     이 캐릭터가 가진 감정 파일 목록. 아래 emotion_aliases 의 영문 이름 기준.
+#  start_affinity: 게임 시작 시 교주 호감도 (config.yaml 의 min~max 범위)
+#  reactions:    상황별 "기본 반응 대사". 여러 줄 쓰면 그중 하나가 무작위로 나옵니다.
+#                "(분노)대사" 처럼 앞에 감정을 붙이면 그 표정으로 말해요.
+#                장면마다 특별한 대사가 필요하면 대본/재판 파일에서 따로 쓰면 되고,
+#                여기 있는 건 "따로 안 썼을 때" 나오는 기본값입니다.
+# ═══════════════════════════════════════════════════════════════
+
+# 감정 이름 번역표: 대본에서 한글 감정 이름을 쓰면 오른쪽 파일 이름으로 바뀝니다.
+# Q: 쓰려는 감정이 더 있나요? (예: 놀람, 삐짐, 졸림, 음흉) 있으면 "한글: 영문파일명" 으로 추가하세요.
+emotion_aliases:
+  기본: normal
+  웃음: smile
+  울음: cry
+  당황: panic
+  분노: angry
+
+# 대본에 캐릭터가 아닌 "화자"가 필요할 때 (예: ???, 무전기, 방송)
+# Q: 캐릭터 목록에 없는 화자가 있나요? 있으면 이름과 이름표 색을 추가하세요.
+extra_speakers:
+  "???": { color: "#999999" }
+  # 무전기: { color: "#7fd1b9" }
+
+# ── 주인공 ──
+kyoju:
+  name: 교주
+  player: true
+  # Q: 교주의 모습이 화면에 나오나요? (true 면 다른 캐릭터처럼 그림이 뜸, false 면 이름표만)
+  show_sprite: TODO
+  # Q: 플레이어가 교주 이름을 직접 정하게 할까요? (true/false)
+  name_input: TODO
+  color: TODO
+  # Q: (작가용) 이 게임의 교주는 어떤 성격인가요? 말수가 적은 주인공? 츳코미 담당?
+  voice_note: TODO
+
+# ── 일행 ──
+
+erpin:
+  name: 에르핀
+  persuasion: emotion      # 감정파
+  start_affinity: 0
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect:          # Q: 교주가 이 캐릭터의 평범한 말에 괜히 의심 표시를 했을 때?
+      - TODO
+    snoop_caught:           # Q: 교주가 이 캐릭터의 기기를 엿보다 들켰을 때?
+      - TODO
+    persuaded:              # Q: 여론전에서 설득당했을 때?
+      - TODO
+    wavering:               # Q: 흔들렸지만 아직 마음을 못 정했을 때?
+      - TODO
+    backfire:               # Q: 엉뚱한 논거를 들이밀어 역효과가 났을 때?
+      - TODO
+    unmoved:                # Q: 전혀 안 움직일 때?
+      - TODO
+    vote:                   # Q: 투표할 때 한마디 ({target} = 투표한 상대 이름)
+      - TODO
+    vanished_note: TODO     # Q: 사라졌을 때 수첩 인물 탭에 뜨는 메모는?
+
+joan:
+  name: 죠안
+  persuasion: trust        # 교주 신뢰파 (처음부터 호감도 높음)
+  start_affinity: 5
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+ner:
+  name: 네르
+  persuasion: emotion
+  start_affinity: 0
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+elena:
+  name: 엘레나
+  persuasion: evidence     # 증거파
+  start_affinity: 0
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+amelia:
+  name: 아멜리아
+  persuasion: evidence
+  start_affinity: 0
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+daya:
+  name: 다야
+  persuasion: trust
+  start_affinity: 5
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+sila:
+  name: 실라
+  persuasion: evidence
+  start_affinity: 0
+  # 참고: 1장 초반에 가장 먼저 사라짐 → 첫 재판 투표 인원은 교주 포함 10명
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+shady:
+  name: 셰이디
+  persuasion: trust
+  start_affinity: 5
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+tig:
+  name: 티그
+  persuasion: emotion
+  start_affinity: 0
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO
+
+uros:
+  name: 우로스
+  persuasion: emotion
+  start_affinity: 0
+  color: TODO
+  emotions: [normal, smile, cry, panic, angry]
+  profile: TODO
+  voice_note: TODO
+  reactions:
+    wrong_suspect: [TODO]
+    snoop_caught: [TODO]
+    persuaded: [TODO]
+    wavering: [TODO]
+    backfire: [TODO]
+    unmoved: [TODO]
+    vote: [TODO]
+    vanished_note: TODO

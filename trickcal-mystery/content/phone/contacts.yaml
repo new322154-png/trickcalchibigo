@@ -1,0 +1,29 @@
+# ═══════════════════════════════════════════════════════════════
+#  phone/contacts.yaml — 메신저 연락처와 기본 설정
+# ═══════════════════════════════════════════════════════════════
+
+# Q: 세계관 안에서 이 메신저는 무엇인가요? (엘레나의 무전기? 교단 통신기? 모두가 하나씩?)
+#    (작가용 메모 — 게임 화면에는 game.yaml 의 names.phone 이 쓰입니다)
+lore_memo: TODO
+
+# Q: 메신저가 처음 열리는 시점은 언제인가요? (예: 첫날 밤, 먹통이던 무전기가 갑자기 울린다)
+unlock_memo: TODO
+
+# Q: 발신자 불명 메시지는 몇 장마다, 어떤 흐름으로 오나요? (작가용 메모)
+unknown_sender_memo: TODO
+
+# 연락처 목록 — 캐릭터 id 는 characters.yaml 의 이름·색을 자동으로 씁니다.
+# 캐릭터가 아닌 발신자만 여기에 추가하세요.
+contacts:
+  unknown:
+    # Q: 발신자 불명의 표시 이름은? (예: ???, 알 수 없음, ■■■)
+    name: TODO
+    # Q: 프로필 사진 자리에 뭘 보여줄까요? (public/assets/ui/phone/ 안 파일 이름, 없으면 "")
+    icon: ""
+    color: "#888888"
+
+# Q: 단체 대화방 이름은? (여러 개면 추가)
+groups:
+  party:
+    name: TODO
+    members: [kyoju, erpin, joan, ner, elena, amelia, daya, sila, shady, tig, uros]

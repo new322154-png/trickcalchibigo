@@ -1,0 +1,49 @@
+# ═══════════════════════════════════════════════════════════════
+#  flowchart.yaml — 사건 흐름도
+# ───────────────────────────────────────────────────────────────
+#  분기 나무에 표시할 지점입니다. 첫 파생 엔딩을 본 뒤에 타이틀·메뉴에서 열립니다.
+#
+#   type: start(시작) / scene(주요 장면) / checkpoint(돌아갈 수 있는 지점) / ending(엔딩)
+#   parent: 바로 앞 지점 id
+#   label:  흐름도에 표시할 이름 (엔딩은 endings.yaml 의 제목을 자동으로 씀)
+#
+#  - 대본에서  #node:ch1_night  태그를 지나가면 그 지점이 "지나감"으로 표시됩니다.
+#  - checkpoint 는  #checkpoint:id  또는 재판 시작 때 자동 저장되고, 흐름도에서 그 지점으로 점프할 수 있어요.
+#  - 아직 안 지나간 지점은 ??? 로 보입니다.
+# ═══════════════════════════════════════════════════════════════
+
+nodes:
+  start:
+    type: start
+    # Q: 흐름도 맨 처음 지점의 이름은?
+    label: TODO
+
+  prologue_mansion:
+    type: scene
+    parent: start
+    # Q: "저택 도착" 지점을 흐름도에 뭐라고 표시할까요?
+    label: TODO
+
+  ch1_vanish:
+    type: scene
+    parent: prologue_mansion
+    # Q: "실라 실종" 지점의 이름은?
+    label: TODO
+
+  ch1_trial:
+    type: checkpoint
+    parent: ch1_vanish
+    # Q: 1장 재판 체크포인트의 이름은?
+    label: TODO
+
+  ch1_wrong:   { type: ending, parent: ch1_trial }
+  ch1_weak:    { type: ending, parent: ch1_trial }
+  ch1_mansion: { type: ending, parent: ch1_trial }
+  ch1_voice:   { type: ending, parent: ch1_trial }
+  ch1_counter: { type: ending, parent: ch1_trial }
+
+  ch1_clear:
+    type: scene
+    parent: ch1_trial
+    # Q: 1장 해결 후 지점의 이름은?
+    label: TODO

@@ -1,0 +1,79 @@
+# ═══════════════════════════════════════════════════════════════
+#  endings.yaml — 엔딩 목록 (갤러리)
+# ───────────────────────────────────────────────────────────────
+#  대본에서  #ending:ch1_wrong  태그를 만나면 엔딩 화면이 뜨고 갤러리에 기록됩니다.
+#  파생 엔딩(branch)이 끝나면 "체크포인트로 돌아가기"가 뜹니다.
+#
+#  칸 설명
+#   no:        엔딩 번호 (갤러리 정렬, "ENDING 03" 표시)
+#   type:      true(트루) / normal(노멀) / branch(파생·배드)
+#   title:     엔딩 제목
+#   desc:      갤러리에서 해금 후 보이는 설명
+#   hint:      잠겨 있을 때 보이는 힌트 (없으면 "")
+#   cg:        엔딩 그림 (public/assets/cg/ 안, 없으면 "")
+#   checkpoint: 파생 엔딩 후 돌아갈 체크포인트 id
+#   memory:    (회차 기억) 이 엔딩을 본 적이 있으면 켜지는 flag — 대본에서 seen_ending("id") 로도 확인 가능
+# ═══════════════════════════════════════════════════════════════
+
+# Q: 트루 엔딩 외에 노멀 엔딩도 있나요? 엔딩은 대략 몇 개로 예상하나요? (작가용 메모)
+memo: TODO
+
+endings:
+  ch1_wrong:
+    no: 1
+    type: branch
+    # Q: 1장에서 엉뚱한 사람을 지목했을 때의 엔딩 제목은?
+    title: TODO
+    desc: TODO
+    hint: TODO
+    cg: ""
+    checkpoint: ch1_trial
+
+  ch1_weak:
+    no: 2
+    type: branch
+    # Q: 진범은 맞혔지만 근거가 부족했을 때의 "어정쩡한 결말" 제목은?
+    title: TODO
+    desc: TODO
+    hint: TODO
+    cg: ""
+    checkpoint: ch1_trial
+
+  ch1_mansion:
+    no: 3
+    type: branch
+    # Q: 동률이 끝내 안 풀려 "저택이 고른" 엔딩 제목은?
+    title: TODO
+    desc: TODO
+    hint: TODO
+    cg: ""
+    checkpoint: ch1_trial
+
+  ch1_voice:
+    no: 4
+    type: branch
+    # Q: 발언권이 바닥나 아무도 교주 말을 듣지 않게 된 엔딩 제목은?
+    title: TODO
+    desc: TODO
+    hint: TODO
+    cg: ""
+    checkpoint: ch1_trial
+
+  ch1_counter:
+    no: 5
+    type: branch
+    # Q: 역습 방어전에 실패해 교주가 용의자가 된 엔딩 제목은?
+    title: TODO
+    desc: TODO
+    hint: TODO
+    cg: ""
+    checkpoint: ch1_trial
+
+  true_end:
+    no: 99
+    type: true
+    # Q: 트루 엔딩 제목은?
+    title: TODO
+    desc: TODO
+    hint: TODO
+    cg: ""
