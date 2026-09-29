@@ -47,6 +47,7 @@ class Game {
   async newGame() {
     await this.start(() => {
       story.resetInk();
+      stopBgm(); // 타이틀 음악 끄기
       setState(newState());
       scene.hideAll();
       scene.setBg('');

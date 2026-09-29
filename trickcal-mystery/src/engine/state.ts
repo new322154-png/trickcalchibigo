@@ -176,9 +176,14 @@ export function applyEffect(effect: string) {
 export interface Settings {
   textSpeed: number;
   autoDelay: number;
+  master: number;
   bgm: number;
   se: number;
   skipUnread: boolean;
+  /** 대화창 바탕 진하기 (0~1) */
+  windowOpacity: number;
+  /** 플레이어가 정한 교주 이름 (빈 칸이면 characters.yaml 의 이름) */
+  playerName: string;
 }
 
 export interface Persist {
@@ -187,6 +192,9 @@ export interface Persist {
   checkpoints: Record<string, any>;
   readLines: string[];
   tutorialsSeen: string[];
+  /** 엑스트라: 한 번이라도 본 CG, 들은 배경음악 */
+  cgSeen: string[];
+  bgmHeard: string[];
   settings: Settings;
 }
 
@@ -207,12 +215,17 @@ export function loadPersist() {
     checkpoints: saved.checkpoints ?? {},
     readLines: saved.readLines ?? [],
     tutorialsSeen: saved.tutorialsSeen ?? [],
+    cgSeen: saved.cgSeen ?? [],
+    bgmHeard: saved.bgmHeard ?? [],
     settings: {
       textSpeed: cfg('text.speed', 35),
       autoDelay: cfg('text.auto_delay', 1.2),
+      master: 1,
       bgm: 0.7,
       se: 0.8,
       skipUnread: cfg('text.skip_unread', false),
+      windowOpacity: 0.72,
+      playerName: '',
       ...(saved.settings ?? {}),
     },
   };
@@ -243,6 +256,13 @@ export function markRead(lineId: string) {
 }
 export function isRead(lineId: string) {
   return readSet.has(lineId);
+}
+
+/** 엑스트라 해금 기록 (CG 를 봤을 때, 음악을 들었을 때) */
+export function markSeen(kind: 'cgSeen' | 'bgmHeard', id: string) {
+  if (!id || id === 'none' || P[kind].includes(id)) return;
+  P[kind].push(id);
+  savePersist();
 }
 
 export function flowchartUnlocked() {

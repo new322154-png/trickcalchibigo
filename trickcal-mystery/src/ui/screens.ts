@@ -3,19 +3,33 @@
  */
 import { C, cfg, charColor, charName, names, t } from '../engine/content';
 import { game } from '../engine/game';
-import { P, S, flowchartUnlocked, savePersist } from '../engine/state';
-import {
-  Snapshot, exportSave, importSave, latestSlot, readSlot, slotLabel, writeSlot,
-} from '../engine/save';
-import { applyVolume } from '../engine/audio';
+import { P, S } from '../engine/state';
+import { latestSlot } from '../engine/save';
+import { playBgm } from '../engine/audio';
 import { isTodo } from '../engine/util';
 import { asset, clear, h, layer } from './dom';
 import { backlog } from './dialogue';
 import { confirm, openModal, toast } from './modal';
 import { setHudVisible } from './hud';
-import { openPhoneApp } from '../modes/phone';
+import { openSystem } from './sysmenu';
 
 const txt = (v: any, fallback = '') => (isTodo(v) || v === undefined ? fallback : names(String(v)));
+const tt = (key: string, fallback: string) => {
+  const v = t(key);
+  return /^\[.*\]$/.test(v) || isTodo(v) ? fallback : v;
+};
+
+/** 타이틀 메뉴 아이콘 (선 그림) */
+const svg = (d: string) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICONS: Record<string, string> = {
+  play: svg('<path d="M8 5v14l11-7z"/>'),
+  resume: svg('<path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v4h4"/>'),
+  folder: svg('<path d="M3 7h6l2 2h10v10H3z"/>'),
+  star: svg('<path d="M12 3l2.2 6.8H21l-5.4 4 2 6.7L12 16.4 6.4 20.5l2-6.7L3 9.8h6.8z"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'),
+  book: svg('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>'),
+  info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
+};
 
 // ── 타이틀 ────────────────────────────────────────
 
@@ -28,25 +42,24 @@ export function showTitle() {
   document.title = txt(C.game.title, '트릭컬 추리 팬게임');
 
   const latest = latestSlot(cfg('save.slots', 12));
+  // 메뉴: 한글 + 작은 영문 + 오른쪽 동그란 아이콘
+  const item = (label: string, en: string, icon: string, onclick: () => void) =>
+    h('button.title-btn', { onclick }, h('span.tb-text', h('b', label), h('small', en)), h('span.tb-icon', { html: ICONS[icon] }));
   const menu = h(
     'div.title-menu',
-    h('button.title-btn', {
-      onclick: async () => {
-        if (latest && !(await confirm(t('confirm.new_game'), '처음부터 시작할까요?'))) return;
-        clear(root);
-        void game.newGame();
-      },
-    }, t('title.new_game')),
-    latest ? h('button.title-btn', { onclick: () => { clear(root); void game.loadSnapshot(latest.snap); } }, t('title.continue')) : null,
-    h('button.title-btn', { onclick: () => openSaveLoad('load') }, t('title.load')),
-    h('button.title-btn', { onclick: () => openGallery() }, t('title.gallery')),
-    flowchartUnlocked()
-      ? h('button.title-btn', { onclick: () => openFlowchart() }, t('title.flowchart'))
-      : null,
-    h('button.title-btn', { onclick: () => openSettings() }, t('title.settings')),
-    h('button.title-btn', { onclick: () => openText(t('title.synopsis'), txt(C.game.synopsis)) }, t('title.synopsis')),
-    h('button.title-btn', { onclick: () => openCredits() }, t('title.credits')),
+    item(t('title.new_game'), 'NEW GAME', 'play', async () => {
+      if (latest && !(await confirm(t('confirm.new_game'), '처음부터 시작할까요?'))) return;
+      clear(root);
+      void game.newGame();
+    }),
+    latest ? item(t('title.continue'), 'CONTINUE', 'resume', () => { clear(root); void game.loadSnapshot(latest.snap); }) : null,
+    item(t('title.load'), 'LOAD', 'folder', () => openSystem('load')),
+    item(tt('title.extra', '엑스트라'), 'EXTRA', 'star', () => openSystem('cg')),
+    item(t('title.settings'), 'CONFIG', 'gear', () => openSystem('config')),
+    item(t('title.synopsis'), 'STORY', 'book', () => openText(t('title.synopsis'), txt(C.game.synopsis))),
+    item(t('title.credits'), 'CREDITS', 'info', () => openCredits()),
   );
+  playBgm(cfg('title_bgm', 'title'));
   // 제목: 작은 머리글(✦ 선) + 명조 제목 + 부제. 글자는 game.yaml 의 title / subtitle
   const logo = h(
     'div.title-logo',
@@ -76,125 +89,19 @@ export function showTitle() {
   root.appendChild(screen);
 }
 
-// ── 게임 중 메뉴 ──────────────────────────────────
+// ── 게임 중 메뉴 · 저장 · 설정 ─────────────────────
+// 모두 시스템 메뉴(sysmenu.ts)의 탭으로 열린다.
 
 export function openGameMenu() {
-  const m = openModal(t('menu.settings'), 'game-menu');
-  const btn = (label: string, fn: () => void) => h('button.menu-btn', { onclick: () => { m.close(); fn(); } }, label);
-  const items = [
-    btn(t('menu.save'), () => openSaveLoad('save')),
-    btn(t('menu.load'), () => openSaveLoad('load')),
-    btn(t('menu.backlog'), () => openBacklog()),
-    btn(t('menu.notebook'), () => openNotebook()),
-    btn(t('menu.phone'), () => openPhoneApp()),
-    flowchartUnlocked() ? btn(t('title.flowchart'), () => openFlowchart()) : null,
-    btn(t('title.gallery'), () => openGallery()),
-    btn(t('menu.settings'), () => openSettings()),
-    btn(t('menu.to_title'), async () => {
-      if (await confirm(t('confirm.to_title'), '타이틀로 돌아갈까요? 저장하지 않은 진행은 사라집니다.')) {
-        game.toTitle();
-      }
-    }),
-  ];
-  m.body.append(...items.filter((x): x is HTMLElement => !!x));
+  openSystem('config');
 }
-
-// ── 저장/불러오기 ─────────────────────────────────
 
 export function openSaveLoad(mode: 'save' | 'load') {
-  if (mode === 'save' && game.saveLocked) {
-    toast('지금은 저장할 수 없습니다.', 'warn');
-    return;
-  }
-  const m = openModal(mode === 'save' ? t('save.title_save') : t('save.title_load'), 'saveload');
-  const render = () => {
-    clear(m.body);
-    const grid = h('div.slot-grid');
-    const slots: (number | string)[] = mode === 'load' ? ['auto'] : [];
-    for (let i = 1; i <= cfg('save.slots', 12); i++) slots.push(i);
-    for (const slot of slots) {
-      const snap = readSlot(slot);
-      const label = slot === 'auto' ? t('save.autosave') : `No.${slot}`;
-      grid.appendChild(
-        h('button.slot', {
-          disabled: mode === 'load' && !snap,
-          onclick: async () => {
-            if (mode === 'save') {
-              if (snap && !(await confirm(t('confirm.overwrite'), '덮어쓸까요?'))) return;
-              const s = game.snapshot();
-              if (!s) return;
-              try {
-                writeSlot(slot, s);
-                toast(t('save.saved'));
-              } catch {
-                toast(t('error.save_failed'), 'error');
-              }
-              render();
-            } else if (snap) {
-              m.close();
-              clear(layer('modal'));
-              void game.loadSnapshot(snap);
-            }
-          },
-        },
-        h('b', label),
-        h('span', snap ? slotLabel(snap) : t('save.empty_slot')),
-        snap ? h('small', new Date(snap.time).toLocaleString()) : null),
-      );
-    }
-    m.body.appendChild(grid);
-    const tools = h('div.slot-tools');
-    if (mode === 'save') {
-      tools.appendChild(h('button.btn', { onclick: () => { const s = game.snapshot(); if (s) exportSave(s); } }, t('save.export')));
-    } else {
-      tools.appendChild(
-        h('button.btn', {
-          onclick: async () => {
-            const snap = await importSave();
-            if (!snap) {
-              toast(t('error.bad_file'), 'error');
-              return;
-            }
-            m.close();
-            clear(layer('modal'));
-            void game.loadSnapshot(snap as Snapshot);
-          },
-        }, t('save.import')),
-      );
-    }
-    m.body.appendChild(tools);
-  };
-  render();
+  openSystem(mode);
 }
 
-// ── 설정 ──────────────────────────────────────────
-
 export function openSettings() {
-  const m = openModal(t('settings.title'), 'settings');
-  const s = P.settings;
-  const slider = (label: string, key: keyof typeof s, min: number, max: number, step: number) => {
-    const input = h('input', { type: 'range', min, max, step, value: s[key] as number }) as HTMLInputElement;
-    input.oninput = () => {
-      (s as any)[key] = Number(input.value);
-      applyVolume();
-      savePersist();
-    };
-    return h('label.setting', h('span', label), input);
-  };
-  const check = h('input', { type: 'checkbox' }) as HTMLInputElement;
-  check.checked = s.skipUnread;
-  check.onchange = () => {
-    s.skipUnread = check.checked;
-    savePersist();
-  };
-  m.body.append(
-    slider(t('settings.text_speed'), 'textSpeed', 10, 120, 1),
-    slider(t('settings.auto_speed'), 'autoDelay', 0.3, 4, 0.1),
-    slider(t('settings.bgm'), 'bgm', 0, 1, 0.05),
-    slider(t('settings.se'), 'se', 0, 1, 0.05),
-    h('label.setting', h('span', t('settings.skip_unread')), check),
-    h('button.btn', { onclick: () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {})) }, t('settings.fullscreen')),
-  );
+  openSystem('config');
 }
 
 // ── 지난 대화 ─────────────────────────────────────
@@ -326,66 +233,14 @@ export function openNotebook(tab: 'evidence' | 'people' | 'suspects' | 'conclusi
   render();
 }
 
-// ── 엔딩 갤러리 ───────────────────────────────────
+// ── 갤러리 · 흐름도 ─────────────────────────────────
 
 export function openGallery() {
-  const m = openModal(t('gallery.title'), 'gallery');
-  const list = Object.entries(C.endings).sort((a, b) => (a[1].no ?? 0) - (b[1].no ?? 0));
-  const seen = list.filter(([id]) => P.endingsSeen.includes(id)).length;
-  m.body.appendChild(h('div.gallery-progress', t('gallery.progress', { seen, total: list.length })));
-  const grid = h('div.gallery-grid');
-  for (const [id, e] of list) {
-    const got = P.endingsSeen.includes(id);
-    grid.appendChild(
-      h(`button.gallery-item${got ? '' : '.locked'}`, {
-        onclick: () => {
-          if (got) openText(txt(e.title, id), txt(e.desc));
-          else if (e.hint && !isTodo(e.hint)) toast(`${txt(C.ui.gallery?.hint_prefix)} ${names(e.hint)}`);
-        },
-      },
-      h('small', `ENDING ${String(e.no).padStart(2, '0')}`),
-      h('b', got ? txt(e.title, id) : t('gallery.locked'))),
-    );
-  }
-  m.body.appendChild(grid);
+  openSystem('endings');
 }
 
-// ── 사건 흐름도 ───────────────────────────────────
-
 export function openFlowchart() {
-  const m = openModal(t('flowchart.title'), 'flowchart');
-  m.body.appendChild(h('p.flow-guide', t('flowchart.guide').replace(/^TODO$/, '')));
-  const nodes = C.flowchart;
-  const children = new Map<string, string[]>();
-  const roots: string[] = [];
-  for (const [id, n] of Object.entries(nodes)) {
-    if (n.parent && nodes[n.parent]) {
-      if (!children.has(n.parent)) children.set(n.parent, []);
-      children.get(n.parent)!.push(id);
-    } else roots.push(id);
-  }
-  const renderNode = (id: string): HTMLElement => {
-    const n = nodes[id];
-    const seen = P.nodesSeen.includes(id) || P.endingsSeen.includes(id);
-    const label = n.type === 'ending' ? txt(C.endings[id]?.title, id) : txt(n.label, id);
-    const canJump = n.type === 'checkpoint' && !!P.checkpoints[id];
-    const el = h(
-      `div.flow-node.${n.type}${seen ? '.seen' : ''}`,
-      h('span', seen ? label : t('flowchart.locked_node')),
-      canJump
-        ? h('button.btn.small', {
-            onclick: async () => {
-              if (!(await confirm(t('confirm.to_checkpoint'), '이 지점으로 돌아갈까요?'))) return;
-              clear(layer('modal'));
-              void game.loadSnapshot(P.checkpoints[id]);
-            },
-          }, t('flowchart.jump'))
-        : null,
-    );
-    const kids = children.get(id) ?? [];
-    return h('div.flow-branch', el, kids.length ? h('div.flow-children', ...kids.map(renderNode)) : null);
-  };
-  m.body.appendChild(h('div.flow-tree', ...roots.map(renderNode)));
+  openSystem('flowchart');
 }
 
 // ── 글 보기 (시놉시스, 엔딩 설명 등) ──────────────────

@@ -4,7 +4,7 @@
  * 그림이 없으면 이름과 감정을 적은 임시 카드가 대신 뜬다.
  */
 import { C, cfg, charName, emotionKey } from '../engine/content';
-import { S } from '../engine/state';
+import { S, markSeen } from '../engine/state';
 import { orDefault, sleep } from '../engine/util';
 import { asset, clear, h, imageWithFallback, layer } from './dom';
 
@@ -32,6 +32,7 @@ export function setBg(name: string) {
 
 export function setCg(name: string) {
   S.stage.cg = name;
+  markSeen('cgSeen', name);
   const el = clear(layer('cg'));
   if (!name || name === 'none') return;
   const img = h('img.cg-img') as HTMLImageElement;

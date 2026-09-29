@@ -216,6 +216,24 @@ export interface Content {
   trials: Record<string, TrialDef>;
   endings: Record<string, EndingDef>;
   flowchart: Record<string, FlowNode>;
+  extras: ExtrasDef;
+}
+
+/** 엑스트라(갤러리) — content/extras.yaml */
+export interface ExtraItem {
+  id: string;          // CG·배경음악 이름 (파일 이름)
+  title?: string;
+  desc?: string;
+  artist?: string;     // 음악: 만든 사람
+  art?: string;        // 음악: 원판에 들어갈 그림 (public/assets/ 기준)
+  file?: string;       // 영상: 파일 이름 (확장자 없이, public/assets/ 기준)
+  poster?: string;     // 영상: 재생 전 그림
+  unlock?: 'always' | 'seen' | string;  // always / seen(게임에서 보거나 들으면) / 엔딩 id
+}
+export interface ExtrasDef {
+  cg: ExtraItem[];
+  music: ExtraItem[];
+  videos: ExtraItem[];
 }
 
 // ── 기능 이름 기본값 (game.yaml 의 names 가 TODO 일 때 대신 씀) ──
@@ -338,7 +356,16 @@ export function loadContent(): Content {
     trials: mergeFolder(f, 'trials'),
     endings: f['endings']?.endings ?? {},
     flowchart: f['flowchart']?.nodes ?? {},
+    extras: {
+      cg: listOf(f['extras']?.cg),
+      music: listOf(f['extras']?.music),
+      videos: listOf(f['extras']?.videos),
+    },
   };
+}
+
+function listOf(v: any): ExtraItem[] {
+  return Array.isArray(v) ? v.filter((x) => x && typeof x === 'object' && x.id) : [];
 }
 
 function resolveNames(names: Record<string, string>) {
@@ -357,7 +384,13 @@ export function setContent(c: Content) {
 /** "%notebook%" → 기능 이름 */
 export function names(text: string): string {
   if (typeof text !== 'string') return String(text ?? '');
-  return text.replace(/%(\w+)%/g, (m, k) => C.game.names[k] ?? m);
+  return text.replace(/%(\w+)%/g, (m, k) => {
+    if (k === 'player') {
+      const pid = Object.entries(C.characters).find(([, d]) => d.player)?.[0];
+      return pid ? charName(pid) : m;
+    }
+    return C.game.names[k] ?? m;
+  });
 }
 
 /** ui.yaml 문구 가져오기.  t('toast.clue_get', { name: '깨진 컵' }) */
@@ -379,10 +412,16 @@ export function charId(nameOrId: string): string | undefined {
   return undefined;
 }
 
+/** 설정에서 정한 교주 이름 (빈 칸이면 기본 이름) */
+let playerNameOverride = '';
+export function setPlayerName(name: string) {
+  playerNameOverride = (name ?? '').trim();
+}
+
 export function charName(id: string): string {
   if (id === 'unknown') return orDefault(C.contacts.unknown?.name, t('phone.unknown_sender'));
   const def = C.characters[id];
-  if (def) return def.player ? orDefault(t('dialogue.player_name'), def.name) : def.name;
+  if (def) return def.player ? playerNameOverride || orDefault(t('dialogue.player_name'), def.name) : def.name;
   return C.contacts[id]?.name ?? id;
 }
 

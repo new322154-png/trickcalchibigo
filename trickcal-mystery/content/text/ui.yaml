@@ -11,6 +11,7 @@
 title:
   # 제목 위 작은 머리글 (영문 대문자 추천). 비우려면 ""
   kicker: TRICKCAL MYSTERY
+  extra: 엑스트라            # CG · 음악 · 영상 · 엔딩
   new_game: 새로 시작
   continue: 이어하기          # 가장 최근 저장에서 시작
   load: 불러오기
@@ -62,6 +63,62 @@ settings:
   fullscreen: 전체 화면
   reset: 기본값으로
   close: 닫기
+  group_text: 텍스트
+  group_sound: 사운드
+  group_screen: 화면
+  preview: "글자가 이런 속도로 나옵니다.\n마음에 드는 속도로 맞춰 보세요."
+  window_opacity: 대화창 진하기
+  master: 전체 볼륨
+  screen_mode: 화면 모드
+  windowed: 창 모드
+  on: 켜기
+  off: 끄기
+  player_name: 교주 이름
+  player_name_hint: 비워 두면 기본 이름
+  player_name_done: 이름을 바꿨습니다.
+  apply: 변경
+
+# ── 시스템 메뉴 (저장·설정·엑스트라를 모은 전체 화면 메뉴) ──
+#  각 탭의 제목과 제목 옆 한 줄 설명
+system:
+  group_game: GAME
+  group_config: CONFIG
+  group_extra: EXTRA
+  save: 저장하기
+  save_desc: 지금까지의 진행을 저장합니다.
+  load: 불러오기
+  load_desc: 저장한 지점에서 다시 시작합니다.
+  config: 환경 설정
+  config_desc: 글자 속도, 소리, 화면을 조정합니다.
+  controls: 조작법
+  controls_desc: 키보드와 마우스로 할 수 있는 것들입니다.
+  cg_desc: 게임에서 만난 특별한 장면을 다시 봅니다.
+  music: 음악
+  music_desc: 게임에 흐른 음악을 다시 듣습니다.
+  video: 영상
+  video_desc: 게임 속 영상을 다시 봅니다.
+  endings: 엔딩
+  endings_desc: 지금까지 도달한 결말입니다.
+  flowchart_desc: 이야기의 갈림길을 되짚고, 그 지점으로 돌아갑니다.
+  locked: 아직 열리지 않았습니다
+  cg_empty: 아직 등록된 CG 가 없습니다.
+  music_empty: 아직 등록된 음악이 없습니다.
+  video_empty: 아직 등록된 영상이 없습니다.
+
+# ── 조작법 화면 ──
+controls:
+  next: 대사 넘기기
+  next_how: 왼쪽 클릭 · Space · Enter
+  backlog: 지난 대화
+  backlog_how: 휠을 위로
+  hide: 대화창 숨기기
+  hide_how: 오른쪽 클릭
+  skip: 스킵
+  skip_how: Ctrl 누르고 있기
+  menu: 메뉴
+  menu_how: Esc
+  debug: 디버그 메뉴 (제작용)
+  debug_how: F9
 
 # ── 확인 창 ──
 #  예/아니오를 묻는 창입니다. 질문 문구는 분위기에 맞게 써 주세요.

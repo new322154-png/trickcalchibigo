@@ -4,8 +4,8 @@
  */
 import './styles/theme.css';
 import './styles/base.css';
-import { loadContent, setContent } from './engine/content';
-import { loadPersist, newState, setState } from './engine/state';
+import { loadContent, setContent, setPlayerName } from './engine/content';
+import { P, loadPersist, newState, setState } from './engine/state';
 import { createStory } from './engine/story';
 import { game } from './engine/game';
 import { buildStage } from './ui/stage';
@@ -28,6 +28,8 @@ function showFatal(e: unknown) {
 try {
   setContent(loadContent());
   loadPersist();
+  setPlayerName(P.settings.playerName);
+  document.documentElement.style.setProperty('--dlg-opacity', String(P.settings.windowOpacity));
   setState(newState());
   createStory();
   buildStage();

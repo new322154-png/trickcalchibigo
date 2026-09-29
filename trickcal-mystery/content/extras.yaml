@@ -1,0 +1,67 @@
+# ═══════════════════════════════════════════════════════════════
+#  extras.yaml — 엑스트라 (CG 갤러리 · 음악 감상실 · 영상)
+# ───────────────────────────────────────────────────────────────
+#  타이틀의 "엑스트라"와 게임 중 메뉴에서 열립니다.
+#  목록에 적은 순서대로 보입니다.
+#
+#  unlock (언제 열리나)
+#    always   처음부터 열림
+#    seen     게임에서 한 번 보거나 들으면 열림 (기본값)
+#    엔딩 id  그 엔딩을 보면 열림 (예: ch1_true)
+# ═══════════════════════════════════════════════════════════════
+
+# ── CG ──
+#  id: public/assets/cg/ 안의 파일 이름 (확장자 없이). 대본의 #cg:이름 과 같게.
+cg:
+  # - id: ch1_found
+  #   title: 찾았다
+  #   desc: 1장 · 창고에서 발견된 실라
+
+# ── 음악 감상실 ──
+#  id:     public/assets/bgm/ 안의 파일 이름 (확장자 없이). 대본의 #bgm:이름 과 같게.
+#  art:    원판에 들어갈 정사각형 그림 (public/assets/ 기준, 없으면 타이틀 그림)
+#  artist: 만든 사람 (예: Suno · 제작자 이름)
+# Q: 곡마다 제목과 한 줄 설명을 뭐라고 붙일까요?
+music:
+  - id: title
+    title: 타이틀
+    artist: TODO
+    desc: TODO
+    unlock: always
+  - id: airship
+    title: 빵주 기내
+    artist: TODO
+    desc: TODO
+  - id: rain
+    title: 폭우 속 섬
+    artist: TODO
+    desc: TODO
+  - id: mansion
+    title: 저택
+    artist: TODO
+    desc: TODO
+  - id: daily
+    title: 일상
+    artist: TODO
+    desc: TODO
+  - id: night
+    title: 밤
+    artist: TODO
+    desc: TODO
+  - id: before_trial
+    title: 재판 직전
+    artist: TODO
+    desc: TODO
+  - id: after_trial
+    title: 재판 후
+    artist: TODO
+    desc: TODO
+
+# ── 영상 ──
+#  file: public/assets/ 기준 파일 이름 (확장자 없이). .webm 과 .mp4 를 차례로 찾음
+videos:
+  - id: title
+    title: 타이틀 화면
+    file: ui/title_bg
+    poster: ui/title_bg.jpg
+    unlock: always
