@@ -14,7 +14,7 @@ import {
 } from '../engine/state';
 import type { PhoneLogEntry, PhoneThreadState } from '../engine/state';
 import { asArray, isTodo, pick, sleep, waitFor } from '../engine/util';
-import { clear, h, layer } from '../ui/dom';
+import { asset, clear, h, layer } from '../ui/dom';
 import * as dlg from '../ui/dialogue';
 import { confirm, openModal, toast } from '../ui/modal';
 
@@ -72,7 +72,7 @@ function renderEntry(view: PhoneView, e: PhoneLogEntry, rerender: () => void) {
       );
     }
   } else {
-    if (e.image) bubble.appendChild(h('img.phone-img', { src: `./assets/evidence/${e.image}` }));
+    if (e.image) bubble.appendChild(h('img.phone-img', { src: asset(`evidence/${e.image}`) }));
     bubble.appendChild(h('div.phone-text', names(e.text)));
   }
   view.list.appendChild(bubble);

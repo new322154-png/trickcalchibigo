@@ -18,7 +18,7 @@ import { Aborted, asArray, cancelAllWaits, hash, isTodo, pick, sleep, waitFor } 
 import * as scene from '../ui/scene';
 import * as dlg from '../ui/dialogue';
 import { closeAllModals, openModal, toast } from '../ui/modal';
-import { clear, h, layer } from '../ui/dom';
+import { asset, clear, h, layer } from '../ui/dom';
 import { refreshHud, setHudVisible } from '../ui/hud';
 import { runInvestigation } from '../modes/investigation';
 import { runBoard } from '../modes/board';
@@ -456,7 +456,7 @@ class Game {
       const m = openModal(isTodo(tut.title) ? '' : names(tut.title), 'tutorial', { closable: false });
       const render = () => {
         clear(m.body);
-        if (tut.image && !isTodo(tut.image)) m.body.appendChild(h('img.tutorial-img', { src: `./assets/ui/tutorial/${tut.image}` }));
+        if (tut.image && !isTodo(tut.image)) m.body.appendChild(h('img.tutorial-img', { src: asset(`ui/tutorial/${tut.image}`) }));
         m.body.appendChild(h('p.tutorial-text', names(pages[page])));
         m.body.appendChild(
           h('div.tutorial-nav',

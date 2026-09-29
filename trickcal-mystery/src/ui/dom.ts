@@ -54,7 +54,8 @@ export function layer(name: string): HTMLElement {
 
 /** 이미지 경로. public/assets 기준 */
 export function asset(path: string) {
-  return `./assets/${path}`;
+  // ?v=배포번호: 새로 배포하면 브라우저가 예전 캐시 대신 새 파일을 받는다
+  return `./assets/${path}?v=${__BUILD_ID__}`;
 }
 
 /** 확장자 없이 적은 이미지 이름이면 jpg → png → webp 순서로 시도 */

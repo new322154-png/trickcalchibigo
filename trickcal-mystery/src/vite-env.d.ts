@@ -5,3 +5,6 @@ declare module 'virtual:ink-story' {
   const json: string;
   export default json;
 }
+
+/** 배포 번호 (vite.config.ts 의 define) */
+declare const __BUILD_ID__: string;

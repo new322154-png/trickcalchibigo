@@ -6,7 +6,7 @@ import { C, names, t } from '../engine/content';
 import { game } from '../engine/game';
 import { S, giveClue, setFlag } from '../engine/state';
 import { isTodo, waitFor } from '../engine/util';
-import { clear, h, layer } from '../ui/dom';
+import { asset, clear, h, layer } from '../ui/dom';
 import * as dlg from '../ui/dialogue';
 import { openModal } from '../ui/modal';
 import * as scene from '../ui/scene';
@@ -156,7 +156,7 @@ async function openMap(inv: InvestigationDef, current: string, go: (to: string) 
   await game.tutorial('map');
   const m = openModal(t('investigation.open_map'), 'map');
   const map = h('div.map');
-  const img = h('img.map-img', { src: './assets/ui/map.png' }) as HTMLImageElement;
+  const img = h('img.map-img', { src: asset('ui/map.png') }) as HTMLImageElement;
   img.onerror = () => img.remove();
   map.appendChild(img);
   for (const rid of inv.rooms) {
