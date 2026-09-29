@@ -17,46 +17,55 @@
   --font-size-ui: 28px;
 
   /* ── 기본 색 ── */
-  --bg: #1a1420;
-  --text: #fdf8f2;
-  --text-dim: #b9adc4;
-  --accent: #ffcf5a;          /* 강조 (선택, 결론, 버튼 테두리) */
-  --accent-2: #ff7eb6;        /* 보조 강조 */
-  --danger: #ff5a6e;          /* 의심도, 틀림 */
-  --good: #6fe0a8;
-  --name-default: #ffd6e8;    /* 이름표 기본 색 (캐릭터 color 가 없을 때) */
+  /* 팔레트: 바탕 #1E1428 · 와인 #6B1F3A · 진홍 #B8324B · 금 #C9A45C · 촛불 #F2B35E · 크림 #F3E9D2 · 녹청 #5E7F6E */
+  --bg: #1e1428;
+  --text: #f3e9d2;
+  --text-dim: #b8a88c;
+  --accent: #e2bd6a;          /* 강조 (선택, 결론, 버튼 테두리) */
+  --accent-2: #f2b35e;        /* 보조 강조 (촛불) */
+  --danger: #b8324b;          /* 의심도, 틀림 */
+  --good: #5e7f6e;
+  --name-default: #f3e9d2;    /* 이름표 기본 색 (캐릭터 color 가 없을 때) */
+  --ink: #3a2418;             /* 크림색 종이 위 글자 색 (대화창·선택지) */
+  --ink-dim: #7a5f48;         /* 종이 위 흐린 글자 (나레이션, 작은 버튼) */
 
   /* ── 대화창 ── */
-  --dlg-bg: rgba(24, 16, 32, 0.86);
-  --dlg-border: 3px solid rgba(255, 207, 90, 0.7);
-  --dlg-radius: 24px;
-  --img-dialogue: none;        /* 예: url('/assets/ui/dialogue_box.png') */
-  --slice-dialogue: 40;
-  --img-nameplate: none;       /* 예: url('/assets/ui/nameplate.png') */
-  --slice-nameplate: 24;
+  /* 대화창 그림은 크기 그대로 깔립니다 (1760×379, 왼쪽 위 리본에 이름이 올라감) */
+  --dlg-bg: transparent;
+  --dlg-border: none;
+  --dlg-radius: 0;
+  --dlg-text-color: var(--ink);
+  --img-dialogue: url('/assets/ui/dialogue_box.png');
+  --name-fixed-color: #f3e9d2; /* 리본 위 이름 글자 색. 캐릭터별 색을 쓰려면 이 줄을 지우세요 */
 
   /* ── 버튼 ── */
-  --btn-bg: rgba(40, 28, 54, 0.92);
-  --btn-bg-hover: rgba(70, 48, 92, 0.95);
-  --btn-border: 2px solid rgba(255, 207, 90, 0.55);
+  --btn-bg: rgba(78, 24, 44, 0.94);
+  --btn-bg-hover: rgba(107, 31, 58, 0.97);
+  --btn-border: 2px solid rgba(201, 164, 92, 0.7);
   --btn-radius: 14px;
-  --img-button: none;          /* 예: url('/assets/ui/button.png') */
-  --img-button-hover: none;
-  --slice-button: 20;
+  /* 버튼 그림 (9-slice). 원본 720×147 을 절반 크기로 그립니다 */
+  --img-button: url('/assets/ui/button.png');
+  --btn-img-bg: transparent;       /* 그림 버튼 뒤 배경색 (그림 모서리가 투명하니 비움) */
+  --slice-button: 50 74;           /* 그림에서 잘라 쓸 모서리 (위아래 좌우, 원본 px) */
+  --slice-button-width: 25px 37px; /* 화면에 그릴 모서리 크기 */
+  --btn-hover-filter: brightness(1.18) drop-shadow(0 0 10px rgba(242, 179, 94, 0.6));
 
   /* ── 선택지 ── */
-  --choice-bg: rgba(30, 20, 44, 0.92);
-  --choice-bg-hover: rgba(255, 207, 90, 0.95);
-  --choice-text-hover: #1a1420;
-  --img-choice: none;
+  --choice-bg: transparent;
+  --choice-bg-hover: transparent;
+  --choice-text: var(--ink);
+  --choice-text-hover: #6b1f3a;
+  --choice-border: none;
+  --img-choice: url('/assets/ui/choice.png');
 
   /* ── 의심 버튼 ── */
-  --suspect-bg: #ff5a6e;
-  --img-suspect: none;         /* 예: url('/assets/ui/suspect_button.png') */
+  --suspect-bg: transparent;
+  --suspect-border: none;
+  --img-suspect: url('/assets/ui/suspect_button.png'); /* 왼쪽에 돋보기, 글자는 오른쪽 */
 
   /* ── 창(모달) ── */
-  --modal-bg: rgba(22, 14, 30, 0.96);
-  --modal-border: 3px solid rgba(255, 207, 90, 0.6);
+  --modal-bg: rgba(30, 20, 40, 0.97);
+  --modal-border: 3px solid rgba(201, 164, 92, 0.7);
   --img-modal: none;
   --slice-modal: 48;
 
@@ -70,7 +79,7 @@
 
   /* ── 재판 ── */
   --trial-bg: rgba(10, 6, 16, 0.78);
-  --trial-accent: #ff5a6e;
+  --trial-accent: #b8324b;
   --img-trial-bg: none;
 
   /* ── 인원 체크 ── */

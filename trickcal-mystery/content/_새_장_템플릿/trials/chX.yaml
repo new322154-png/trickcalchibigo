@@ -1,0 +1,186 @@
+# ═══════════════════════════════════════════════════════════════
+#  trials/chX.yaml — X장 재판
+# ───────────────────────────────────────────────────────────────
+#  대본에서  #trial:chX_trial  태그로 시작합니다. 시작 직전에 자동으로 체크포인트가 저장돼요.
+#
+#  흐름:  1페이즈 단톡방 심리 → (교주 의심도가 높으면) 2페이즈 역습 방어전 → 3페이즈 최종 여론전·투표
+#  결과에 따라 results 에 적은 대본 knot 으로 이어집니다.
+#
+#  대사 줄 형식은 다른 파일과 같습니다:  "이름(감정): 대사"
+# ═══════════════════════════════════════════════════════════════
+
+chX_trial:
+  # Q: 이 재판의 제목은? (재판 시작 컷인 아래에 작게 표시)
+  title: TODO
+  checkpoint: chX_trial
+
+  # ── 결과별로 이어질 대본 knot ──
+  #  이 knot 들은 content/story/chX/ 안의 ink 파일에 이미 자리가 만들어져 있습니다.
+  results:
+    correct: chX_after_trial          # 진범을 맞히고 근거도 충분
+    correct_weak: chX_end_weak        # 진범은 맞혔지만 핵심 논거를 다 못 보여줌
+    wrong: chX_end_wrong              # 엉뚱한 사람이 지목됨 (기본)
+    wrong_by_target: {}               # 특정 인물이 지목됐을 때 따로 보여줄 결말 (예: { erpin: chX_end_wrong_erpin })
+    mansion: chX_end_mansion          # 연장 토론 후에도 동률 → 저택이 고른다
+    voice_empty: chX_end_voice        # 1페이즈에서 발언권이 바닥남
+    counter_fail: chX_end_counter     # 역습 방어전 실패 → 교주 용의자 루트
+
+  # ════════ 1페이즈: 단톡방 심리 ════════
+  chat:
+    # Q: 1페이즈 시작 전 대사는? (누가 먼저 말을 꺼내나요?)
+    intro:
+      - TODO
+
+    rounds:
+      - id: r1
+        # Q: 이 라운드의 논점(화면 위에 표시)은? 예) "실라가 마지막으로 목격된 시간"
+        topic: TODO
+        # 메시지는 위에서 아래로 올라오고, 끝까지 가면 처음부터 다시 반복됩니다.
+        messages:
+          - id: m1
+            from: elena
+            text: TODO
+          - id: m2
+            from: erpin
+            text: TODO
+            # 되묻기(%action_ask%)를 하면 이 아래에 새 메시지가 끼어듭니다
+            ask:
+              - { id: m2a, from: erpin, text: TODO }
+          - id: m3
+            from: tig
+            text: TODO
+            # capture: 몇 초 뒤 삭제되는 메시지. 제때 캡처하면 증거 "cap:m3" 으로 쓸 수 있음
+            capture: 3
+          - id: m4
+            from: amelia
+            text: TODO
+
+        # 이 라운드의 정답
+        #  rebut   = 메시지 하나에 증거를 붙여 반박  (evidence 에 단서 id, 캡처한 메시지는 cap:메시지id)
+        #  compare = 두 메시지를 골라 "동시에 참일 수 없다"
+        answer:
+          type: rebut
+          message: m2
+          evidence: example_clue
+          # type: compare
+          # messages: [m2, m4]
+
+        # 귓속말: 특정 메시지가 올라온 직후 1:1 메시지가 옴
+        whispers:
+          - after: m1
+            from: amelia
+            # Q: 누가 어떤 귓속말을 보내나요? 진짜 힌트인가요, 함정인가요?
+            text: TODO
+
+        # Q: 정답을 맞혔을 때 이어지는 대사는?
+        solved:
+          - TODO
+        # Q: 틀렸을 때 나오는 대사는? (여러 개면 무작위)
+        wrong:
+          - TODO
+
+    # Q: 1페이즈를 모두 마쳤을 때 대사는?
+    outro:
+      - TODO
+
+  # ════════ 2페이즈: 역습 방어전 (조건부) ════════
+  #  교주 의심도가 config.yaml 의 counter_threshold 이상일 때만 열립니다.
+  #  고발 라운드는 "플레이어가 실제로 한 수상한 행동"에 맞춰 골라집니다.
+  #   when 에 쓸 수 있는 행동: snoop_caught(엿보기 들킴) / wrong_suspect(틀린 의심 표시)
+  #                          reply_timeout(답장 무시) / wrong_rebut(재판 중 틀린 반박)
+  #                          flag:이름 (대본에서 켠 flag)
+  counter:
+    # Q: 교주가 역으로 몰리기 시작하는 순간의 대사는? (누가 교주를 고발하나요?)
+    intro:
+      - TODO
+    rounds:
+      - id: c1
+        when: snoop_caught
+        # Q: 엿보기가 들킨 일로 고발당할 때의 대사는?
+        accuse:
+          - TODO
+        # 방어 방법
+        #  evidence  = 단서/캡처로 반박 (id 적기)
+        #  witness   = 교주 편 증인을 부름. 호감도가 min_affinity 이상인 캐릭터 중 고르기
+        defense:
+          type: witness
+          min_affinity: 5
+        # Q: 방어에 성공했을 때 대사는?
+        solved:
+          - TODO
+        # Q: 방어에 실패했을 때 대사는?
+        wrong:
+          - TODO
+      - id: c2
+        when: wrong_suspect
+        accuse:
+          - TODO
+        defense:
+          type: evidence
+          evidence: example_clue
+        solved:
+          - TODO
+        wrong:
+          - TODO
+    # 방어에 몇 번 실패하면 counter_fail 결말로 갈지
+    max_fails: 2
+    # Q: 역습 방어전을 이겨냈을 때 대사는?
+    outro:
+      - TODO
+
+  # ════════ 3페이즈: 최종 여론전 ════════
+  opinion:
+    # (작가용) 진범 id — 여기 적은 사람이 지목되면 correct
+    culprit: TODO
+    turns: 3
+    # Q: 여론전 시작 대사는?
+    intro:
+      - TODO
+
+    # 시작 시점에 각자 누구를 의심하는지와 확신 정도(0~5)
+    # Q: 1페이즈가 끝난 시점에 각 캐릭터는 누구를 의심하고 있나요?
+    #    (사라진 사람, 진범 본인도 적어 두세요. 사라진 사람은 자동으로 빠집니다)
+    initial:
+      erpin:  { target: TODO, conf: 2 }
+      joan:   { target: TODO, conf: 2 }
+      ner:    { target: TODO, conf: 2 }
+      elena:  { target: TODO, conf: 2 }
+      amelia: { target: TODO, conf: 2 }
+      daya:   { target: TODO, conf: 2 }
+      shady:  { target: TODO, conf: 2 }
+      tig:    { target: TODO, conf: 2 }
+      uros:   { target: TODO, conf: 2 }
+
+    # 이번 재판에서 쓸 수 있는 결론 카드 (board 파일의 conclusions id)
+    # accuses: 이 카드가 가리키는 사람 / key: true 면 "핵심 논거" (모두 보여줘야 correct, 아니면 correct_weak)
+    cards:
+      concl_example: { accuses: TODO, key: true }
+
+    # 진범의 반론: 턴이 끝날 때마다 여론을 되돌리려 함
+    rebuttals:
+      - turn: 1
+        # Q: 첫 턴이 끝나고 진범은 어떻게 반론하나요?
+        lines:
+          - TODO
+        # 반론에 넘어가는 사람 (대상: 진범이 떠넘기려는 사람)
+        sway: {}            # 예) { tig: erpin, uros: erpin }
+      - turn: 2
+        lines:
+          - TODO
+        sway: {}
+
+    # Q: 투표 직전 대사는?
+    before_vote:
+      - TODO
+    # Q: 동률이 나와서 연장 토론을 할 때의 대사는?
+    extension:
+      - TODO
+    # Q: 투표 결과가 진범을 가리켰을 때 발표 대사는?
+    verdict_correct:
+      - TODO
+    # Q: 엉뚱한 사람이 지목됐을 때 발표 대사는? ({target} = 지목된 사람 이름)
+    verdict_wrong:
+      - TODO
+    # Q: 끝내 동률일 때 "저택이 고르는" 연출 대사는?
+    verdict_mansion:
+      - TODO

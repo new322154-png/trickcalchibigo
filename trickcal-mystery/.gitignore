@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+# Inky(ink 편집기)가 만드는 임시 파일
+*.ink.json

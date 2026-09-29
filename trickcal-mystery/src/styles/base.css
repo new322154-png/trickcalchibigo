@@ -48,10 +48,17 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 /* ── 버튼 공통 ── */
 .btn, .menu-btn, .title-btn, .slot, .card, .thread-row, .gallery-item {
   background: var(--btn-bg); border: var(--btn-border); border-radius: var(--btn-radius); padding: 12px 24px;
-  border-image: var(--img-button) var(--slice-button) fill / calc(var(--slice-button) * 1px);
+}
+/* 버튼 그림은 진짜 버튼에만 (카드·목록 칸은 색으로) */
+.btn, .menu-btn, .title-btn {
+  background: var(--btn-img-bg, var(--btn-bg));
+  border-image: var(--img-button) var(--slice-button, 20) fill / var(--slice-button-width, 20px);
+  padding: 14px 44px; transition: filter .15s, transform .1s;
 }
 .btn:hover:not(:disabled), .menu-btn:hover, .title-btn:hover, .slot:hover:not(:disabled), .card:hover, .thread-row:hover { background: var(--btn-bg-hover); }
-.btn.small { padding: 4px 12px; font-size: 20px; }
+.btn:hover:not(:disabled), .menu-btn:hover, .title-btn:hover { background: var(--btn-img-bg, var(--btn-bg-hover)); filter: var(--btn-hover-filter, none); }
+.btn:active:not(:disabled), .menu-btn:active, .title-btn:active { transform: translateY(2px); }
+.btn.small { padding: 6px 28px; font-size: 20px; }
 
 /* ── HUD ── */
 .party-bar { position: absolute; top: 20px; left: 20px; display: flex; gap: 8px; }
@@ -68,26 +75,34 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 @keyframes pulse { 50% { transform: scale(1.1) } }
 
 /* ── 대화창 ── */
-.dlg-box { position: absolute; left: 80px; right: 80px; bottom: 36px; height: 300px; background: var(--dlg-bg); border: var(--dlg-border); border-radius: var(--dlg-radius); padding: 56px 72px 28px; box-shadow: var(--shadow);
-  border-image: var(--img-dialogue) var(--slice-dialogue) fill / calc(var(--slice-dialogue) * 1px); }
+/* 1760×379 = dialogue_box.png 크기 그대로. 글자는 안쪽 종이 영역(위 100px, 좌 96px)부터 */
+.dlg-box { position: absolute; left: 80px; width: 1760px; bottom: 20px; height: 379px; background: var(--dlg-bg); border: var(--dlg-border); border-radius: var(--dlg-radius); padding: 104px 120px 60px 96px;
+  background-image: var(--img-dialogue); background-size: 100% 100%; background-repeat: no-repeat; filter: drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
 .dlg-box.ui-hidden { opacity: 0; }
-.dlg-name { position: absolute; top: -34px; left: 48px; padding: 8px 36px; font-size: var(--font-size-name); font-weight: 800; color: var(--name-color, var(--name-default)); background: var(--dlg-bg); border: var(--dlg-border); border-radius: 16px;
-  border-image: var(--img-nameplate) var(--slice-nameplate) fill / calc(var(--slice-nameplate) * 1px); }
-.dlg-text { font-size: var(--font-size-dialogue); line-height: 1.55; white-space: pre-wrap; word-break: keep-all; }
-.dlg-box.narration .dlg-text { color: var(--text-dim); }
-.dlg-next { position: absolute; right: 48px; bottom: 60px; opacity: 0; color: var(--accent); }
+/* 이름: 대화창 그림 왼쪽 위 리본 위에 올라감 */
+.dlg-name { position: absolute; top: 31px; left: 186px; width: 300px; height: 52px; line-height: 52px; text-align: center; font-size: var(--font-size-name); font-weight: 800; letter-spacing: 1px; white-space: nowrap;
+  color: var(--name-fixed-color, var(--name-color, var(--name-default))); text-shadow: 0 2px 0 #3a0d1c, 0 0 6px rgba(40, 6, 18, .8); }
+.dlg-name:empty { display: none; }
+.dlg-text { font-size: var(--font-size-dialogue); line-height: 1.55; white-space: pre-wrap; word-break: keep-all; color: var(--dlg-text-color, var(--text)); }
+.dlg-box.narration .dlg-text { color: var(--ink-dim, var(--text-dim)); font-style: italic; }
+.dlg-next { position: absolute; right: 104px; bottom: 96px; opacity: 0; color: #6b1f3a; font-size: 30px; }
 .dlg-next.show { opacity: 1; animation: bob 1s infinite; }
 @keyframes bob { 50% { translate: 0 6px } }
-.dlg-suspect { position: absolute; right: 36px; top: -44px; padding: 10px 28px; border-radius: 40px; background: var(--suspect-bg); border: 3px solid #fff; font-weight: 900; font-size: 30px; box-shadow: var(--shadow);
-  background-image: var(--img-suspect); background-size: cover; }
-.dlg-suspect.used { opacity: .4; }
-.dlg-controls { position: absolute; right: 36px; bottom: 12px; display: flex; gap: 6px; }
-.dlg-controls button { background: none; border: none; font-size: 20px; color: var(--text-dim); padding: 4px 10px; }
-.dlg-controls button.on { color: var(--accent); }
+/* 의심 버튼: 220×79, 왼쪽 38% 는 돋보기 자리라 글자는 오른쪽에 */
+.dlg-suspect { position: absolute; right: 64px; top: -58px; width: 220px; height: 79px; padding: 0 18px 0 84px; border-radius: 40px; background-color: var(--suspect-bg); border: var(--suspect-border, 3px solid #fff); font-weight: 900; font-size: 32px; color: #fff4dc; text-shadow: 0 2px 0 #4a0a1c;
+  background-image: var(--img-suspect); background-size: 100% 100%; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); transition: filter .15s, transform .1s; }
+.dlg-suspect:hover:not(.used) { filter: brightness(1.15) drop-shadow(0 0 12px rgba(242,179,94,.7)); transform: scale(1.04); }
+.dlg-suspect.used { filter: grayscale(.7) brightness(.8); opacity: .7; }
+.dlg-controls { position: absolute; right: 104px; bottom: 46px; display: flex; gap: 6px; }
+.dlg-controls button { background: none; border: none; font-size: 20px; font-weight: 600; color: var(--ink-dim, var(--text-dim)); padding: 4px 10px; }
+.dlg-controls button:hover { color: #6b1f3a; }
+.dlg-controls button.on { color: var(--danger); }
 
 .choices { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 18px; width: 1100px; }
-.choice { background: var(--choice-bg); border: var(--btn-border); border-radius: var(--btn-radius); padding: 22px; font-size: 34px; background-image: var(--img-choice); background-size: 100% 100%; }
-.choice:hover:not(:disabled) { background-color: var(--choice-bg-hover); color: var(--choice-text-hover); }
+/* 선택지: 1100×90 = choice.png 크기 */
+.choice { height: 90px; background: var(--choice-bg); border: var(--choice-border, var(--btn-border)); border-radius: var(--btn-radius); padding: 0 110px; font-size: 34px; font-weight: 600; color: var(--choice-text, var(--text));
+  background-image: var(--img-choice); background-size: 100% 100%; filter: drop-shadow(0 6px 12px rgba(0,0,0,.5)); transition: filter .15s, transform .15s; }
+.choice:hover:not(:disabled) { background-color: var(--choice-bg-hover); color: var(--choice-text-hover); filter: brightness(1.08) drop-shadow(0 0 14px rgba(242,179,94,.75)); transform: scale(1.02); }
 .choice-timer, .reply-timer { height: 10px; background: rgba(255,255,255,.2); border-radius: 5px; overflow: hidden; }
 .choice-timer-fill, .reply-timer-fill { height: 100%; width: 100%; background: var(--danger); }
 .choice-timer-label { text-align: center; color: var(--danger); }
