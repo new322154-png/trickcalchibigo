@@ -47,8 +47,13 @@ export function showTitle() {
     h('button.title-btn', { onclick: () => openText(t('title.synopsis'), txt(C.game.synopsis)) }, t('title.synopsis')),
     h('button.title-btn', { onclick: () => openCredits() }, t('title.credits')),
   );
-  const logo = h('img.title-logo', { src: asset('ui/title_logo.png') }) as HTMLImageElement;
-  logo.onerror = () => logo.replaceWith(h('h1.title-text', txt(C.game.title, '제목 미정')));
+  // 제목: 장식판 그림(ui/title_logo.png) 위에 game.yaml 의 제목 글자를 얹는다. 그림이 없으면 글자만.
+  const plate = h('img.title-plate', { src: asset('ui/title_logo.png'), alt: '' }) as HTMLImageElement;
+  const logo = h('div.title-logo', plate, h('h1.title-text', txt(C.game.title, '제목 미정')));
+  plate.onerror = () => {
+    plate.remove();
+    logo.classList.add('no-plate');
+  };
   const screen = h(
     'div.title-screen',
     logo,
@@ -56,8 +61,8 @@ export function showTitle() {
     menu,
     h('div.title-author', txt(C.game.author)),
   );
-  // 타이틀 배경: public/assets/ui/title_bg.png (없으면 그라데이션)
-  screen.style.backgroundImage = `url(${asset('ui/title_bg.png')}), radial-gradient(circle at 50% 30%, #3a2850, #120c18)`;
+  // 타이틀 배경: public/assets/ui/title_bg.jpg 또는 .png (없으면 그라데이션)
+  screen.style.backgroundImage = `url(${asset('ui/title_bg.jpg')}), url(${asset('ui/title_bg.png')}), radial-gradient(circle at 50% 30%, #3a2850, #120c18)`;
   root.appendChild(screen);
 }
 
