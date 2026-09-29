@@ -136,6 +136,8 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 /* ── 타이틀 ── */
 /* 타이틀: 제목은 왼쪽 위 하늘, 메뉴는 오른쪽 아래 바다 위 */
 .title-screen { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, #3a2850, #120c18); background-size: cover; background-position: center; }
+.title-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .6s; }
+.title-video.ready { opacity: 1; }
 .title-logo { position: absolute; left: 70px; top: 50px; width: 1000px; height: 334px; display: grid; place-items: center; filter: drop-shadow(0 10px 24px rgba(0,0,0,.55)); }
 .title-plate { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .title-text { position: relative; margin: -14px 0 0; max-width: 640px; text-align: center; font-size: 76px; line-height: 1.05; font-weight: 900; font-family: var(--font-title); color: #f3e9d2; letter-spacing: 2px; word-break: keep-all;

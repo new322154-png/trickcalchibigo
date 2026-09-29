@@ -27,7 +27,8 @@
 // Q: 왜 볼케니카로 가는 중인가요?
 // Q: 빵주 안에서 일행은 각자 무엇을 하고 있었나요?
 //    → 캐릭터 소개를 겸한 짧은 개그를 넣기 좋은 곳이에요. 10명을 다 보여줄지, 몇 명만 보여줄지 정하세요.
-#bg:airship_inside
+#bg:airship_cockpit
+// 배경 이름: airship_cockpit(조종실), airship_deck(갑판)
 #bgm:airship
 (TODO) 빵주 기내 첫 지문
 #show:erpin normal left

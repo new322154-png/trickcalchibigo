@@ -54,8 +54,19 @@ export function showTitle() {
     plate.remove();
     logo.classList.add('no-plate');
   };
+  // 움직이는 배경: public/assets/ui/title_bg.webm / .mp4 (소리 없이 반복). 없거나 재생이 막히면 그림 배경만 보인다
+  const video = h(
+    'video.title-video',
+    { autoplay: true, muted: true, loop: true, playsinline: true, preload: 'auto' },
+    h('source', { src: asset('ui/title_bg.webm'), type: 'video/webm' }),
+    h('source', { src: asset('ui/title_bg.mp4'), type: 'video/mp4' }),
+  ) as HTMLVideoElement;
+  video.muted = true;
+  video.addEventListener('playing', () => video.classList.add('ready'));
+  void video.play().catch(() => {});
   const screen = h(
     'div.title-screen',
+    video,
     logo,
     h('div.title-sub', txt(C.game.subtitle)),
     menu,
