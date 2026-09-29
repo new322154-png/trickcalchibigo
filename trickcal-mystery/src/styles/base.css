@@ -80,7 +80,7 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
   background-image: var(--img-dialogue); background-size: 100% 100%; background-repeat: no-repeat; filter: drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
 .dlg-box.ui-hidden { opacity: 0; }
 /* 이름: 대화창 그림 왼쪽 위 리본 위에 올라감 */
-.dlg-name { position: absolute; top: 31px; left: 186px; width: 300px; height: 52px; line-height: 52px; text-align: center; font-size: var(--font-size-name); font-weight: 800; letter-spacing: 1px; white-space: nowrap;
+.dlg-name { position: absolute; top: 24px; left: 196px; width: 290px; height: 52px; line-height: 52px; text-align: center; font-size: var(--font-size-name); font-weight: 800; letter-spacing: 1px; white-space: nowrap;
   color: var(--name-fixed-color, var(--name-color, var(--name-default))); text-shadow: 0 2px 0 #3a0d1c, 0 0 6px rgba(40, 6, 18, .8); }
 .dlg-name:empty { display: none; }
 .dlg-text { font-size: var(--font-size-dialogue); line-height: 1.55; white-space: pre-wrap; word-break: keep-all; color: var(--dlg-text-color, var(--text)); }
