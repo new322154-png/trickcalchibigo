@@ -1,108 +1,62 @@
 /* ═══════════════════════════════════════════════════════════════
-   theme.css — UI 스킨 (직접 만드실 UI 를 끼우는 곳)
+   theme.css — UI 스킨
    ───────────────────────────────────────────────────────────────
-   1) 색·글꼴·크기는 아래 변수만 바꾸면 전체에 반영됩니다.
-   2) 이미지 UI 를 쓰려면 --img-… 변수에  url('/assets/ui/파일.png')  형식으로 넣으세요.
-      (none 이면 색으로 그림. public/assets/ui/ 폴더에 파일을 넣으면 /assets/ui/ 주소가 됩니다)
-   3) 9-slice(모서리가 늘어나지 않는 틀) 이미지는 --slice-… 값으로 모서리 크기(px)를 정합니다.
-   필요한 이미지 목록은 docs/03_UI_에셋_목록.md 에 있습니다.
+   UI 는 그림 없이 코드로 그립니다 (반투명 유리판 + 가는 선 + ✦ 장식).
+   색·글꼴·크기는 아래 변수만 바꾸면 전체에 반영됩니다.
+   배치(위치·크기)는 base.css 에 있습니다.
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── 글꼴 ── */
-  --font-main: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  --font-title: var(--font-main);
-  --font-size-dialogue: 38px;
-  --font-size-name: 34px;
-  --font-size-ui: 28px;
+  /* ── 글꼴 ── (index.html 에서 Pretendard, Noto Serif KR 을 불러옴) */
+  --font-main: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-title: 'Noto Serif KR', 'Nanum Myeongjo', serif;  /* 제목·큰 글자용 명조 */
+  --font-size-dialogue: 34px;
+  --font-size-name: 32px;
+  --font-size-ui: 26px;
 
   /* ── 기본 색 ── */
-  /* 팔레트: 바탕 #1E1428 · 와인 #6B1F3A · 진홍 #B8324B · 금 #C9A45C · 촛불 #F2B35E · 크림 #F3E9D2 · 녹청 #5E7F6E */
-  --bg: #1e1428;
-  --text: #f3e9d2;
-  --text-dim: #b8a88c;
-  --accent: #e2bd6a;          /* 강조 (선택, 결론, 버튼 테두리) */
-  --accent-2: #f2b35e;        /* 보조 강조 (촛불) */
-  --danger: #b8324b;          /* 의심도, 틀림 */
-  --good: #5e7f6e;
-  --name-default: #f3e9d2;    /* 이름표 기본 색 (캐릭터 color 가 없을 때) */
-  --ink: #3a2418;             /* 크림색 종이 위 글자 색 (대화창·선택지) */
-  --ink-dim: #7a5f48;         /* 종이 위 흐린 글자 (나레이션, 작은 버튼) */
+  --bg: #0e0b14;
+  --text: #f1ebe2;            /* 기본 글자 (따뜻한 흰색) */
+  --text-dim: #a89fb0;        /* 흐린 글자 (설명, 나레이션) */
+  --accent: #d9b872;          /* 강조 (바랜 금색): 선택, 켜짐, 제목 */
+  --accent-2: #c0445f;        /* 보조 강조 (와인): 의심, 경고 */
+  --danger: #d9546e;
+  --good: #7fb59a;
+  --name-default: #f1ebe2;
+
+  /* ── 유리판 ── 모든 창·대화창·버튼의 바탕 */
+  --glass: rgba(18, 13, 26, 0.72);
+  --glass-strong: rgba(14, 10, 20, 0.9);
+  --glass-hover: rgba(217, 184, 114, 0.14);
+  --glass-blur: blur(10px);
+  --line: rgba(241, 235, 226, 0.16);        /* 가는 테두리 */
+  --line-strong: rgba(241, 235, 226, 0.38);
+  --radius: 14px;
+  --radius-lg: 22px;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 
   /* ── 대화창 ── */
-  /* 대화창 그림은 크기 그대로 깔립니다 (1760×379, 왼쪽 위 리본에 이름이 올라감) */
-  --dlg-bg: transparent;
-  --dlg-border: none;
-  --dlg-radius: 0;
-  --dlg-text-color: var(--ink);
-  --img-dialogue: url('/assets/ui/dialogue_box.png');
-  --name-fixed-color: #f3e9d2; /* 리본 위 이름 글자 색. 캐릭터별 색을 쓰려면 이 줄을 지우세요 */
+  --dlg-height: 250px;
+  --dlg-name-width: 250px;    /* 왼쪽 이름 칸 너비 */
 
   /* ── 버튼 ── */
-  --btn-bg: rgba(78, 24, 44, 0.94);
-  --btn-bg-hover: rgba(107, 31, 58, 0.97);
-  --btn-border: 2px solid rgba(201, 164, 92, 0.7);
-  --btn-radius: 14px;
-  /* 버튼 그림 (9-slice). 원본 720×147 을 절반 크기로 그립니다 */
-  --img-button: url('/assets/ui/button.png');
-  --btn-img-bg: transparent;       /* 그림 버튼 뒤 배경색 (그림 모서리가 투명하니 비움) */
-  --slice-button: 50 74;           /* 그림에서 잘라 쓸 모서리 (위아래 좌우, 원본 px) */
-  --slice-button-width: 25px 37px; /* 화면에 그릴 모서리 크기 */
-  --btn-hover-filter: brightness(1.18) drop-shadow(0 0 10px rgba(242, 179, 94, 0.6));
-
-  /* ── 선택지 ── */
-  --choice-bg: transparent;
-  --choice-bg-hover: transparent;
-  --choice-text: var(--ink);
-  --choice-text-hover: #6b1f3a;
-  --choice-border: none;
-  --img-choice: url('/assets/ui/choice.png');
-
-  /* ── 의심 버튼 ── */
-  --suspect-bg: transparent;
-  --suspect-border: none;
-  --img-suspect: url('/assets/ui/suspect_button.png'); /* 왼쪽에 돋보기, 글자는 오른쪽 */
-
-  /* ── 창(모달) ── */
-  --modal-bg: transparent;
-  --modal-border: 3px solid transparent;
-  --modal-shadow: none;
-  --modal-filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .6));
-  /* 창 틀 그림 (9-slice). 원본 1254×831, 모서리 160px 을 화면에선 96px 로 */
-  --img-modal: url('/assets/ui/modal.png');
-  --slice-modal: 160;
-  --slice-modal-width: 96px;
-  --img-modal-top: url('/assets/ui/modal_crescent.png'); /* 위쪽 가운데 초승달 */
-  --modal-title-pad: 50px 70px 6px;   /* 틀 안쪽 여백 */
-  --modal-body-pad: 14px 70px 60px;
+  --btn-bg: rgba(18, 13, 26, 0.6);
+  --btn-bg-hover: var(--glass-hover);
+  --btn-border: 1px solid var(--line-strong);
+  --btn-radius: 10px;
 
   /* ── 휴대폰 ── */
-  --phone-frame: #4a2f3a;
-  --phone-screen: #f7f0e2;
-  --phone-bubble-them: #ffffff;
-  --phone-bubble-me: #f6d78e;
-  --phone-text: #3a2418;
-  /* 휴대폰 틀 그림 (878×1412 을 622×1000 으로). 화면 구멍: 좌우 47px, 위 45px(노치 아래 68px), 아래 52px */
-  --img-phone-frame: url('/assets/ui/phone_frame.png');
-  --phone-w: 622px;
-  --phone-h: 1000px;
-  --phone-pad: 70px 49px 54px;
-  --phone-border: none;
-  --phone-radius: 0;
-  --phone-shadow: none;
-  --phone-filter: drop-shadow(0 12px 28px rgba(0, 0, 0, .6));
-  --phone-bg: var(--img-phone-frame) center / 100% 100% no-repeat,
-              linear-gradient(var(--phone-screen), var(--phone-screen)) 47px 45px / calc(100% - 94px) calc(100% - 97px) no-repeat;
+  --phone-bezel: #0b0910;
+  --phone-screen: #15111c;
+  --phone-bubble-them: #2a2433;
+  --phone-bubble-me: #d9b872;
+  --phone-text: #f1ebe2;
+  --phone-text-me: #1a1420;
 
   /* ── 재판 ── */
-  --trial-bg: rgba(10, 6, 16, 0.78);
-  --trial-accent: #b8324b;
-  --img-trial-bg: none;
+  --trial-accent: #c0445f;
 
   /* ── 인원 체크 ── */
-  --party-size: 64px;
-  --party-gone-filter: grayscale(1) brightness(0.55);
-
-  /* ── 효과 ── */
-  --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --party-size: 58px;
+  --party-gone-filter: grayscale(1) brightness(0.45);
 }

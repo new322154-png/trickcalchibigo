@@ -17,7 +17,7 @@ let phoneBadge: HTMLElement;
 export function buildHud(handlers: { onMenu: () => void; onNotebook: () => void; onPhone: () => void; onBacklog: () => void }) {
   const root = clear(layer('hud'));
   const btn = (label: string, onclick: () => void, extra = '') =>
-    h(`button.btn.hud-pill${extra}`, { onclick: (e: Event) => { e.stopPropagation(); onclick(); } }, label);
+    h(`button.hud-pill${extra}`, { onclick: (e: Event) => { e.stopPropagation(); onclick(); } }, label);
   // 오른쪽 위 버튼 줄. 오토·스킵은 대화창이 떠 있을 때만 보인다 (dialogue.showBox)
   const auto = btn(t('menu.auto'), () => toggleAuto(), '.hud-dlg-only.hidden');
   auto.dataset.k = 'auto';

@@ -55,7 +55,7 @@ export function buildDialogue(handlers: { onMenu: () => void; onBacklog: () => v
   bustImg = h('img') as HTMLImageElement;
   bustImg.onerror = () => bustEl.classList.add('hidden');
   bustEl = h('div.dlg-bust.hidden', bustImg);
-  // 틀 그림(dlg-frame)이 상반신보다 앞에 그려져서, 캐릭터가 리본 위로 튀어나온 것처럼 보인다
+  // 유리판(dlg-frame)이 상반신보다 앞에 그려져서, 캐릭터 아랫부분이 흐린 유리 뒤로 들어간다
   box = h('div.dlg-box.hidden', bustEl, h('div.dlg-frame'), nameEl, textEl, nextEl, suspectBtn);
   box.addEventListener('contextmenu', (e) => {
     e.preventDefault();

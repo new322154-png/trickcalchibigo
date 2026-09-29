@@ -47,13 +47,13 @@ export function showTitle() {
     h('button.title-btn', { onclick: () => openText(t('title.synopsis'), txt(C.game.synopsis)) }, t('title.synopsis')),
     h('button.title-btn', { onclick: () => openCredits() }, t('title.credits')),
   );
-  // 제목: 장식판 그림(ui/title_logo.png) 위에 game.yaml 의 제목 글자를 얹는다. 그림이 없으면 글자만.
-  const plate = h('img.title-plate', { src: asset('ui/title_logo.png'), alt: '' }) as HTMLImageElement;
-  const logo = h('div.title-logo', plate, h('h1.title-text', txt(C.game.title, '제목 미정')));
-  plate.onerror = () => {
-    plate.remove();
-    logo.classList.add('no-plate');
-  };
+  // 제목: 작은 머리글(✦ 선) + 명조 제목 + 부제. 글자는 game.yaml 의 title / subtitle
+  const logo = h(
+    'div.title-logo',
+    h('div.title-kicker', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL MYSTERY')),
+    h('h1.title-text', txt(C.game.title, '제목 미정')),
+    h('div.title-sub', txt(C.game.subtitle)),
+  );
   // 움직이는 배경: public/assets/ui/title_bg.webm / .mp4 (소리 없이 반복). 없거나 재생이 막히면 그림 배경만 보인다
   const video = h(
     'video.title-video',
@@ -68,7 +68,6 @@ export function showTitle() {
     'div.title-screen',
     video,
     logo,
-    h('div.title-sub', txt(C.game.subtitle)),
     menu,
     h('div.title-author', txt(C.game.author)),
   );
