@@ -230,7 +230,7 @@ const DEFAULT_NAMES: Record<string, string> = {
   map: '지도',
   board: '추리 보드',
   conclusion_card: '결론',
-  phone: '무전기',
+  phone: '휴대폰',
   group_chat: '단체방',
   snoop: '엿보기',
   recover: '복구',

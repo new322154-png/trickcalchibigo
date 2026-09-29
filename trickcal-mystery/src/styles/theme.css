@@ -64,18 +64,35 @@
   --img-suspect: url('/assets/ui/suspect_button.png'); /* 왼쪽에 돋보기, 글자는 오른쪽 */
 
   /* ── 창(모달) ── */
-  --modal-bg: rgba(30, 20, 40, 0.97);
-  --modal-border: 3px solid rgba(201, 164, 92, 0.7);
-  --img-modal: none;
-  --slice-modal: 48;
+  --modal-bg: transparent;
+  --modal-border: 3px solid transparent;
+  --modal-shadow: none;
+  --modal-filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .6));
+  /* 창 틀 그림 (9-slice). 원본 1254×831, 모서리 160px 을 화면에선 96px 로 */
+  --img-modal: url('/assets/ui/modal.png');
+  --slice-modal: 160;
+  --slice-modal-width: 96px;
+  --img-modal-top: url('/assets/ui/modal_crescent.png'); /* 위쪽 가운데 초승달 */
+  --modal-title-pad: 50px 70px 6px;   /* 틀 안쪽 여백 */
+  --modal-body-pad: 14px 70px 60px;
 
   /* ── 휴대폰 ── */
-  --phone-frame: #111;
-  --phone-screen: #f4f1ec;
+  --phone-frame: #4a2f3a;
+  --phone-screen: #f7f0e2;
   --phone-bubble-them: #ffffff;
-  --phone-bubble-me: #ffe28a;
-  --phone-text: #222;
-  --img-phone-frame: none;     /* 폰(무전기) 틀 이미지 */
+  --phone-bubble-me: #f6d78e;
+  --phone-text: #3a2418;
+  /* 휴대폰 틀 그림 (878×1412 을 622×1000 으로). 화면 구멍: 좌우 47px, 위 45px(노치 아래 68px), 아래 52px */
+  --img-phone-frame: url('/assets/ui/phone_frame.png');
+  --phone-w: 622px;
+  --phone-h: 1000px;
+  --phone-pad: 70px 49px 54px;
+  --phone-border: none;
+  --phone-radius: 0;
+  --phone-shadow: none;
+  --phone-filter: drop-shadow(0 12px 28px rgba(0, 0, 0, .6));
+  --phone-bg: var(--img-phone-frame) center / 100% 100% no-repeat,
+              linear-gradient(var(--phone-screen), var(--phone-screen)) 47px 45px / calc(100% - 94px) calc(100% - 97px) no-repeat;
 
   /* ── 재판 ── */
   --trial-bg: rgba(10, 6, 16, 0.78);

@@ -160,7 +160,7 @@ board:
   # Q: 맞혔을 때 기본으로 뜨는 말은?
   correct: TODO
 
-# ── 휴대폰(무전기) ──
+# ── 휴대폰 ──
 phone:
   title: "%phone%"
   typing: 입력 중…

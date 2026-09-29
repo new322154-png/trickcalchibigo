@@ -69,7 +69,7 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 .susp-meter { position: absolute; top: 100px; left: 20px; display: flex; align-items: center; gap: 12px; font-size: 22px; }
 .susp-track { width: 240px; height: 14px; background: rgba(0,0,0,.5); border-radius: 7px; overflow: hidden; }
 .susp-fill { height: 100%; width: 0; background: var(--danger); transition: width .5s; }
-/* 오른쪽 위 버튼 줄: 오토 · 스킵 · 지난 대화 · 수첩 · 무전기 · 설정 */
+/* 오른쪽 위 버튼 줄: 오토 · 스킵 · 지난 대화 · 수첩 · 휴대폰 · 설정 */
 .hud-corner { position: absolute; top: 22px; right: 24px; display: flex; gap: 10px; align-items: center; }
 .hud-pill { position: relative; padding: 8px 30px; font-size: 22px; font-weight: 700; color: var(--text); text-shadow: 0 2px 0 rgba(40, 6, 18, .8); filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
 .hud-pill.on { color: #fff4dc; filter: brightness(1.25) drop-shadow(0 0 12px rgba(242, 179, 94, .9)); }
@@ -114,11 +114,13 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 
 /* ── 창(모달) ── */
 .modal { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: grid; place-items: center; }
-.modal-panel { min-width: 720px; max-width: 1560px; max-height: 900px; display: flex; flex-direction: column; background: var(--modal-bg); border: var(--modal-border); border-radius: 28px; box-shadow: var(--shadow);
-  border-image: var(--img-modal) var(--slice-modal) fill / calc(var(--slice-modal) * 1px); }
-.modal-title { display: flex; justify-content: space-between; align-items: center; padding: 24px 32px 8px; font-size: 36px; font-weight: 800; color: var(--accent); }
-.modal-close { background: none; border: none; font-size: 32px; }
-.modal-body { padding: 16px 32px 32px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.modal-panel { position: relative; min-width: 720px; max-width: 1560px; max-height: 900px; display: flex; flex-direction: column; background: var(--modal-bg); border: var(--modal-border); border-radius: 28px; box-shadow: var(--modal-shadow, var(--shadow)); filter: var(--modal-filter, none);
+  border-image: var(--img-modal) var(--slice-modal) fill / var(--slice-modal-width, calc(var(--slice-modal) * 1px)); }
+/* 창 위쪽 가운데 장식 (틀 그림을 늘려도 찌그러지지 않게 따로 붙임) */
+.modal-panel::before { content: ''; position: absolute; top: -3px; left: 50%; width: 48px; height: 54px; transform: translateX(-50%); background: var(--img-modal-top, none) center / contain no-repeat; pointer-events: none; }
+.modal-title { display: flex; justify-content: space-between; align-items: center; padding: var(--modal-title-pad, 24px 32px 8px); font-size: 36px; font-weight: 800; color: var(--accent); }
+.modal-close { background: none; border: none; font-size: 32px; color: var(--accent); }
+.modal-body { padding: var(--modal-body-pad, 16px 32px 32px); overflow: auto; display: flex; flex-direction: column; gap: 12px; }
 .confirm .modal-panel { min-width: 640px; }
 .confirm-text { font-size: 32px; text-align: center; white-space: pre-line; }
 .confirm-buttons { display: flex; justify-content: center; gap: 24px; }
@@ -231,14 +233,14 @@ body.debug-spots .hotspot-label { display: block; }
 
 /* ── 휴대폰 ── */
 .phone-backdrop { display: grid; place-items: center; }
-.phone { width: 620px; height: 1000px; background: var(--phone-screen); border: 18px solid var(--phone-frame); border-radius: 60px; display: flex; flex-direction: column; overflow: hidden; color: var(--phone-text); box-shadow: var(--shadow);
-  border-image: var(--img-phone-frame) 60 fill / 60px; }
-.phone-header { padding: 24px; font-weight: 800; background: rgba(0,0,0,.06); text-align: center; }
+.phone { width: var(--phone-w, 620px); height: var(--phone-h, 1000px); padding: var(--phone-pad, 0); background: var(--phone-bg, var(--phone-screen)); border: var(--phone-border, 18px solid var(--phone-frame)); border-radius: var(--phone-radius, 60px);
+  display: flex; flex-direction: column; overflow: hidden; color: var(--phone-text); box-shadow: var(--phone-shadow, var(--shadow)); filter: var(--phone-filter, none); }
+.phone-header { padding: 14px 24px 18px; font-weight: 800; text-align: center; border-bottom: 2px solid rgba(107, 31, 58, .15); }
 .phone-log { flex: 1; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .phone-msg { max-width: 80%; align-self: flex-start; }
 .phone-msg.mine { align-self: flex-end; }
 .phone-from { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-.phone-text { background: var(--phone-bubble-them); padding: 12px 18px; border-radius: 20px; font-size: 26px; white-space: pre-wrap; }
+.phone-text { background: var(--phone-bubble-them); padding: 12px 18px; border-radius: 20px; font-size: 26px; white-space: pre-wrap; word-break: keep-all; box-shadow: 0 2px 4px rgba(58, 36, 24, .12); }
 .phone-msg.mine .phone-text { background: var(--phone-bubble-me); }
 .phone-msg.deleted .phone-text { font-style: italic; color: #999; }
 .phone-img { max-width: 100%; border-radius: 14px; }
