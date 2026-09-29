@@ -24,7 +24,7 @@ export function setBg(name: string) {
   }
   el.style.background = '';
   const img = h('img.bg-img') as HTMLImageElement;
-  imageWithFallback(img, `bg/${name}`, ['png', 'jpg', 'webp'], () => {
+  imageWithFallback(img, `bg/${name}`, ['jpg', 'png', 'webp'], () => {
     img.replaceWith(h('div.bg-missing', `배경 없음: assets/bg/${name}`));
   });
   el.appendChild(img);
@@ -35,7 +35,7 @@ export function setCg(name: string) {
   const el = clear(layer('cg'));
   if (!name || name === 'none') return;
   const img = h('img.cg-img') as HTMLImageElement;
-  imageWithFallback(img, `cg/${name}`, ['png', 'jpg', 'webp'], () => {
+  imageWithFallback(img, `cg/${name}`, ['jpg', 'png', 'webp'], () => {
     img.replaceWith(h('div.bg-missing', `CG 없음: assets/cg/${name}`));
   });
   el.appendChild(img);

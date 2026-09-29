@@ -1,7 +1,8 @@
-# Cloudflare Pages 캐시 설정
-# 이미지·음악은 일주일 캐시 (파일 내용을 바꿀 땐 파일 이름도 바꾸는 게 안전)
+# Cloudflare 캐시 설정
+# 이미지·음악·영상: 매번 바뀌었는지만 확인하고, 안 바뀌었으면 저장된 걸 씀
+# (파일을 새로 넣거나 교체하면 새로고침 한 번으로 바로 반영됨)
 /assets/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, no-cache
 
 # 게임 코드(해시가 붙은 파일)는 영구 캐시
 /build/*

@@ -57,8 +57,8 @@ export function asset(path: string) {
   return `./assets/${path}`;
 }
 
-/** 확장자 없이 적은 이미지 이름이면 png → jpg → webp 순서로 시도 */
-export function imageWithFallback(img: HTMLImageElement, base: string, exts = ['png', 'jpg', 'webp'], onFail?: () => void) {
+/** 확장자 없이 적은 이미지 이름이면 jpg → png → webp 순서로 시도 */
+export function imageWithFallback(img: HTMLImageElement, base: string, exts = ['jpg', 'png', 'webp'], onFail?: () => void) {
   if (/\.\w{3,4}$/.test(base)) {
     img.src = asset(base);
     img.onerror = () => onFail?.();
