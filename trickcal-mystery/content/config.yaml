@@ -26,6 +26,9 @@ characters:
   bust_height: 900        # 상반신으로 띄울 때 그림 높이(px). 캐릭터별 위치는 characters.yaml 의 bust: [가로, 세로]
 
 # ── 조사·추리 ──
+investigation:
+  bgm: mansion            # 조사 중 기본 배경음악 (investigations 파일에서 bgm: 으로 조사마다 바꿀 수 있음)
+
 suspect:
   # 의심 표시가 틀렸을 때 (#suspect 태그가 없는 발언에 표시했을 때)
   wrong_affinity: -1      # 그 발언을 한 캐릭터의 호감도 변화

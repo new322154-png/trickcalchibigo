@@ -62,6 +62,8 @@ export interface InvestigationDef {
   intro?: Lines;
   outro?: Lines;
   on_complete?: string;
+  /** 조사 중 배경음악 (없으면 config.yaml 의 investigation.bgm) */
+  bgm?: string;
   spots?: Record<string, { hotspots?: Hotspot[]; people?: SpotPerson[] }>;
 }
 

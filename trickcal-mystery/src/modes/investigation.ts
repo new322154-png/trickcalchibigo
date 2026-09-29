@@ -2,7 +2,8 @@
  * 조사 모드 — 방 배경 위의 조사 지점을 누르고, 문으로 이동하고, 지도로 바로 이동한다.
  * 데이터: content/investigations/*.yaml, content/locations.yaml
  */
-import { C, names, t } from '../engine/content';
+import { C, cfg, names, t } from '../engine/content';
+import { playBgm } from '../engine/audio';
 import { game } from '../engine/game';
 import { S, giveClue, setFlag } from '../engine/state';
 import { isTodo, waitFor } from '../engine/util';
@@ -24,6 +25,7 @@ export async function runInvestigation(id: string): Promise<string | null> {
     console.warn('[조사] investigations 폴더에 없는 id:', id);
     return null;
   }
+  playBgm(inv.bgm && !isTodo(inv.bgm) ? inv.bgm : cfg('investigation.bgm', 'mansion'));
   const roomKey = `inv_room_${id}`;
   if (!S.vars[`inv_intro_${id}`]) {
     S.vars[`inv_intro_${id}`] = true;
