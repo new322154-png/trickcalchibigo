@@ -1,191 +1,266 @@
 # ═══════════════════════════════════════════════════════════════
 #  text/tutorial.yaml — 기능 설명(튜토리얼)
 # ───────────────────────────────────────────────────────────────
-#  각 기능을 처음 쓸 때 한 번 뜨는 설명입니다. 대본에서  #tutorial:suspect  처럼
-#  태그를 달면 그 자리에서 뜨고, 이미 본 설명은 다시 뜨지 않습니다.
-#  수첩 → "도움말"에서 언제든 다시 볼 수 있어요.
+#  각 기능을 처음 쓸 때 한 번 뜨는 설명입니다. 1장(튜토리얼 장)에서 대부분 나오도록
+#  기능을 처음 쓰는 순간에 자동으로 뜨고, 대본에서  #tutorial:suspect  처럼 원하는 자리에 띄울 수도 있어요.
+#  이미 본 설명은 다시 뜨지 않고, 수첩 → "?" 탭에서 언제든 다시 볼 수 있습니다.
 #
-#  공통 질문
-#   speaker: 누가 설명하나요?  캐릭터 id(예: elena) 를 쓰면 그 캐릭터가 대사로 설명하고,
-#            system 이라고 쓰면 설명 창(그림+글)으로 뜹니다.
+#   speaker: 누가 설명하나요?  system 이면 설명 창(그림+글)으로 뜨고,
+#            캐릭터 id(예: elena) 를 쓰면 그 캐릭터가 대사로 설명합니다.
+#            → 이야기 속에서 캐릭터가 알려 주게 하고 싶으면 speaker 를 바꾸고 pages 를 대사로 고치세요.
 #   title:   설명 창 제목
-#   pages:   설명 내용. "- " 한 줄이 한 페이지(또는 대사 한 줄)입니다.
-#            캐릭터가 설명할 때는 "(웃음)대사" 처럼 앞에 감정을 붙일 수 있어요.
+#   pages:   설명 내용. "- " 한 줄이 한 페이지(또는 대사 한 줄)입니다. %suspect_button% 같은 기능 이름을 쓸 수 있어요.
 #   image:   설명 그림 (public/assets/ui/tutorial/ 안의 파일 이름, 없으면 "")
+#
+#  아래 문구는 기본 설명입니다. 분위기에 맞게 자유롭게 고치세요. 비우려면 pages 를 [TODO] 로.
 # ═══════════════════════════════════════════════════════════════
 
 # ── 기본 ──
 dialogue:
-  # Q: 대화 조작법(클릭으로 넘기기, 메뉴, 지난 대화)을 누가 어떻게 알려줄까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: 대화
   image: ""
   pages:
-    - TODO
+    - 화면을 누르거나 Space · Enter 로 대사를 넘깁니다.\n휠을 위로 굴리면 지난 대화를, 오른쪽 클릭으로 대화창을 잠깐 숨길 수 있어요.
+    - 오른쪽 위 메뉴에서 오토 · 스킵 · 지난 대화 · %notebook% · %phone% · 설정을 열 수 있습니다.\n지난 대화에서는 최근 대사로 되돌아갈 수도 있어요.
 
-# ── 조사·추리 ──
-suspect:
-  # Q: "%suspect_button%" 기능을 어떻게 설명할까요?
-  #    핵심: 수상한 발언에서 버튼을 누르면 수첩에 저장 / 나중에 증거와 맞으면 추궁 가능 /
-  #          아무 데나 누르면 상대가 기분 나빠하고 교주가 의심받음
-  speaker: TODO
-  title: TODO
+party_bar:
+  speaker: system
+  title: "%party_bar%"
   image: ""
   pages:
-    - TODO
+    - 왼쪽 위 초상화는 지금 저택에 있는 일행입니다.\n사라진 사람은 흑백으로, 갇힌 사람은 자물쇠로 표시돼요.
 
-notebook:
-  # Q: 수첩(증거·인물·의심 발언·결론 탭)을 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+checkpoint:
+  speaker: system
+  title: "%checkpoint%"
   image: ""
   pages:
-    - TODO
+    - 중요한 갈림길에서는 %checkpoint%가 자동으로 기록됩니다.\n엉뚱한 결말에 닿아도 여기서 다시 시작할 수 있어요.
 
+# ── 조사·방탈출 ──
 investigation:
-  # Q: 조사 파트(화면 속 수상한 곳 누르기, 방 이동, 필수 단서)를 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%investigation%"
   image: ""
   pages:
-    - TODO
+    - 방 안의 수상한 곳을 누르면 조사합니다. 마우스를 올리면 이름이 떠요.\n🔍 표시는 더 가까이 들여다볼 수 있는 곳, 🔒 표시는 무언가로 열어야 하는 곳입니다.
+    - 아래 버튼으로 다른 방으로 이동합니다. 필요한 단서를 모두 찾으면 "조사 끝내기"로 넘어가요.
 
 map:
-  # Q: 저택 지도(한 번 간 방은 바로 이동)를 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%map%"
   image: ""
   pages:
-    - TODO
+    - 한 번 가 본 방은 %map%에서 바로 이동할 수 있습니다. 층이 여러 개면 위쪽 탭으로 층을 바꿔요.
+
+closeup:
+  speaker: system
+  title: 자세히 보기
+  image: ""
+  pages:
+    - 가까이 들여다보는 화면입니다. 이 안에서도 수상한 곳을 누를 수 있고, 더 깊이 들어가는 곳도 있어요.\n다 봤으면 "돌아가기"를 누르세요.
+
+items:
+  speaker: system
+  title: "%item%"
+  image: ""
+  pages:
+    - 주운 물건은 %notebook%의 아이템 탭에 모입니다.\n열쇠나 쪽지처럼, 다른 곳에서 "쓰는" 물건이에요.
+
+use_item:
+  speaker: system
+  title: "%item% 쓰기"
+  image: ""
+  pages:
+    - 🔒 표시가 있는 곳은 맞는 물건을 써야 열립니다.\n가진 물건 중 하나를 골라 보세요. 틀려도 불이익은 없어요.
+
+lock:
+  speaker: system
+  title: 자물쇠
+  image: ""
+  pages:
+    - 번호나 순서를 맞춰야 열리는 장치입니다.\n답은 다른 방의 단서 어딘가에 숨어 있어요.
+
+talk:
+  speaker: system
+  title: 대화하기
+  image: ""
+  pages:
+    - 방에 있는 사람을 누르면 말을 걸 수 있습니다.\n주제를 골라 이야기하고, 이미 나눈 주제에는 ✓ 표시가 붙어요.
+    - 새 단서를 얻거나 사이가 가까워지면 새로운 주제가 열립니다.\n사람마다 있는 장소와 시간대가 다르니, 여기저기 찾아다녀 보세요.
+
+present:
+  speaker: system
+  title: 보여 주기
+  image: ""
+  pages:
+    - '"무언가 보여 준다"로 모은 증거·물건·사진을 들이밀 수 있습니다.\n맞는 걸 보여 주면 숨기던 이야기가 나오기도 해요.'
+
+camera:
+  speaker: system
+  title: 사진 찍기
+  image: ""
+  pages:
+    - '"사진 찍기"로 지금 방의 모습을 %phone%에 남겨 둡니다.\n찍은 사진은 %phone%의 사진첩에서 볼 수 있고, 증거처럼 보여 줄 수도 있어요.'
+
+compare:
+  speaker: system
+  title: 사진과 비교
+  image: ""
+  pages:
+    - 이 저택은 밤사이 조금씩 달라집니다.\n전에 찍어 둔 사진과 지금 모습을 나란히 놓고, 달라진 곳을 눌러 찾아내세요.
+
+# ── 추리 ──
+suspect:
+  speaker: system
+  title: "%suspect_button%"
+  image: ""
+  pages:
+    - 수상한 말이 나오면 대화창 위의 %suspect_button% 버튼을 누르세요.\n맞으면 %notebook%의 의심 발언 탭에 기록되고, 재판에서 무기가 됩니다.
+    - 아무 말에나 누르면 상대가 기분 나빠하고, 교주의 %suspicion%가 올라가요.
+
+notebook:
+  speaker: system
+  title: "%notebook%"
+  image: ""
+  pages:
+    - 모은 증거, 아이템, 인물, 의심 발언, 결론, 진실 조각이 모두 %notebook%에 정리됩니다.\n막히면 %notebook%부터 펼쳐 보세요.
+
+habits:
+  speaker: system
+  title: 평소 습관
+  image: ""
+  pages:
+    - 대화하다 보면 그 사람의 "평소 습관"을 알게 됩니다.\n%notebook%의 인물 탭에 하나씩 모여요.
+    - 이 저택에서는 누군가가 "원래의 그 사람"이 아닐지도 모릅니다.\n습관을 많이 알아 둘수록, 어긋난 순간을 알아챌 수 있어요.
+
+mismatch:
+  speaker: system
+  title: 어긋남
+  image: ""
+  pages:
+    - 알고 있던 습관과 다른 말을 할 때 %suspect_button%를 누르면, "어긋남"으로 기록됩니다.\n어긋남은 마지막 진실에 다가가는 가장 중요한 증거예요.
 
 board:
-  # Q: 추리 보드(빈칸에 카드 채우기, 결론 카드 얻기)를 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%board%"
   image: ""
   pages:
-    - TODO
+    - 모은 단서를 빈칸에 끼워 가설을 완성합니다.\n모든 문장이 맞으면 재판에서 쓸 %conclusion_card%를 얻어요.
+
+affinity:
+  speaker: system
+  title: "%affinity%"
+  image: ""
+  pages:
+    - 선택과 행동에 따라 일행의 %affinity%가 바뀝니다.\n%notebook%의 인물 탭에서 사람마다 지금 사이가 어떤지 확인할 수 있어요.
+    - 친한 사람은 비밀을 털어놓고, 재판에서도 교주 편을 들어 줍니다.
+
+suspicion:
+  speaker: system
+  title: "%suspicion%"
+  image: ""
+  pages:
+    - 괜한 의심이나 들킨 엿보기는 교주의 %suspicion%를 올립니다.\n왼쪽 위 게이지가 가득 차면… 이번엔 교주가 재판에 설지도 몰라요.
 
 # ── 휴대폰 ──
 phone:
-  # Q: 메신저(대화방, 답장 선택지)를 어떻게 설명할까요? 휴대폰이 울리는 장면과 겹쳐도 좋아요.
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%phone%"
   image: ""
   pages:
-    - TODO
+    - 새 메시지가 오면 %phone%에 빨간 점이 뜹니다.\n답장을 골라 보내고, 지난 대화와 사진첩도 여기서 봐요.
 
 reply_timer:
-  # Q: 답장 제한 시간(시간 안에 안 고르면 무응답으로 처리)을 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: 답장 시간
   image: ""
   pages:
-    - TODO
+    - 막대가 다 줄어들기 전에 답장을 골라야 합니다.\n답하지 않는 것도 하나의 답이 돼요.
 
 recover:
-  # Q: 삭제된 메시지 복구를 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%recover%"
   image: ""
   pages:
-    - TODO
+    - 누군가 지운 메시지는 "%recover%"로 되살릴 수 있습니다.\n지우고 싶었던 데에는 이유가 있겠죠.
 
 snoop:
-  # Q: 엿보기(강력한 단서지만 들키면 호감도 하락·의심도 상승)를 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%snoop%"
   image: ""
   pages:
-    - TODO
+    - 다른 사람의 %phone%를 몰래 볼 수 있습니다.\n들키면 %affinity%가 떨어지고 %suspicion%가 올라가요.
 
 # ── 재판 ──
 trial_intro:
-  # Q: 재판 전체 규칙(3페이즈, 틀려도 체크포인트로 돌아올 수 있음)을 누가 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%trial%"
   image: ""
   pages:
-    - TODO
+    - 누군가 사라진 밤이 지나면 %trial%이 열립니다.\n모은 증거와 발언으로 범인을 밝혀내세요. 판결은 저택에 남은 사람들의 운명을 바꿉니다.
 
 trial_chat:
-  # Q: 단톡방 심리 조작법(되묻기, 반박, 캡처, 대조, 발언권)을 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%trial_chat%"
   image: ""
   pages:
-    - TODO
+    - 단체방에 올라오는 발언 중 모순을 찾아 %action_ask% · %action_rebut% · %action_capture% · %action_compare% 로 공격합니다.
+    - 틀리면 %voice_meter%이 줄어들고, 다 떨어지면 재판에서 밀려나요.
 
 whisper:
-  # Q: 귓속말(진짜 힌트일 수도, 함정일 수도)을 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%whisper%"
   image: ""
   pages:
-    - TODO
+    - 막힐 때 누군가 몰래 %whisper%을 보내 줄 때가 있습니다.\n친한 사람일수록 도움이 되는 말을 해 줘요.
 
 trial_counter:
-  # Q: 역습 방어전(교주가 고발당함, 알리바이 증명)을 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%trial_counter%"
   image: ""
   pages:
-    - TODO
+    - 교주의 수상한 행동이 도마에 올랐습니다.\n증거나 교주 편 증인으로 스스로를 변호하세요.
 
 trial_opinion:
-  # Q: 최종 여론전(설득 성향 3종, 결론 카드, 역효과, 진범의 반론)을 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%trial_opinion%"
   image: ""
   pages:
-    - TODO
+    - 한 사람씩 설득해 여론을 모읍니다.\n감정파는 마음에, 증거파는 증거에 흔들리고, 교주를 믿는 사람은 교주 편에 서요.
 
 vote:
-  # Q: 투표와 동률 규칙(연장 토론 1회, 그래도 동률이면 저택이 고른다)을 어떻게 설명할까요?
-  #    저택이 고른다는 사실을 처음부터 알려줄지, 숨길지도 정하세요.
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%vote%"
   image: ""
   pages:
-    - TODO
+    - 마지막에는 모두가 범인이라고 생각하는 사람을 %vote%합니다.\n동률이면 %extension%이 열리고, 그래도 갈리면… 저택이 고릅니다.
 
-# ── 관계·분기 ──
-affinity:
-  # Q: 호감도를 설명할까요, 아니면 숨겨진 수치로 둘까요? 설명한다면 내용은?
-  speaker: TODO
-  title: TODO
+defendant:
+  speaker: system
+  title: 피고석
   image: ""
   pages:
-    - TODO
+    - 교주의 %suspicion%가 가득 찼습니다.\n이번 재판의 피고는 교주입니다. 누명을 벗지 못하면 교주가 갇혀요.
 
-suspicion:
-  # Q: 교주 의심도(수상한 행동을 하면 오르고, 높으면 재판에서 역으로 몰림)를 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+confine:
+  speaker: system
+  title: 갇힘
   image: ""
   pages:
-    - TODO
+    - 판결로 지목된 사람은 저택 어딘가에 갇힙니다.\n갇힌 사람과는 더 이상 이야기할 수 없어요. 그 판결이 옳았는지는… 곧 알게 됩니다.
 
-party_bar:
-  # Q: 인원 체크 UI(사라진 사람은 흑백)를 설명할까요? 설명 없이 보여주는 게 더 섬뜩할 수도 있어요.
-  speaker: TODO
-  title: TODO
+truth:
+  speaker: system
+  title: "%truth%"
   image: ""
   pages:
-    - TODO
-
-checkpoint:
-  # Q: 파생 엔딩 후 체크포인트로 돌아오는 규칙을 어떻게 설명할까요? (첫 파생 엔딩 직후에 뜸)
-  speaker: TODO
-  title: TODO
-  image: ""
-  pages:
-    - TODO
+    - 재판을 마칠 때마다 저택에 숨겨진 %truth% 하나를 얻습니다.\n%notebook%의 "%truth%" 탭에 모인 조각들이 마지막 진실로 이어져요.
 
 flowchart:
-  # Q: 사건 흐름도(본 엔딩, 못 본 엔딩, 점프)를 어떻게 설명할까요?
-  speaker: TODO
-  title: TODO
+  speaker: system
+  title: "%flowchart%"
   image: ""
   pages:
-    - TODO
+    - 지나온 갈림길이 %flowchart%에 기록됩니다.\n%checkpoint%를 눌러 그 지점으로 돌아가 다른 선택을 해 볼 수 있어요.

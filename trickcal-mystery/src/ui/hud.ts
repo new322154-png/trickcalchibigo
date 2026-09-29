@@ -13,6 +13,7 @@ import { toggleAuto, toggleSkip } from './dialogue';
 let partyEl: HTMLElement;
 let suspEl: HTMLElement;
 let phoneBadge: HTMLElement;
+let clockEl: HTMLElement;
 
 export function buildHud(handlers: { onMenu: () => void; onNotebook: () => void; onPhone: () => void; onBacklog: () => void }) {
   const root = clear(layer('hud'));
@@ -38,7 +39,8 @@ export function buildHud(handlers: { onMenu: () => void; onNotebook: () => void;
   root.appendChild(corner);
   partyEl = h('div.party-bar', { title: C.game.names.party_bar });
   suspEl = h('div.susp-meter', h('span.susp-label', C.game.names.suspicion), h('div.susp-track', h('div.susp-fill')));
-  root.append(partyEl, suspEl);
+  clockEl = h('div.hud-clock');
+  root.append(partyEl, suspEl, clockEl);
   suspEl.style.display = cfg('suspicion.show_meter', true) ? '' : 'none';
   refreshHud();
 }
@@ -53,12 +55,16 @@ export function refreshHud() {
   for (const [id, def] of Object.entries(C.characters)) {
     if (def.player) continue;
     const gone = S.vanished.includes(id);
+    const locked = S.confined.includes(id);
     const img = h('img', { src: asset(`characters/${id}/icon.png`), alt: def.name }) as HTMLImageElement;
     img.onerror = () => img.replaceWith(h('span.party-initial', def.name.slice(0, 1)));
-    partyEl.appendChild(h(`div.party-member${gone ? '.gone' : ''}`, { title: def.name }, img));
+    partyEl.appendChild(h(`div.party-member${gone ? '.gone' : ''}${locked ? '.locked' : ''}`, { title: def.name }, img, locked ? h('span.party-lock', '🔒') : null));
   }
   const max = cfg('suspicion.max', 10);
   (suspEl.querySelector('.susp-fill') as HTMLElement).style.width = `${(S.suspicion / max) * 100}%`;
+  // 며칠째 · 시간대
+  const TIME: Record<string, string> = { morning: t('time.morning').replace(/^\[.*\]$/, '아침'), day: t('time.day').replace(/^\[.*\]$/, '낮'), night: t('time.night').replace(/^\[.*\]$/, '밤') };
+  clockEl.textContent = `${S.day}일째 · ${TIME[S.time] ?? S.time}`;
   const unread = Object.values(S.phone).some((p) => p.unread);
   phoneBadge.classList.toggle('hidden', !unread);
 }
@@ -95,3 +101,27 @@ events.on('phone', ({ thread, notify }) => {
   }
 });
 events.on('stateLoaded', () => refreshHud());
+events.on('time', () => refreshHud());
+
+const tx = (key: string, fb: string, vars: Record<string, string> = {}) => {
+  let v = t(key);
+  if (/^\[.*\]$/.test(v) || v === 'TODO') v = fb;
+  for (const [k, val] of Object.entries(vars)) v = v.replace(`{${k}}`, val);
+  return v;
+};
+events.on('item', ({ id, gained }) => {
+  const name = C.items[id]?.name && C.items[id].name !== 'TODO' ? C.items[id].name : id;
+  toast(gained ? tx('toast.item_get', '{name}을(를) 얻었다.', { name }) : tx('toast.item_used', '{name}을(를) 썼다.', { name }), gained ? 'clue' : '');
+});
+events.on('confine', ({ who, confined }) => {
+  refreshHud();
+  toast(confined ? tx('toast.confined', '{name}이(가) 갇혔다.', { name: charName(who) }) : tx('toast.released', '{name}이(가) 풀려났다.', { name: charName(who) }), confined ? 'warn' : 'up');
+});
+events.on('truth', ({ id }) => {
+  const title = C.truths[id]?.title && C.truths[id].title !== 'TODO' ? C.truths[id].title : '';
+  toast(tx('toast.truth', '진실 조각을 얻었다{title}', { title: title ? `: ${title}` : '.' }), 'clue');
+});
+events.on('habit', ({ key }) => {
+  const who = key.split('.')[0];
+  toast(tx('toast.habit_learned', '{name}의 평소 습관을 하나 알게 됐다.', { name: charName(who) }), 'clue');
+});

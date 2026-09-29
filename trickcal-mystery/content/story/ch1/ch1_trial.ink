@@ -16,6 +16,12 @@
 (TODO) 실라를 찾는 장면
 #return:sila
 실라: (TODO) 돌아온 실라의 첫마디
+// ── 판결의 결과 ──
+// Q: 재판에서 지목된 진범은 어떻게 되나요? 갇힌다면 아래 줄의 // 를 지우고 진범 id 를 적으세요.
+//    갇힌 사람은 일행 표시에 자물쇠가 붙고, 조사 중에 만날 수 없게 됩니다. (나중에 #release:id 로 풀어 줄 수 있음)
+// #confine:진범id
+// Q: 이번 재판으로 얻는 "진실 조각"은? (content/truths.yaml)
+#truth:truth_ch1
 -> ending_hint
 
 = ending_hint

@@ -16,6 +16,7 @@
 (TODO) 실라를 찾는 장면
 #return:sila
 실라: (TODO) 돌아온 실라의 첫마디
+// ── 판결의 결과 ── 갇히면  #confine:진범id   진실 조각은  #truth:조각id
 -> ending_hint
 
 = ending_hint

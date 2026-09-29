@@ -182,6 +182,8 @@ const contacts = data['phone/contacts']?.contacts ?? {};
 const endings = data.endings?.endings ?? {};
 const flow = data.flowchart?.nodes ?? {};
 const tutorials = data['text/tutorial'] ?? {};
+const items = data.items?.items ?? {};
+const truths = data.truths?.truths ?? {};
 
 // ── 검사 도우미 ──
 const needKnot = (file, where, k) => {
@@ -197,6 +199,17 @@ const needChar = (file, where, id, extra = []) => {
   if (!id || isTodo(id) || extra.includes(id)) return;
   if (!toChar(id)) err(file, `${where}: characters.yaml 에 "${id}" 캐릭터가 없습니다`);
 };
+const needItem = (file, where, id) => {
+  if (!id || isTodo(id)) return;
+  if (!items[id]) err(file, `${where}: items.yaml 에 "${id}" 아이템이 없습니다`);
+};
+const needHabit = (file, where, key) => {
+  if (!key || isTodo(key)) return;
+  const [who, hid] = String(key).split('.');
+  const c = toChar(who);
+  if (!c) return err(file, `${where}: characters.yaml 에 "${who}" 캐릭터가 없습니다`);
+  if (!hid || !(characters[c]?.habits ?? {})[hid]) warn(file, `${where}: ${who} 의 habits 에 "${hid}" 가 없습니다`);
+};
 const needRoom = (file, where, id) => {
   if (!id || isTodo(id)) return;
   if (!rooms[id]) err(file, `${where}: locations.yaml 에 "${id}" 방이 없습니다`);
@@ -211,16 +224,47 @@ for (const [id, inv] of Object.entries(investigations)) {
   needKnot(f, 'on_complete', inv.on_complete);
   for (const [room, spots] of Object.entries(inv.spots ?? {})) {
     needRoom(f, 'spots', room);
-    for (const sp of spots?.hotspots ?? []) {
-      needEvidence(f, `${room}/${sp.id}.clue`, sp.clue);
-      needKnot(f, `${room}/${sp.id}.knot`, sp.knot);
-      if (!Array.isArray(sp.rect) || sp.rect.length !== 4) warn(f, `${room}/${sp.id}: rect 는 [가로, 세로, 너비, 높이] 4개 숫자여야 합니다`);
-    }
+    checkSpots(f, room, spots?.hotspots, inv);
     for (const p of spots?.people ?? []) {
       needChar(f, `${room}.people`, p.who);
       needKnot(f, `${room}.people.knot`, p.knot);
+      for (const tp of p.topics ?? []) {
+        needEvidence(f, `${room}.${p.who}.topics.${tp.id}.clue`, tp.clue);
+        needKnot(f, `${room}.${p.who}.topics.${tp.id}.knot`, tp.knot);
+        if (tp.habit) needHabit(f, `${room}.${p.who}.topics.${tp.id}.habit`, `${p.who}.${tp.habit}`);
+      }
+      for (const [k, v] of Object.entries(p.present ?? {})) {
+        if (!evidence[k] && !items[k] && !String(k).startsWith('photo:')) warn(f, `${room}.${p.who}.present: "${k}" 는 단서도 아이템도 아닙니다`);
+        if (typeof v === 'string' && v.startsWith('knot:')) needKnot(f, `${room}.${p.who}.present.${k}`, v.slice(5).trim());
+      }
     }
   }
+  for (const [cid, cu] of Object.entries(inv.closeups ?? {})) checkSpots(f, `closeups.${cid}`, cu?.hotspots, inv);
+  for (const [room, list] of Object.entries(inv.diffs ?? {})) {
+    needRoom(f, 'diffs', room);
+    for (const d of list ?? []) needEvidence(f, `diffs.${room}.${d.id}.clue`, d.clue);
+  }
+}
+function checkSpots(f, where, list, inv) {
+  for (const sp of list ?? []) {
+    const w = `${where}/${sp.id}`;
+    needEvidence(f, `${w}.clue`, sp.clue);
+    needKnot(f, `${w}.knot`, sp.knot);
+    needItem(f, `${w}.item`, sp.item);
+    if (sp.closeup && !(inv.closeups ?? {})[sp.closeup]) err(f, `${w}.closeup: closeups 에 "${sp.closeup}" 가 없습니다`);
+    for (const d of [sp.use, sp.lock]) {
+      if (!d) continue;
+      if (d === sp.use) needItem(f, `${w}.use.item`, d.item);
+      if (!d.flag) err(f, `${w}: use/lock 에는 flag 가 꼭 있어야 합니다`);
+      needEvidence(f, `${w}.clue`, d.clue);
+      needItem(f, `${w}.give_item`, d.give_item);
+      if (d.closeup && !(inv.closeups ?? {})[d.closeup]) err(f, `${w}.closeup: closeups 에 "${d.closeup}" 가 없습니다`);
+    }
+    if (!Array.isArray(sp.rect) || sp.rect.length !== 4) warn(f, `${w}: rect 는 [가로, 세로, 너비, 높이] 4개 숫자여야 합니다`);
+  }
+}
+for (const [id, tr] of Object.entries(trials)) {
+  if (tr?.if_suspected && !trials[tr.if_suspected]) err(`trials(${id})`, `if_suspected: trials 폴더에 "${tr.if_suspected}" 가 없습니다`);
 }
 for (const [id, r] of Object.entries(rooms)) for (const d of r?.doors ?? []) needRoom(`locations(${id})`, 'doors', d);
 
@@ -325,6 +369,11 @@ for (const f of inkFiles) {
         case 'node': if (!flow[arg]) warn(where, `#node: flowchart.yaml 에 "${arg}" 지점이 없습니다`); break;
         case 'show': case 'hide': case 'vanish': case 'return': needChar(where, `#${cmd}`, arg); break;
         case 'affinity': needChar(where, '#affinity', arg); break;
+        case 'item': case 'lose_item': needItem(where, `#${cmd}`, arg); break;
+        case 'confine': case 'release': needChar(where, `#${cmd}`, arg); break;
+        case 'truth': if (!truths[arg]) err(where, `#truth: truths.yaml 에 "${arg}" 가 없습니다`); break;
+        case 'habit': case 'mismatch': needHabit(where, `#${cmd}`, arg); break;
+        case 'time': if (!['morning', 'day', 'night'].includes(arg)) warn(where, `#time: morning / day / night 중 하나여야 합니다`); break;
         case 'chapter': if (!(data.chapters ?? {})[arg]) warn(where, `#chapter: chapters.yaml 에 "${arg}" 가 없습니다`); break;
       }
     }

@@ -49,6 +49,35 @@ export interface GameState {
   lastVote: string;
   vars: Record<string, any>; // 모드들이 쓰는 잡다한 진행 기록 (조사 중인 방 등)
   stage: StageState;
+  /** 방탈출: 가진 아이템 */
+  items: string[];
+  /** 지금 시간대 (morning / day / night) 와 날짜 */
+  time: string;
+  day: number;
+  /** 재판 결과로 갇힌 사람 */
+  confined: string[];
+  /** 모은 진실 조각 (truths.yaml) */
+  truths: string[];
+  /** 알게 된 습관 "who.habit" */
+  habits: string[];
+  /** 잡아낸 어긋남 (습관과 다른 말) */
+  anomalies: { who: string; habit: string; text: string }[];
+  /** 휴대폰으로 찍은 사진 */
+  photos: Photo[];
+  /** 이미 나눈 대화 주제 "who/topic" */
+  topicsSeen: string[];
+  /** 사진 비교로 찾은 달라진 곳 */
+  diffsFound: string[];
+}
+
+export interface Photo {
+  id: string;
+  room: string;
+  bg: string;
+  chapter: string;
+  day: number;
+  time: string;
+  taken: number;
 }
 
 export function newState(): GameState {
@@ -76,7 +105,24 @@ export function newState(): GameState {
     lastVote: '',
     vars: {},
     stage: { bg: '', bgm: '', cg: '', sprites: {} },
+    items: [],
+    time: 'morning',
+    day: 1,
+    confined: [],
+    truths: [],
+    habits: [],
+    anomalies: [],
+    photos: [],
+    topicsSeen: [],
+    diffsFound: [],
   };
+}
+
+/** 예전 세이브에 없는 칸 채우기 */
+export function upgradeState(s: any): GameState {
+  const base = newState();
+  for (const k of Object.keys(base) as (keyof GameState)[]) if (s[k] === undefined) s[k] = base[k];
+  return s as GameState;
 }
 
 export let S: GameState;
@@ -135,7 +181,51 @@ export function logAction(type: string) {
 }
 
 export function isPresent(who: string) {
-  return !S.vanished.includes(who);
+  return !S.vanished.includes(who) && !S.confined.includes(who);
+}
+
+// ── 방탈출 · 재판 결과 · 습관 ──
+
+export function giveItem(id: string) {
+  if (!id || S.items.includes(id)) return;
+  if (!C.items[id]) console.warn(`[아이템] items.yaml 에 없는 id: ${id}`);
+  S.items.push(id);
+  events.emit('item', { id, gained: true });
+}
+
+export function loseItem(id: string) {
+  if (!S.items.includes(id)) return;
+  S.items = S.items.filter((i) => i !== id);
+  events.emit('item', { id, gained: false });
+}
+
+export function confine(who: string) {
+  if (!S.confined.includes(who)) S.confined.push(who);
+  events.emit('confine', { who, confined: true });
+}
+
+export function release(who: string) {
+  S.confined = S.confined.filter((w) => w !== who);
+  events.emit('confine', { who, confined: false });
+}
+
+export function giveTruth(id: string) {
+  if (S.truths.includes(id)) return;
+  if (!C.truths[id]) console.warn(`[진실] truths.yaml 에 없는 id: ${id}`);
+  S.truths.push(id);
+  events.emit('truth', { id });
+}
+
+/** "erpin.calls_kyoju" 형식 */
+export function learnHabit(key: string) {
+  if (!key || S.habits.includes(key)) return;
+  S.habits.push(key);
+  events.emit('habit', { key });
+}
+
+export function setTime(time: string) {
+  S.time = time;
+  events.emit('time', { time });
 }
 
 /**
@@ -165,6 +255,24 @@ export function applyEffect(effect: string) {
       break;
     case 'action':
       logAction(arg);
+      break;
+    case 'item':
+      giveItem(arg);
+      break;
+    case 'lose_item':
+      loseItem(arg);
+      break;
+    case 'confine':
+      confine(arg);
+      break;
+    case 'release':
+      release(arg);
+      break;
+    case 'truth':
+      giveTruth(arg);
+      break;
+    case 'habit':
+      learnHabit(arg);
       break;
     default:
       console.warn('[효과] 알 수 없는 효과:', effect);

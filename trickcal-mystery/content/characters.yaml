@@ -16,6 +16,7 @@
 #  emotions:     이 캐릭터가 가진 감정 파일 목록. 아래 emotion_aliases 의 영문 이름 기준.
 #  start_affinity: 게임 시작 시 교주 호감도 (config.yaml 의 min~max 범위)
 #  bust:         (선택) 대화창 위 상반신 위치 보정 [가로, 세로] px. 예) bust: [0, 40] → 40px 아래로
+#  habits:       평소 습관 도감 (가짜 찾기용). 수첩 인물 탭에 모인 만큼 보임
 #  reactions:    상황별 "기본 반응 대사". 여러 줄 쓰면 그중 하나가 무작위로 나옵니다.
 #                "(분노)대사" 처럼 앞에 감정을 붙이면 그 표정으로 말해요.
 #                장면마다 특별한 대사가 필요하면 대본/재판 파일에서 따로 쓰면 되고,
@@ -59,7 +60,14 @@ erpin:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect:          # Q: 교주가 이 캐릭터의 평범한 말에 괜히 의심 표시를 했을 때?
       - TODO
     snoop_caught:           # Q: 교주가 이 캐릭터의 기기를 엿보다 들켰을 때?
@@ -84,7 +92,14 @@ joan:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -102,7 +117,14 @@ ner:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -120,7 +142,14 @@ elena:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -138,7 +167,14 @@ amelia:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -156,7 +192,14 @@ daya:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -175,7 +218,14 @@ sila:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -193,7 +243,14 @@ shady:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -211,7 +268,14 @@ tig:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]
@@ -229,7 +293,14 @@ uros:
   emotions: [normal, smile, cry, panic, angry]
   profile: TODO
   voice_note: TODO
+  # Q: 평소 습관 (습관 id: 설명). 대화 주제에서 habit: 으로 알게 되고,
+  #    대본에서 습관과 어긋난 말에 #mismatch:이 캐릭터id.습관id 를 달면 의심 버튼으로 잡을 수 있어요.
+  #    예) calls_kyoju: 교주를 "교주님"이라고 부른다
+  habits:
+    example: TODO
   reactions:
+    present_unknown:        # Q: 상관없는 물건이나 증거를 보여 줬을 때?
+      - TODO
     wrong_suspect: [TODO]
     snoop_caught: [TODO]
     persuaded: [TODO]

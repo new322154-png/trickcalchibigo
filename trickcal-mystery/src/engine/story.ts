@@ -54,6 +54,13 @@ function bindExternals() {
   bind('present', (who: string) => isPresent(charId(who) ?? who));
   bind('seen_ending', (id: string) => P.endingsSeen.includes(id));
   bind('voted', () => S.lastVote || '');
+  bind('has_item', (id: string) => S.items.includes(id));
+  bind('confined', (who: string) => S.confined.includes(charId(who) ?? who));
+  bind('has_truth', (id: string) => S.truths.includes(id));
+  bind('knows_habit', (key: string) => S.habits.includes(key));
+  bind('anomalies', (who: string) => S.anomalies.filter((a) => !who || a.who === (charId(who) ?? who)).length);
+  bind('time_now', () => S.time);
+  bind('day', () => S.day);
 }
 
 export function inkStory() {

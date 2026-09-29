@@ -78,6 +78,12 @@ settings:
   player_name_done: 이름을 바꿨습니다.
   apply: 변경
 
+# ── 시간대 이름 (오른쪽 위 "1일째 · 아침") ──
+time:
+  morning: 아침
+  day: 낮
+  night: 밤
+
 # ── 시스템 메뉴 (저장·설정·엑스트라를 모은 전체 화면 메뉴) ──
 #  각 탭의 제목과 제목 옆 한 줄 설명
 system:
@@ -161,6 +167,18 @@ toast:
   conclusion_get: "%conclusion_card% 「{name}」을(를) 얻었다."
 
 # ── 대화 화면 ──
+  # ── 방탈출·재판 결과 알림 ({name} = 이름) ──
+  item_get: "{name}을(를) 얻었다."
+  item_used: "{name}을(를) 썼다."
+  habit_learned: "{name}의 평소 습관을 하나 알게 됐다."
+  anomaly_found: 평소와 다르다… 수첩에 기록했다.
+  anomaly_vague: 뭔가 걸리는데… 이 사람의 평소 모습을 더 알아야 할 것 같다.
+  confined: "{name}이(가) 갇혔다."
+  released: "{name}이(가) 풀려났다."
+  truth: "진실 조각을 얻었다{title}"
+  photo_taken: "찰칵. {room}을(를) 찍었다."
+  photo_same: 이미 지금 모습을 찍어 두었다.
+
 dialogue:
   # Q: 이름을 모르는 인물의 이름표는? (대본에서 ??? 로 쓰면 이 값이 표시)
   unknown_speaker: "???"
@@ -190,6 +208,14 @@ notebook:
   close: 닫기
 
 # ── 조사 ──
+  tab_items: 아이템
+  tab_truths: 진실 조각
+  empty_items: 가진 물건이 없다.
+  confined_mark: 갇힘
+  habits_title: 평소 습관
+  anomaly_mark: 어긋남
+  truth_locked: 아직 드러나지 않은 진실
+
 investigation:
   title: "%investigation%"
   move: 이동
@@ -206,6 +232,30 @@ investigation:
   unknown_room: "???"
 
 # ── 추리 보드 ──
+  # ── 방탈출 ──
+  photo: 사진 찍기
+  compare: 사진과 비교
+  compare_title: 달라진 곳 찾기
+  now: 지금
+  diff_found: …여기, 전과 다르다.
+  back: ← 돌아가기
+  no_items: 쓸 수 있는 물건이 없다.
+  use_title: 무엇을 쓸까?
+  use_wrong: …이건 아닌 것 같다.
+  lock_number: 번호 자물쇠
+  lock_sequence: 순서 맞추기
+  lock_try: 열어 본다
+  lock_wrong: 철컥. 열리지 않는다.
+  # ── 대화 ──
+  show: 무언가 보여 준다
+  show_title: 무엇을 보여 줄까?
+  show_unknown: …그게 뭔데?
+  leave: 대화를 마친다
+  # 층 이름 (지도 탭). 숫자 층은 자동으로 "1층", "지하 1층"
+  floors:
+    outside: 바깥
+    attic: 다락
+
 board:
   title: "%board%"
   # Q: 보드 화면 위쪽에 뜨는 안내 문구는?

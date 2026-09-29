@@ -176,13 +176,26 @@ export function openBacklog() {
 
 // ── 수첩 ──────────────────────────────────────────
 
-export function openNotebook(tab: 'evidence' | 'people' | 'suspects' | 'conclusions' | 'help' = 'evidence') {
+type NbTab = 'evidence' | 'items' | 'people' | 'suspects' | 'conclusions' | 'truths' | 'help';
+
+/** 호감도 단계 이름 (config.yaml 의 affinity.levels 로 바꿀 수 있음) */
+function affinityLevel(v: number) {
+  const levels: [number, string][] = cfg('affinity.levels', [[-10, '적대'], [-4, '경계'], [0, '보통'], [3, '친근'], [6, '신뢰'], [9, '각별']]);
+  let name = levels[0]?.[1] ?? '';
+  for (const [min, label] of levels) if (v >= min) name = label;
+  return name;
+}
+
+export function openNotebook(tab: NbTab = 'evidence') {
   const m = openModal(t('notebook.title'), 'notebook');
-  const tabs: [typeof tab, string][] = [
+  const lbl = (k: string, fb: string) => tt(`notebook.${k}`, fb);
+  const tabs: [NbTab, string][] = [
     ['evidence', t('notebook.tab_evidence')],
+    ['items', lbl('tab_items', '아이템')],
     ['people', t('notebook.tab_people')],
     ['suspects', t('notebook.tab_suspects')],
     ['conclusions', t('notebook.tab_conclusions')],
+    ['truths', lbl('tab_truths', '진실 조각')],
     ['help', '?'],
   ];
   const content = h('div.nb-content');
@@ -192,6 +205,7 @@ export function openNotebook(tab: 'evidence' | 'people' | 'suspects' | 'conclusi
   const render = () => {
     bar.querySelectorAll('.nb-tab').forEach((b, i) => b.classList.toggle('on', tabs[i][0] === tab));
     clear(content);
+    content.className = `nb-content nb-${tab}`;
     if (tab === 'evidence') {
       if (!S.evidence.length) content.appendChild(h('p.empty', t('notebook.empty_evidence')));
       for (const id of S.evidence) {
@@ -200,15 +214,51 @@ export function openNotebook(tab: 'evidence' | 'people' | 'suspects' | 'conclusi
         const img = e.image && !isTodo(e.image) ? h('img.nb-img', { src: asset(`evidence/${e.image}`) }) : null;
         content.appendChild(h('div.nb-item', img, h('b', txt(e.name, id)), h('p', txt(upd?.desc ?? e.desc))));
       }
+    } else if (tab === 'items') {
+      if (!S.items.length) content.appendChild(h('p.empty', lbl('empty_items', '가진 물건이 없다.')));
+      for (const id of S.items) {
+        const it = C.items[id] ?? { name: id };
+        const img = it.image && !isTodo(it.image) ? h('img.nb-img', { src: asset(`items/${it.image}`) }) : null;
+        content.appendChild(h('div.nb-item', img, h('b', txt(it.name, id)), h('p', txt(it.desc))));
+      }
     } else if (tab === 'people') {
+      const amin = cfg('affinity.min', -10);
+      const amax = cfg('affinity.max', 10);
       for (const [id, def] of Object.entries(C.characters)) {
         if (def.player) continue;
         const gone = S.vanished.includes(id);
+        const locked = S.confined.includes(id);
+        const aff = S.affinity[id] ?? 0;
+        const icon = h('img', { src: asset(`characters/${id}/icon.png`), alt: def.name }) as HTMLImageElement;
+        icon.onerror = () => icon.replaceWith(h('span', def.name.slice(0, 1)));
+        // 습관 도감: 아는 것만 글자로, 모르는 건 ???
+        const habits = Object.entries(def.habits ?? {}).filter(([, v]) => !isTodo(v));
+        const known = habits.filter(([hid]) => S.habits.includes(`${id}.${hid}`));
+        const anomalies = S.anomalies.filter((a) => a.who === id);
+        const status = gone ? txt(C.ui.notebook?.vanished_mark, '행방불명') : locked ? lbl('confined_mark', '갇힘') : '';
+        const meter = h('div.aff-bar', h('div.aff-fill', { style: { width: `${((aff - amin) / (amax - amin)) * 100}%` } }));
         content.appendChild(
-          h(`div.nb-item${gone ? '.gone' : ''}`,
-            h('b', { style: { color: charColor(id) } }, def.name, gone ? ` ${txt(C.ui.notebook?.vanished_mark, '(행방불명)')}` : ''),
+          h(`div.nb-item.person${gone ? '.gone' : ''}${locked ? '.locked' : ''}`,
+            h('div.person-head',
+              h('div.person-icon', icon),
+              h('div.person-name',
+                h('b', { style: { color: charColor(id) } }, def.name),
+                status ? h('span.person-status', status) : null),
+              h('div.person-aff',
+                h('small', `${names('%affinity%')} · ${affinityLevel(aff)}${cfg('affinity.show_numbers', false) ? ` (${aff})` : ''}`),
+                meter)),
             h('p', gone ? txt(def.reactions?.vanished_note as any, txt(def.profile)) : txt(def.profile)),
-            cfg('affinity.show_numbers', false) ? h('small', `${names('%affinity%')} ${S.affinity[id] ?? 0}`) : null),
+            habits.length
+              ? h('div.habits',
+                  h('small', lbl('habits_title', '평소 습관')),
+                  ...habits.map(([hid, text]) => {
+                    const knows = S.habits.includes(`${id}.${hid}`);
+                    const odd = anomalies.some((a) => a.habit === hid);
+                    return h(`div.habit${knows ? '' : '.unknown'}${odd ? '.odd' : ''}`, knows ? names(text) : '???', odd ? h('span.odd-mark', lbl('anomaly_mark', '어긋남')) : null);
+                  }),
+                  h('small.habit-count', `${known.length} / ${habits.length}`))
+              : null,
+            ...anomalies.map((a) => h('p.anomaly', `「${names(a.text)}」`))),
         );
       }
     } else if (tab === 'suspects') {
@@ -220,6 +270,13 @@ export function openNotebook(tab: 'evidence' | 'people' | 'suspects' | 'conclusi
       for (const id of S.conclusions) {
         const c = C.conclusions[id];
         content.appendChild(h('div.nb-item', h('b', txt(c?.name, id)), h('p', txt(c?.text))));
+      }
+    } else if (tab === 'truths') {
+      const all = Object.entries(C.truths);
+      content.appendChild(h('div.sys-progress', h('b', String(S.truths.length)), ` / ${all.length}`));
+      for (const [id, tr] of all) {
+        const got = S.truths.includes(id);
+        content.appendChild(h(`div.nb-item.truth${got ? '' : '.locked'}`, h('b', got ? txt(tr.title, id) : '???'), h('p', got ? txt(tr.text) : lbl('truth_locked', '아직 드러나지 않은 진실'))));
       }
     } else {
       // 도움말: 본 튜토리얼 다시 보기

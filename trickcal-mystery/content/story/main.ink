@@ -26,6 +26,13 @@ EXTERNAL flag(name)          // flag 가 켜져 있나? (#flag:이름 으로 켬
 EXTERNAL present(who)        // 그 캐릭터가 아직 일행에 있나? (사라지지 않았나)
 EXTERNAL seen_ending(id)     // (회차 기억) 그 엔딩을 본 적이 있나?
 EXTERNAL voted()             // 방금 재판에서 지목된 사람 id
+EXTERNAL has_item(id)        // 아이템을 가지고 있나? (items.yaml id)
+EXTERNAL confined(who)       // 그 캐릭터가 재판 결과로 갇혀 있나?
+EXTERNAL has_truth(id)       // 진실 조각을 모았나? (truths.yaml id)
+EXTERNAL knows_habit(key)    // 그 습관을 알고 있나? 예) knows_habit("erpin.calls_kyoju")
+EXTERNAL anomalies(who)      // 그 캐릭터에게서 잡아낸 어긋남 개수 ("" 이면 전체)
+EXTERNAL time_now()          // 지금 시간대 (morning / day / night)
+EXTERNAL day()               // 며칠째인가
 
 -> start
 
@@ -52,3 +59,17 @@ EXTERNAL voted()             // 방금 재판에서 지목된 사람 id
 ~ return false
 === function voted() ===
 ~ return ""
+=== function has_item(id) ===
+~ return false
+=== function confined(who) ===
+~ return false
+=== function has_truth(id) ===
+~ return false
+=== function knows_habit(key) ===
+~ return false
+=== function anomalies(who) ===
+~ return 0
+=== function time_now() ===
+~ return "morning"
+=== function day() ===
+~ return 1

@@ -22,6 +22,8 @@ export interface CharacterDef {
   emotions?: string[];
   profile?: string;
   reactions?: Record<string, Lines | string>;
+  /** 평소 습관 도감: 습관 id → 설명 */
+  habits?: Record<string, string>;
 }
 
 export interface RoomDef {
@@ -44,14 +46,79 @@ export interface Hotspot {
   clue?: string;
   knot?: string;
   needs?: string;
+  /** 이 flag 가 켜지면 사라지는 지점 (다 조사한 서랍 등) */
+  hide_if?: string;
+  /** 누르면 들어가는 클로즈업 화면 id (조사 파일의 closeups) */
+  closeup?: string;
+  /** 주울 수 있는 아이템 id (items.yaml) */
+  item?: string;
+  /** 이 flag 를 켬 */
+  flag?: string;
+  /** 아이템을 써야 하는 곳 */
+  use?: UseDef;
+  /** 번호 자물쇠·순서 맞추기 */
+  lock?: LockDef;
+}
+
+export interface UseDef {
+  item: string;          // 맞는 아이템 id
+  flag: string;          // 성공하면 켜지는 flag (이 flag 가 켜진 뒤에는 lines 대신 done 이 나옴)
+  before?: Lines;        // 아직 안 썼을 때 누르면 나오는 대사 (그 뒤 아이템 고르기)
+  success?: Lines;       // 맞는 아이템을 썼을 때
+  wrong?: Lines;         // 틀린 아이템을 썼을 때
+  done?: Lines;          // 이미 해결한 뒤 누르면
+  consume?: boolean;     // 쓰면 아이템이 없어지나 (기본 true)
+  clue?: string;         // 성공하면 얻는 단서
+  give_item?: string;    // 성공하면 얻는 아이템
+  closeup?: string;      // 성공하면 바로 들어가는 클로즈업
+}
+
+export interface LockDef {
+  type: 'number' | 'sequence';
+  answer: string | string[]; // number: "0417" / sequence: 고를 순서 ["달", "별", "해"]
+  choices?: string[];        // sequence: 누를 수 있는 버튼들
+  flag: string;              // 풀면 켜지는 flag
+  title?: string;
+  hint?: string;
+  before?: Lines;
+  success?: Lines;
+  wrong?: Lines;
+  done?: Lines;
+  clue?: string;
+  give_item?: string;
+  closeup?: string;
+}
+
+export interface CloseupDef {
+  title?: string;
+  image?: string;        // public/assets/closeup/ 안의 그림 (없으면 설명 창)
+  text?: string;         // 그림이 없을 때 또는 그림 아래에 뜨는 설명
+  enter?: Lines;         // 처음 들어갈 때 대사
+  hotspots?: Hotspot[];  // 클로즈업 안에서 누를 곳 (몇 단계든 들어갈 수 있음)
+}
+
+export interface TopicDef {
+  id: string;
+  label: string;
+  lines?: Lines;
+  knot?: string;
+  needs?: string;        // flag 또는 단서 id (둘 중 하나라도 있으면 열림)
+  affinity?: number;     // 이 호감도 이상일 때만 보임
+  clue?: string;
+  habit?: string;        // 이 대화로 알게 되는 습관 id (characters.yaml 의 habits)
+  effects?: string[];
 }
 
 export interface SpotPerson {
   who: string;
   emotion?: string;
   pos?: string;
-  lines?: Lines;
+  lines?: Lines;         // 대화 주제가 없을 때 누르면 나오는 대사
   knot?: string;
+  time?: string | string[]; // 이 시간대에만 이 방에 있음 (morning / day / night)
+  needs?: string;        // 이 flag 가 켜져야 나타남
+  topics?: TopicDef[];   // 대화 주제 메뉴
+  present?: Record<string, Lines | string>; // 증거·아이템을 보여 줬을 때 (id → 대사, 또는 knot:이름)
 }
 
 export interface InvestigationDef {
@@ -62,6 +129,12 @@ export interface InvestigationDef {
   intro?: Lines;
   outro?: Lines;
   on_complete?: string;
+  /** 이번 조사에서 방 배경을 바꿀 때 (방 id → 배경 이름). 밤 버전, 어질러진 버전 등 */
+  bgs?: Record<string, string>;
+  /** 클로즈업 화면들 */
+  closeups?: Record<string, CloseupDef>;
+  /** 전날 사진과 비교했을 때 찾을 수 있는 달라진 곳 (방 id → 목록) */
+  diffs?: Record<string, { id: string; rect: [number, number, number, number]; lines?: Lines; clue?: string }[]>;
   /** 조사 중 배경음악 (없으면 config.yaml 의 investigation.bgm) */
   bgm?: string;
   spots?: Record<string, { hotspots?: Hotspot[]; people?: SpotPerson[] }>;
@@ -148,6 +221,10 @@ export interface CounterRound {
 export interface TrialDef {
   title: string;
   checkpoint?: string;
+  /** 교주 의심도가 가득 찬 채로 이 재판에 오면, 대신 열리는 "교주 피고 재판" id */
+  if_suspected?: string;
+  /** 피고 (교주 피고 재판이면 kyoju) — 화면 위에 "피고: 이름" 표시 */
+  defendant?: string;
   results: {
     correct: string;
     correct_weak?: string;
@@ -219,6 +296,8 @@ export interface Content {
   endings: Record<string, EndingDef>;
   flowchart: Record<string, FlowNode>;
   extras: ExtrasDef;
+  items: Record<string, { name: string; desc?: string; image?: string }>;
+  truths: Record<string, { title: string; text?: string; chapter?: string }>;
 }
 
 /** 엑스트라(갤러리) — content/extras.yaml */
@@ -273,6 +352,9 @@ const DEFAULT_NAMES: Record<string, string> = {
   flowchart: '사건 흐름도',
   checkpoint: '체크포인트',
   gallery: '엔딩 갤러리',
+  defendant: '피고:',
+  item: '아이템',
+  truth: '진실 조각',
 };
 
 // ── 불러오기 ────────────────────────────────────────────────
@@ -359,6 +441,8 @@ export function loadContent(): Content {
     trials: mergeFolder(f, 'trials'),
     endings: f['endings']?.endings ?? {},
     flowchart: f['flowchart']?.nodes ?? {},
+    items: f['items']?.items ?? {},
+    truths: f['truths']?.truths ?? {},
     extras: {
       cg: listOf(f['extras']?.cg),
       music: listOf(f['extras']?.music),

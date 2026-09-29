@@ -58,6 +58,9 @@ export function confirm(text: string, fallback = '계속할까요?'): Promise<bo
 export function toast(text: string, kind = '') {
   if (!text || isTodo(text)) return;
   const el = h(`div.toast${kind ? '.toast-' + kind : ''}`, text);
+  // 한꺼번에 여러 개가 뜨면 아래로 쌓기
+  const n = layer('toast').querySelectorAll('.toast').length;
+  el.style.top = `${96 + n * 64}px`;
   layer('toast').appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   sleep(2600).then(() => {

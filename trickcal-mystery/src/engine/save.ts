@@ -5,7 +5,7 @@
  * - 체크포인트는 슬롯과 별개로 영구 기록(P.checkpoints)에 남는다 → 흐름도에서 점프.
  */
 import { C } from './content';
-import { S, GameState, P, savePersist, setState } from './state';
+import { S, GameState, P, savePersist, setState, upgradeState } from './state';
 import { loadInk, saveInk } from './story';
 import type { Line } from './story';
 
@@ -43,7 +43,7 @@ export function makeSnapshot(resume: Resume): Snapshot {
 
 export function applySnapshot(snap: Snapshot) {
   loadInk(snap.ink);
-  setState(JSON.parse(JSON.stringify(snap.state)));
+  setState(upgradeState(JSON.parse(JSON.stringify(snap.state))));
 }
 
 export function writeSlot(slot: number | string, snap: Snapshot) {

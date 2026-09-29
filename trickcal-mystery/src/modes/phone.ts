@@ -212,6 +212,17 @@ export async function openPhoneApp() {
         }, h('b', threadTitle(id)), h('span', last ? (last.deleted ? t('phone.deleted') : names(last.text)) : '')),
       );
     }
+    // 사진첩 (조사 중 찍은 사진)
+    if (S.photos.length) {
+      m.body.appendChild(h('div.section-title', '사진첩'));
+      const grid = h('div.album');
+      for (const ph of [...S.photos].reverse()) {
+        const room = C.rooms[ph.room]?.name;
+        const label = `${room && room !== 'TODO' ? room : ph.room} · ${ph.day}일째 ${({ morning: '아침', day: '낮', night: '밤' } as Record<string, string>)[ph.time] ?? ph.time}`;
+        grid.appendChild(h('button.album-item', { onclick: () => viewPhoto(asset(`bg/${ph.bg}.jpg`), label) }, h('img', { src: asset(`bg/${ph.bg}.jpg`) }), h('span', label)));
+      }
+      m.body.appendChild(grid);
+    }
     // 엿보기
     const snoops = Object.entries(C.snoops).filter(([sid, s]) => !S.snooped.includes(sid) && (!s.needs || S.flags[s.needs]) && !S.vanished.includes(s.owner));
     if (snoops.length) {
@@ -256,4 +267,20 @@ async function snoop(id: string) {
       await game.sayOrQueue([/^[(（]/.test(reaction) ? `${name}${reaction}` : `${name}: ${reaction}`]);
     }
   }
+}
+
+function viewPhoto(src: string, label: string) {
+  const close = () => {
+    el.remove();
+    window.removeEventListener('keydown', onKey, true);
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      close();
+    }
+  };
+  const el = h('div.cg-view', { onclick: close }, h('img', { src }), h('div.cg-view-cap', label));
+  layer('modal').appendChild(el);
+  window.addEventListener('keydown', onKey, true);
 }

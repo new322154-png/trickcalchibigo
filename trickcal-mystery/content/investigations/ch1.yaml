@@ -14,6 +14,30 @@
 #   knot:     대사가 복잡하면(선택지, 조건) lines 대신 ink 대본의 knot 이름을 적으세요
 #   needs:    이 flag 가 켜져 있어야 나타나는 지점
 #   people:   이 방에 서 있는 캐릭터 (말을 걸 수 있음) → people 칸에 따로
+#
+#  ── 방탈출 칸 (조사 지점에 추가로 쓸 수 있는 것) ──
+#   item:     주울 수 있는 아이템 id (items.yaml)
+#   flag:     누르면 켜지는 flag
+#   hide_if:  이 flag 가 켜지면 지점이 사라짐 (다 뒤진 서랍 등)
+#   closeup:  누르면 들어가는 클로즈업 화면 id (아래 closeups). 클로즈업 안에도 지점을 둘 수 있어 몇 단계든 들어감
+#   use:      아이템을 써야 열리는 곳   { item, flag, before, success, wrong, done, consume, clue, give_item, closeup }
+#   lock:     번호 자물쇠·순서 맞추기  { type: number|sequence, answer, choices, flag, hint, before, success, wrong, clue, give_item, closeup }
+#
+#  ── 사람 칸 ──
+#   time:     이 시간대에만 이 방에 있음 (morning / day / night, 여러 개면 [morning, day])
+#   needs:    이 flag 가 켜져야 나타남
+#   lines:    처음 말을 걸면 하는 인사 (topics 가 없으면 이것만 나옴)
+#   topics:   대화 주제 메뉴  { id, label, lines 또는 knot, needs, affinity(이 이상일 때만), clue, habit, effects }
+#   present:  증거·아이템을 보여 줬을 때 반응 { 단서나 아이템 id: 대사 목록 또는 "knot:이름" }
+#             사진은 "photo:방id" 로 (예: photo:dining — 식당을 찍은 사진을 보여 줬을 때)
+#             목록에 없는 걸 보여 주면 characters.yaml 의 present_unknown 반응
+#
+#  ── 조사 전체 칸 ──
+#   bgs:       이번 조사에서 방 배경 바꾸기 { 방 id: 배경 이름 } (밤 버전, 어질러진 버전)
+#   closeups:  클로즈업 화면들 { id: { title, image(public/assets/closeup/), text, enter, hotspots } }
+#   diffs:     휴대폰 사진과 비교해 찾을 달라진 곳 { 방 id: [ { id, rect, lines, clue } ] }
+#              → 전에 찍어 둔 그 방 사진이 있으면 "사진과 비교" 버튼이 생김
+#   bgm:       조사 중 음악 (없으면 config.yaml 의 investigation.bgm)
 # ═══════════════════════════════════════════════════════════════
 
 ch1_search:
@@ -54,16 +78,87 @@ ch1_search:
             - TODO
           # knot: ch1_talk_elena      # 선택지가 있는 대화라면 knot 사용
 
+    # ── 아래 식당·주방·복도는 방탈출 기능 예시입니다. 글과 위치를 바꿔 쓰거나 지우세요 ──
     dining:
-      hotspots: []
-      people: []
+      hotspots:
+        # 번호 자물쇠 예시: 주방 찻잔 속 쪽지(0417)가 답
+        - id: clock_safe
+          label: 벽시계 아래 작은 금고
+          rect: [60, 20, 12, 18]
+          lock:
+            type: number
+            answer: "0417"
+            flag: ch1_safe_open
+            hint: 네 자리 숫자
+            before:
+              - 번호 자물쇠가 달린 작은 금고다.
+            success:
+              - 철컥, 금고가 열렸다.
+            wrong:
+              - 꿈쩍도 하지 않는다.
+            done:
+              - 이미 열어 둔 금고다.
+            clue: ""
+      people:
+        # 대화 주제 · 보여 주기 예시
+        - who: daya
+          emotion: normal
+          pos: left
+          time: [morning, day]
+          lines:
+            - TODO
+          topics:
+            - id: smalltalk
+              label: 잡담
+              lines:
+                - TODO
+            - id: alibi
+              label: 어젯밤 어디 있었어?
+              lines:
+                - TODO
+            - id: secret
+              label: (친해지면) 털어놓을 이야기
+              affinity: 3
+              lines:
+                - TODO
+            - id: habit
+              label: 평소에 뭐 하고 지내?
+              habit: example        # 이 대화로 다야의 습관 "example" 을 알게 됨
+              lines:
+                - TODO
+          present:
+            example_clue:
+              - TODO
 
     kitchen:
-      hotspots: []
+      hotspots:
+        # 클로즈업 예시: 찻잔을 누르면 찻잔 속 화면으로
+        - id: teacup
+          label: 식은 찻잔
+          rect: [55, 55, 10, 12]
+          lines:
+            - 누군가 마시다 만 찻잔이다. 바닥에 뭔가 보인다.
+          closeup: teacup_inside
       people: []
 
     corridor:
-      hotspots: []
+      hotspots:
+        # 아이템 사용 예시: 녹슨 열쇠로 여는 서랍장
+        - id: drawer
+          label: 잠긴 서랍장
+          rect: [10, 45, 10, 18]
+          use:
+            item: rusty_key
+            flag: ch1_drawer_open
+            before:
+              - 서랍장이 잠겨 있다. 작은 열쇠 구멍이 있다.
+            success:
+              - 열쇠가 딱 맞는다. 서랍이 열렸다.
+            wrong:
+              - 맞지 않는다.
+            done:
+              - 열어 둔 서랍장이다.
+            closeup: drawer_inside
       people: []
 
     guest_rooms:
@@ -73,3 +168,43 @@ ch1_search:
     study:
       hotspots: []
       people: []
+
+  # ── 클로즈업 화면 ──
+  #  image 가 없으면 text 가 설명 창으로 뜹니다. 그림을 만들면 public/assets/closeup/ 에 넣고 이름을 적으세요.
+  closeups:
+    teacup_inside:
+      title: 찻잔 속
+      image: teacup_inside
+      text: 찻잔 바닥에 젖은 쪽지가 붙어 있다. 받침 밑에도 뭔가 반짝인다.
+      hotspots:
+        - id: note
+          label: 젖은 쪽지
+          rect: [40, 40, 20, 20]
+          lines:
+            - 번진 글씨로 숫자가 적혀 있다.
+          item: wet_note
+        - id: saucer
+          label: 받침 밑
+          rect: [65, 70, 20, 15]
+          lines:
+            - 받침 밑에 작은 열쇠가 테이프로 붙어 있었다.
+          item: rusty_key
+    drawer_inside:
+      title: 서랍 안
+      image: drawer_inside
+      text: 서랍 안에 오래된 편지 뭉치가 들어 있다.
+      hotspots: []
+
+  # ── 사진 비교로 찾는 달라진 곳 ──
+  #  예) 어제 찍은 식당 사진과 지금 식당을 비교하면 찻잔 위치가 달라져 있다
+  diffs:
+    dining:
+      - id: moved_cup
+        rect: [70, 50, 8, 10]
+        lines:
+          - 어제 사진에서는 찻잔이 여기 없었다.
+        clue: ""
+
+  # 이번 조사에서 방 배경 바꾸기 예시 (밤 버전 그림을 만들면)
+  # bgs:
+  #   dining: dining_night

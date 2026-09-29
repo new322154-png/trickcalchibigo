@@ -13,6 +13,8 @@ chX_trial:
   # Q: 이 재판의 제목은? (재판 시작 컷인 아래에 작게 표시)
   title: TODO
   checkpoint: chX_trial
+  # 교주 의심도가 가득 찬 채로 이 재판에 오면 대신 열릴 "교주 피고 재판" id (같은 형식으로 trials 에 따로 작성)
+  # if_suspected: 
 
   # ── 결과별로 이어질 대본 knot ──
   #  이 knot 들은 content/story/chX/ 안의 ink 파일에 이미 자리가 만들어져 있습니다.

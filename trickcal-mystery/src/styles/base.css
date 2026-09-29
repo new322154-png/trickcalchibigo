@@ -497,3 +497,93 @@ body.debug-spots .hotspot-label { display: block; }
 .end-card.t-branch small { color: var(--accent-2); }
 .end-card.locked { opacity: .5; }
 .end-card:hover { border-color: var(--line-strong); }
+
+/* ═══ 방탈출: 클로즈업 · 자물쇠 · 고르기 · 사진 비교 ═════════ */
+/* 클로즈업: 방 위에 크게 뜨는 그림 + 그 안의 조사 지점 */
+.closeup { position: absolute; inset: 0; background: rgba(6, 4, 10, .78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; animation: fadein .2s; pointer-events: auto; }
+.closeup-title { font-size: 30px; font-weight: 700; letter-spacing: 2px; }
+.closeup-title:empty { display: none; }
+.closeup-box { position: relative; width: 1440px; aspect-ratio: 16 / 9; max-height: 810px; border: 1px solid var(--line-strong); border-radius: var(--radius-lg); overflow: hidden; background: var(--glass-strong); box-shadow: var(--shadow); }
+.closeup-img { width: 100%; height: 100%; object-fit: cover; }
+.closeup-noimg { position: absolute; inset: 0; display: grid; place-items: center; padding: 80px; text-align: center; font-size: 30px; line-height: 1.7; color: var(--text-dim); white-space: pre-line; }
+.closeup-text { max-width: 1400px; font-size: 22px; color: var(--text-dim); text-align: center; }
+.closeup-back { position: absolute; left: 60px; bottom: 40px; }
+
+/* 자물쇠 */
+.lock .modal-panel { min-width: 760px; }
+.lock-hint { color: var(--text-dim); text-align: center; font-size: 22px; }
+.lock-dials { display: flex; justify-content: center; gap: 18px; padding: 20px 0; }
+.dial { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.dial button { width: 84px; height: 44px; background: rgba(241,235,226,.05); border: 1px solid var(--line-strong); border-radius: 10px; color: var(--text-dim); font-size: 18px; }
+.dial button:hover { color: var(--accent); border-color: var(--accent); }
+.dial-val { width: 84px; height: 110px; display: grid; place-items: center; font-size: 64px; font-weight: 700; font-variant-numeric: tabular-nums; background: rgba(0,0,0,.35); border: 1px solid var(--line-strong); border-radius: 12px; color: var(--accent); }
+.seq-shown { display: flex; justify-content: center; gap: 12px; padding: 12px 0; }
+.seq-slot { min-width: 110px; height: 70px; display: grid; place-items: center; padding: 0 14px; border: 1px dashed var(--line-strong); border-radius: 10px; font-size: 24px; }
+.seq-slot.filled { border-style: solid; border-color: var(--accent); color: var(--accent); }
+.seq-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.lock-tools, .pick-tools { display: flex; justify-content: center; gap: 12px; margin-top: 18px; }
+.lock-ok { border-color: var(--accent); color: var(--accent); }
+
+/* 가진 것 고르기 */
+.picker .modal-panel { width: 1200px; }
+.pick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-height: 560px; overflow: auto; padding-top: 10px; }
+.pick-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; background: rgba(241,235,226,.04); border: 1px solid var(--line); border-radius: var(--radius); transition: .15s; }
+.pick-card:hover { border-color: var(--accent); background: var(--glass-hover); }
+.pick-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
+.pick-mark { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; font-size: 30px; color: var(--text-dim); border: 1px dashed var(--line); border-radius: 8px; }
+.pick-card b { font-size: 20px; font-weight: 600; text-align: center; }
+
+/* 사진 비교 */
+.compare { position: absolute; inset: 0; background: rgba(6,4,10,.9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; pointer-events: auto; }
+.cmp-head { display: flex; align-items: baseline; gap: 20px; font-size: 30px; }
+.cmp-head span { color: var(--accent); font-size: 24px; }
+.cmp-row { display: flex; gap: 24px; }
+.cmp-pane { position: relative; width: 880px; aspect-ratio: 16 / 9; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; }
+.cmp-pane img { width: 100%; height: 100%; object-fit: cover; }
+.cmp-cap { position: absolute; left: 12px; top: 12px; padding: 4px 14px; border-radius: 999px; background: var(--glass-strong); font-size: 18px; }
+.cmp-spot { position: absolute; background: transparent; border: none; border-radius: 50%; cursor: crosshair; }
+.cmp-spot.found { border: 3px solid var(--accent-2); box-shadow: 0 0 16px var(--accent-2); cursor: default; }
+
+/* 조사 버튼 */
+.inv-compare { border-color: var(--accent-2); }
+
+/* ═══ 수첩: 인물 카드 · 진실 조각 ═════════════════════════ */
+.nb-people { grid-template-columns: repeat(2, 1fr); }
+.nb-item.person { display: flex; flex-direction: column; gap: 6px; }
+.person-head { display: flex; align-items: center; gap: 16px; }
+.person-icon { flex: none; width: 64px; height: 64px; border-radius: 50%; overflow: hidden; border: 1px solid var(--line-strong); display: grid; place-items: center; font-weight: 700; font-size: 26px; background: var(--glass); }
+.person-icon img { width: 100%; height: 100%; object-fit: cover; }
+.person-name { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
+.person-name b { font-size: 26px; }
+.person-status { font-size: 16px; color: var(--accent-2); letter-spacing: 1px; }
+.person-aff { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.person-aff small { font-size: 16px; color: var(--text-dim); }
+.aff-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.aff-fill { height: 100%; background: linear-gradient(90deg, #c0445f, #d9b872); }
+.nb-item.locked { border-color: rgba(192,68,95,.5); }
+.habits { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.habits > small:first-child { width: 100%; font-size: 15px; letter-spacing: 2px; color: var(--accent); }
+.habit { padding: 4px 12px; border-radius: 999px; font-size: 17px; border: 1px solid var(--line-strong); }
+.habit.unknown { color: var(--text-dim); border-style: dashed; }
+.habit.odd { border-color: var(--accent-2); color: #fff; background: rgba(192,68,95,.25); }
+.odd-mark { margin-left: 8px; font-size: 13px; color: var(--accent-2); }
+.habit-count { margin-left: auto; font-size: 14px; color: var(--text-dim); }
+.nb-item p.anomaly { margin: 0; font-size: 18px; color: #f0a0b0; }
+.nb-truths { grid-template-columns: 1fr; }
+.nb-truths .sys-progress { margin: 0; }
+.nb-item.truth b { font-family: var(--font-title); font-size: 24px; }
+.nb-item.truth.locked { opacity: .5; border-style: dashed; }
+
+/* HUD: 갇힌 사람 */
+.party-member { position: relative; }
+.party-member.locked { filter: grayscale(.6) brightness(.7); border-color: var(--accent-2); }
+.party-lock { position: absolute; right: -4px; bottom: -4px; font-size: 18px; }
+
+/* 휴대폰 사진첩 */
+.album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.album-item { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(241,235,226,.04); border: 1px solid var(--line); border-radius: 10px; font-size: 16px; color: var(--text-dim); }
+.album-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; }
+.map-floors { margin-bottom: 10px; }
+
+.hud-clock { position: absolute; top: 92px; right: 40px; font-size: 18px; letter-spacing: 2px; color: var(--text-dim); text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+.closeup-box:has(.closeup-noimg) + .closeup-text { display: none; }

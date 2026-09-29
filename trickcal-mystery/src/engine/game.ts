@@ -7,8 +7,8 @@
 import { C, cfg, charId, names, t } from './content';
 import { events } from './events';
 import {
-  P, S, addAffinity, addSuspicion, applyEffect, giveClue, giveConclusion, logAction,
-  newState, savePersist, setFlag, setState, unvanish, vanish,
+  P, S, addAffinity, addSuspicion, applyEffect, confine, giveClue, giveConclusion, giveItem, giveTruth,
+  learnHabit, logAction, loseItem, newState, release, savePersist, setFlag, setState, setTime, unvanish, vanish,
 } from './state';
 import * as story from './story';
 import type { Line } from './story';
@@ -284,6 +284,19 @@ class Game {
       case 'timer': this.nextChoiceTimer = Number(arg || 0); break;
       case 'notify': this.notify(arg); break;
       case 'suspect': break; // 의심 표시 정답 표시용 (onSuspect 에서 읽음)
+      case 'mismatch': break; // 습관과 어긋난 말 표시용 (onSuspect 에서 읽음)
+      // 방탈출
+      case 'item': giveItem(arg); await this.tutorial('items'); break;
+      case 'lose_item': loseItem(arg); break;
+      // 시간
+      case 'time': setTime(arg); break;
+      case 'day': S.day = /^[+-]/.test(arg) ? S.day + Number(arg) : Number(arg || S.day + 1); refreshHud(); break;
+      // 재판 결과 · 진실
+      case 'confine': confine(charId(arg) ?? arg); await this.tutorial('confine'); break;
+      case 'release': release(charId(arg) ?? arg); break;
+      case 'truth': giveTruth(arg); await this.tutorial('truth'); break;
+      // 습관 도감
+      case 'habit': learnHabit(arg); await this.tutorial('habits'); break;
       default:
         console.warn(`[태그] 모르는 태그 #${cmd}`);
     }
@@ -346,8 +359,26 @@ class Game {
   // ── 의심 표시 ───────────────────────────────────
 
   onSuspect(line: Line) {
-    const tag = line.tags.find((t) => t.startsWith('suspect'));
     const who = line.speakerId!;
+    // 습관과 어긋난 말: #mismatch:erpin.calls_kyoju
+    const mm = line.tags.find((t) => t.startsWith('mismatch'));
+    if (mm) {
+      const key = mm.split(':')[1]?.trim() ?? '';
+      const [owner, habit] = key.split('.');
+      if (S.habits.includes(key)) {
+        if (!S.anomalies.some((a) => a.who === owner && a.habit === habit)) {
+          S.anomalies.push({ who: owner, habit, text: line.body });
+          events.emit('anomaly', { who: owner, habit });
+        }
+        toast(t('toast.anomaly_found').replace(/^\[.*\]$/, '평소와 다르다… 수첩에 기록했다.'), 'warn');
+        void this.tutorial('mismatch');
+      } else {
+        // 습관을 아직 모르면 "뭔가 이상한데" 정도만
+        toast(t('toast.anomaly_vague').replace(/^\[.*\]$/, '뭔가 걸리는데… 이 사람의 평소 모습을 더 알아야 할 것 같다.'));
+      }
+      return;
+    }
+    const tag = line.tags.find((t) => t.startsWith('suspect'));
     if (tag !== undefined) {
       const id = tag.split(':')[1]?.trim() || null;
       if (!S.marks.some((m) => m.id === id && id !== null)) {
@@ -442,7 +473,8 @@ class Game {
       P.tutorialsSeen.push(id);
       savePersist();
     }
-    const pages = asArray(tut.pages).filter((p) => !isTodo(p));
+    // yaml 에 적은 \n 은 줄바꿈으로
+    const pages = asArray(tut.pages).filter((p) => !isTodo(p)).map((p) => String(p).replace(/\\n/g, '\n'));
     if (pages.length === 0) return; // 아직 안 쓴 튜토리얼은 건너뜀
     const speaker = isTodo(tut.speaker) ? 'system' : tut.speaker;
     const who = charId(speaker);

@@ -19,6 +19,13 @@ export interface GameEvents {
   ending: { id: string };
   toast: { text: string; kind?: string };
   stateLoaded: {};
+  item: { id: string; gained: boolean };
+  confine: { who: string; confined: boolean };
+  truth: { id: string };
+  habit: { key: string };
+  anomaly: { who: string; habit: string };
+  time: { time: string };
+  photo: { id: string };
 }
 
 type Handler<T> = (payload: T) => void;
