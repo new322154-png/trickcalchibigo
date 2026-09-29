@@ -21,41 +21,50 @@ cg:
 #  id:     public/assets/bgm/ 안의 파일 이름 (확장자 없이). 대본의 #bgm:이름 과 같게.
 #  art:    원판에 들어갈 정사각형 그림 (public/assets/ 기준, 없으면 타이틀 그림)
 #  artist: 만든 사람 (예: Suno · 제작자 이름)
+#  loop:   게임에서 곡을 한 번 튼 뒤 끊김 없이 반복할 구간 [시작초, 끝초]. 비우면 곡 전체를 반복
 # Q: 곡마다 제목과 한 줄 설명을 뭐라고 붙일까요?
 music:
   - id: title
     title: 타이틀
     artist: TODO
     desc: TODO
+    loop: [46.45, 104.777]   # 게임에서 반복할 구간 (초)
     unlock: always
   - id: airship
     title: 빵주 기내
     artist: TODO
     desc: TODO
+    loop: [19.0, 42.596]   # 게임에서 반복할 구간 (초)
   - id: rain
     title: 폭우 속 섬
     artist: TODO
     desc: TODO
+    loop: [40.45, 67.877]   # 게임에서 반복할 구간 (초)
   - id: mansion
     title: 저택
     artist: TODO
     desc: TODO
+    loop: [25.75, 44.936]   # 게임에서 반복할 구간 (초)
   - id: daily
     title: 일상
     artist: TODO
     desc: TODO
+    loop: [4.9, 40.426]   # 게임에서 반복할 구간 (초)
   - id: night
     title: 밤
     artist: TODO
     desc: TODO
+    loop: [35.4, 124.146]   # 게임에서 반복할 구간 (초)
   - id: before_trial
     title: 재판 직전
     artist: TODO
     desc: TODO
+    loop: [2.6, 56.786]   # 게임에서 반복할 구간 (초)
   - id: after_trial
     title: 재판 후
     artist: TODO
     desc: TODO
+    loop: [3.45, 108.805]   # 게임에서 반복할 구간 (초)
 
 # ── 영상 ──
 #  file: public/assets/ 기준 파일 이름 (확장자 없이). .webm 과 .mp4 를 차례로 찾음

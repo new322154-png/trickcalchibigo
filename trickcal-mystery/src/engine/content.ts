@@ -228,6 +228,7 @@ export interface ExtraItem {
   art?: string;        // 음악: 원판에 들어갈 그림 (public/assets/ 기준)
   file?: string;       // 영상: 파일 이름 (확장자 없이, public/assets/ 기준)
   poster?: string;     // 영상: 재생 전 그림
+  loop?: [number, number]; // 음악: 게임에서 반복할 구간 [시작초, 끝초]
   unlock?: 'always' | 'seen' | string;  // always / seen(게임에서 보거나 들으면) / 엔딩 id
 }
 export interface ExtrasDef {
