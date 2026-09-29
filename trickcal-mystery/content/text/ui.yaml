@@ -78,6 +78,8 @@ confirm:
   snoop: TODO
   # Q: 재판에서 증거를 제시하기 직전 "정말 이걸로?" 확인 문구는? (필요 없으면 "")
   present: TODO
+  # Q: 지난 대화에서 "여기로 돌아가기"를 누를 때 묻는 말은? (그 뒤 진행은 사라짐)
+  rewind: TODO
 
 # ── 알림 (화면 위에 잠깐 뜨는 작은 창) ──
 toast:
@@ -107,6 +109,7 @@ dialogue:
   player_name: 교주
   backlog_title: 지난 대화
   backlog_empty: 아직 나눈 대화가 없다.
+  rewind: 여기로 돌아가기
   # Q: 선택지 제한 시간이 있을 때 표시하는 문구는?
   choice_timer: TODO
 

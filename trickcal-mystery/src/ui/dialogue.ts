@@ -1,23 +1,32 @@
 /**
- * 대화창: 이름표, 타자기 효과, 의심 표시 버튼, 오토/스킵, 선택지, 지난 대화(백로그).
+ * 대화창: 이름표, 말하는 캐릭터 상반신, 타자기 효과, 의심 표시 버튼, 오토/스킵, 선택지, 지난 대화(백로그).
+ * 오토·스킵·지난 대화 버튼은 화면 오른쪽 위(hud.ts)에 있다.
+ * 대화창 위에서 마우스 오른쪽 클릭 = 창 숨기기, 휠 위로 = 지난 대화
  */
-import { C, charColor, charName, names, t } from '../engine/content';
-import { P, isRead, markRead } from '../engine/state';
+import { C, cfg, charColor, charName, emotionKey, names, t } from '../engine/content';
+import { P, S, isRead, markRead } from '../engine/state';
 import { Line } from '../engine/story';
 import { sleep, waitFor } from '../engine/util';
-import { clear, h, layer } from './dom';
-import { setTalking } from './scene';
+import { asset, clear, h, layer } from './dom';
+import { hasTalkMotion, setTalking, spritePath } from './scene';
 
 export interface BacklogEntry {
+  kind?: 'line' | 'choice';
   name: string;
   color: string;
   text: string;
+  speakerId?: string;
+  /** 이 대사로 되돌아갈 때 쓰는 저장 상태 (최근 몇십 줄만 보관) */
+  snap?: unknown;
 }
 
 export const backlog: BacklogEntry[] = [];
 const BACKLOG_MAX = 300;
 
 let box: HTMLElement;
+let bustEl: HTMLElement;
+let bustImg: HTMLImageElement;
+let bustSrc = { normal: '', talk: '' };
 let nameEl: HTMLElement;
 let textEl: HTMLElement;
 let nextEl: HTMLElement;
@@ -43,26 +52,20 @@ export function buildDialogue(handlers: { onMenu: () => void; onBacklog: () => v
   textEl = h('div.dlg-text');
   nextEl = h('div.dlg-next', '▼');
   suspectBtn = h('button.dlg-suspect', { onclick: (e: Event) => { e.stopPropagation(); onSuspect(); } }, names('%suspect_button%'));
-  const controls = h(
-    'div.dlg-controls',
-    h('button', { onclick: stop(() => toggleAuto()) , 'data-k': 'auto' }, t('menu.auto')),
-    h('button', { onclick: stop(() => toggleSkip()), 'data-k': 'skip' }, t('menu.skip')),
-    h('button', { onclick: stop(handlers.onBacklog) }, t('menu.backlog')),
-    h('button', { onclick: stop(handlers.onNotebook) }, t('menu.notebook')),
-    h('button', { onclick: stop(handlers.onPhone) }, t('menu.phone')),
-    h('button', { onclick: stop(hideUiOnce) }, t('menu.hide_ui')),
-    h('button', { onclick: stop(handlers.onMenu) }, t('menu.settings')),
-  );
-  box = h('div.dlg-box.hidden', nameEl, textEl, nextEl, suspectBtn, controls);
+  bustImg = h('img') as HTMLImageElement;
+  bustImg.onerror = () => bustEl.classList.add('hidden');
+  bustEl = h('div.dlg-bust.hidden', bustImg);
+  // 틀 그림(dlg-frame)이 상반신보다 앞에 그려져서, 캐릭터가 리본 위로 튀어나온 것처럼 보인다
+  box = h('div.dlg-box.hidden', bustEl, h('div.dlg-frame'), nameEl, textEl, nextEl, suspectBtn);
+  box.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    hideUiOnce();
+  });
+  box.addEventListener('wheel', (e) => {
+    if ((e as WheelEvent).deltaY < 0) handlers.onBacklog();
+  }, { passive: true });
   choicesEl = h('div.choices');
   root.append(box, choicesEl);
-}
-
-function stop(fn: () => void) {
-  return (e: Event) => {
-    e.stopPropagation();
-    fn();
-  };
 }
 
 export function setSuspectHandler(fn: (line: Line) => void) {
@@ -92,11 +95,11 @@ export function stopAutoSkip() {
   refreshControls();
 }
 function refreshControls() {
-  box?.querySelector('[data-k="auto"]')?.classList.toggle('on', auto);
-  box?.querySelector('[data-k="skip"]')?.classList.toggle('on', skip);
+  document.querySelector('[data-k="auto"]')?.classList.toggle('on', auto);
+  document.querySelector('[data-k="skip"]')?.classList.toggle('on', skip);
 }
 
-function hideUiOnce() {
+export function hideUiOnce() {
   box.classList.add('ui-hidden');
   const back = () => {
     box.classList.remove('ui-hidden');
@@ -107,13 +110,40 @@ function hideUiOnce() {
 
 export function showBox(v: boolean) {
   box.classList.toggle('hidden', !v);
+  // 오토·스킵 버튼은 대화 중에만
+  document.querySelectorAll('.hud-dlg-only').forEach((el) => el.classList.toggle('hidden', !v));
+}
+
+/** 말하는 캐릭터 상반신 (config.yaml characters.bust) */
+function setBust(line: Line) {
+  const id = line.speakerId;
+  const def = id ? C.characters[id] : undefined;
+  const hide = () => {
+    bustEl.classList.add('hidden');
+    bustSrc = { normal: '', talk: '' };
+  };
+  if (!cfg('characters.bust', true) || !id || !def) return hide();
+  if (def.player && def.show_sprite !== true) return hide();
+  const emo = emotionKey(line.emotion ?? S.stage.sprites[id]?.emotion);
+  bustSrc = { normal: asset(spritePath(id, emo)), talk: hasTalkMotion(id, emo) ? asset(spritePath(id, emo, true)) : '' };
+  const [dx, dy] = Array.isArray(def.bust) ? def.bust : [0, 0];
+  bustImg.style.height = cfg('characters.bust_height', 900) + 'px';
+  bustImg.style.transform = `translate(calc(-50% + ${Number(dx) || 0}px), ${Number(dy) || 0}px)`;
+  if (bustImg.getAttribute('src') !== bustSrc.normal) bustImg.src = bustSrc.normal;
+  bustEl.classList.remove('hidden');
+}
+
+function setBustTalking(talking: boolean) {
+  if (!bustSrc.talk) return;
+  const want = talking ? bustSrc.talk : bustSrc.normal;
+  if (bustImg.getAttribute('src') !== want) bustImg.src = want;
 }
 
 /**
  * 한 줄 출력. 클릭하면 다음으로.
  * opts.suspectable=false 면 의심 버튼 숨김 (조사·튜토리얼 등)
  */
-export async function say(line: Line, opts: { suspectable?: boolean } = {}): Promise<void> {
+export async function say(line: Line, opts: { suspectable?: boolean; snap?: unknown } = {}): Promise<void> {
   saying = true;
   try {
     await sayInner(line, opts);
@@ -122,7 +152,7 @@ export async function say(line: Line, opts: { suspectable?: boolean } = {}): Pro
   }
 }
 
-async function sayInner(line: Line, opts: { suspectable?: boolean }): Promise<void> {
+async function sayInner(line: Line, opts: { suspectable?: boolean; snap?: unknown }): Promise<void> {
   currentLine = line;
   markedThisLine = false;
   showBox(true);
@@ -134,10 +164,18 @@ async function sayInner(line: Line, opts: { suspectable?: boolean }): Promise<vo
   nameEl.style.display = name ? '' : 'none';
   nameEl.style.setProperty('--name-color', charColor(line.speakerId ?? line.speakerName));
   box.classList.toggle('narration', !name);
+  setBust(line);
 
   const text = names(line.body);
-  backlog.push({ name: nameEl.textContent ?? '', color: charColor(line.speakerId), text });
+  backlog.push({ kind: 'line', name: nameEl.textContent ?? '', color: charColor(line.speakerId ?? line.speakerName), text, speakerId: line.speakerId, snap: opts.snap });
   if (backlog.length > BACKLOG_MAX) backlog.shift();
+  // 되돌아가기용 상태는 최근 것만 남긴다 (메모리 절약)
+  let kept = 0;
+  const limit = cfg('text.rewind_limit', 60);
+  for (let i = backlog.length - 1; i >= 0; i--) {
+    if (!backlog[i].snap) continue;
+    if (++kept > limit) backlog[i].snap = undefined;
+  }
 
   const alreadyRead = isRead(line.id);
   markRead(line.id);
@@ -151,6 +189,7 @@ async function sayInner(line: Line, opts: { suspectable?: boolean }): Promise<vo
 
   // 타자기 효과
   setTalking(line.speakerId, true);
+  setBustTalking(true);
   nextEl.classList.remove('show');
   let done = false;
   textEl.textContent = '';
@@ -164,6 +203,7 @@ async function sayInner(line: Line, opts: { suspectable?: boolean }): Promise<vo
     done = true;
     textEl.textContent = text;
     setTalking(line.speakerId, false);
+    setBustTalking(false);
     nextEl.classList.add('show');
   })();
 

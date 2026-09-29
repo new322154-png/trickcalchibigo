@@ -15,12 +15,15 @@ text:
   speed: 35               # 1초에 나오는 글자 수 (설정 메뉴 기본값)
   auto_delay: 1.2         # 오토 모드에서 한 줄 다 나온 뒤 기다리는 초
   skip_unread: false      # 읽지 않은 대사도 스킵할지 (설정 메뉴 기본값)
+  rewind_limit: 60        # 지난 대화에서 "여기로 돌아가기"가 되는 최근 대사 수
 
 characters:
   ext: gif                # 캐릭터 파일 확장자: gif / webp / png
   talk_suffix: _talk      # 말하는 모션 파일 꼬리표. smile_talk.gif 가 있으면 대사 출력 중에만 사용
   default_emotion: normal
   dim_listeners: true     # 말하지 않는 캐릭터를 살짝 어둡게
+  bust: true              # 대화창 리본 위에 말하는 캐릭터 상반신 띄우기
+  bust_height: 900        # 상반신으로 띄울 때 그림 높이(px). 캐릭터별 위치는 characters.yaml 의 bust: [가로, 세로]
 
 # ── 조사·추리 ──
 suspect:

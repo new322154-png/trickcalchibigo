@@ -44,10 +44,16 @@ export function setCg(name: string) {
 // ── 캐릭터 ──
 const talkAvailable = new Map<string, boolean>();
 
-function spritePath(id: string, emotion: string, talk = false) {
+export function spritePath(id: string, emotion: string, talk = false) {
   const ext = cfg('characters.ext', 'gif');
   const suffix = talk ? cfg('characters.talk_suffix', '_talk') : '';
   return `characters/${id}/${emotion}${suffix}.${ext}`;
+}
+
+/** 말하는 모션 파일이 있는지 (확인 전이면 false, 확인은 백그라운드로 시작) */
+export function hasTalkMotion(id: string, emotion: string) {
+  checkTalk(id, emotion);
+  return talkAvailable.get(`${id}/${emotion}`) === true;
 }
 
 function checkTalk(id: string, emotion: string) {

@@ -69,15 +69,24 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 .susp-meter { position: absolute; top: 100px; left: 20px; display: flex; align-items: center; gap: 12px; font-size: 22px; }
 .susp-track { width: 240px; height: 14px; background: rgba(0,0,0,.5); border-radius: 7px; overflow: hidden; }
 .susp-fill { height: 100%; width: 0; background: var(--danger); transition: width .5s; }
-.hud-corner { position: absolute; top: 20px; right: 20px; display: flex; gap: 12px; }
-.hud-btn { width: 72px; height: 72px; border-radius: 50%; background: var(--btn-bg); border: var(--btn-border); font-size: 32px; }
-.phone-badge { position: absolute; top: 110px; right: 20px; width: 72px; height: 72px; border-radius: 50%; background: var(--accent-2); border: none; font-size: 34px; animation: pulse 1.2s infinite; }
+/* 오른쪽 위 버튼 줄: 오토 · 스킵 · 지난 대화 · 수첩 · 무전기 · 설정 */
+.hud-corner { position: absolute; top: 22px; right: 24px; display: flex; gap: 10px; align-items: center; }
+.hud-pill { position: relative; padding: 8px 30px; font-size: 22px; font-weight: 700; color: var(--text); text-shadow: 0 2px 0 rgba(40, 6, 18, .8); filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+.hud-pill.on { color: #fff4dc; filter: brightness(1.25) drop-shadow(0 0 12px rgba(242, 179, 94, .9)); }
+.hud-pill.on::after { content: ''; position: absolute; left: 50%; bottom: -8px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 8px var(--accent-2); }
+.hud-dot { position: absolute; top: -4px; right: 4px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); border: 2px solid #f3e9d2; animation: pulse 1.2s infinite; }
 @keyframes pulse { 50% { transform: scale(1.1) } }
 
 /* ── 대화창 ── */
 /* 1760×379 = dialogue_box.png 크기 그대로. 글자는 안쪽 종이 영역(위 100px, 좌 96px)부터 */
-.dlg-box { position: absolute; left: 80px; width: 1760px; bottom: 20px; height: 379px; background: var(--dlg-bg); border: var(--dlg-border); border-radius: var(--dlg-radius); padding: 104px 120px 60px 96px;
+.dlg-box { position: absolute; left: 80px; width: 1760px; bottom: 20px; height: 379px; padding: 104px 120px 60px 96px; }
+.dlg-frame { position: absolute; inset: 0; z-index: 1; background: var(--dlg-bg); border: var(--dlg-border); border-radius: var(--dlg-radius);
   background-image: var(--img-dialogue); background-size: 100% 100%; background-repeat: no-repeat; filter: drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
+.dlg-box > :not(.dlg-frame):not(.dlg-bust) { z-index: 2; }
+.dlg-text { position: relative; }
+/* 말하는 캐릭터 상반신: 리본 가운데(x≈340) 위로 솟고, 아랫부분은 대화창 틀에 가려짐 */
+.dlg-bust { position: absolute; z-index: 0; left: 40px; width: 600px; bottom: calc(100% - 150px); height: 560px; overflow: hidden; pointer-events: none; }
+.dlg-bust img { position: absolute; left: 50%; top: 0; width: auto; }
 .dlg-box.ui-hidden { opacity: 0; }
 /* 이름: 대화창 그림 왼쪽 위 리본 위에 올라감 */
 .dlg-name { position: absolute; top: 24px; left: 196px; width: 290px; height: 52px; line-height: 52px; text-align: center; font-size: var(--font-size-name); font-weight: 800; letter-spacing: 1px; white-space: nowrap;
@@ -85,7 +94,7 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 .dlg-name:empty { display: none; }
 .dlg-text { font-size: var(--font-size-dialogue); line-height: 1.55; white-space: pre-wrap; word-break: keep-all; color: var(--dlg-text-color, var(--text)); }
 .dlg-box.narration .dlg-text { color: var(--ink-dim, var(--text-dim)); font-style: italic; }
-.dlg-next { position: absolute; right: 104px; bottom: 96px; opacity: 0; color: #6b1f3a; font-size: 30px; }
+.dlg-next { position: absolute; right: 104px; bottom: 64px; opacity: 0; color: #6b1f3a; font-size: 30px; }
 .dlg-next.show { opacity: 1; animation: bob 1s infinite; }
 @keyframes bob { 50% { translate: 0 6px } }
 /* 의심 버튼: 220×79, 왼쪽 38% 는 돋보기 자리라 글자는 오른쪽에 */
@@ -93,10 +102,6 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
   background-image: var(--img-suspect); background-size: 100% 100%; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); transition: filter .15s, transform .1s; }
 .dlg-suspect:hover:not(.used) { filter: brightness(1.15) drop-shadow(0 0 12px rgba(242,179,94,.7)); transform: scale(1.04); }
 .dlg-suspect.used { filter: grayscale(.7) brightness(.8); opacity: .7; }
-.dlg-controls { position: absolute; right: 104px; bottom: 46px; display: flex; gap: 6px; }
-.dlg-controls button { background: none; border: none; font-size: 20px; font-weight: 600; color: var(--ink-dim, var(--text-dim)); padding: 4px 10px; }
-.dlg-controls button:hover { color: #6b1f3a; }
-.dlg-controls button.on { color: var(--danger); }
 
 .choices { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 18px; width: 1100px; }
 /* 선택지: 1100×90 = choice.png 크기 */
@@ -145,8 +150,26 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 
 /* ── 수첩 · 백로그 · 갤러리 · 흐름도 ── */
 .backlog .modal-panel, .notebook .modal-panel, .flowchart .modal-panel, .gallery .modal-panel { width: 1500px; height: 880px; }
-.backlog-row { display: flex; gap: 24px; font-size: 26px; }
-.backlog-row b { min-width: 160px; }
+/* ── 지난 대화 ── */
+.backlog-screen { display: block; background: rgba(14, 8, 20, .82); backdrop-filter: blur(3px); }
+.bl-title { position: absolute; top: 30px; left: 60px; font-size: 40px; font-weight: 800; color: var(--accent); text-shadow: 0 2px 0 #000; }
+.bl-close { position: absolute; top: 24px; right: 36px; width: 76px; height: 76px; border-radius: 50%; font-size: 36px; font-weight: 900; color: var(--text); background: rgba(40, 20, 34, .9); border: 3px solid var(--accent); }
+.bl-close:hover { filter: brightness(1.2); }
+.bl-list { position: absolute; top: 110px; bottom: 30px; left: 0; right: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 46px; padding: 40px 0 20px; scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+.bl-entry { display: grid; grid-template-columns: 170px 880px 110px; align-items: center; gap: 26px; }
+.bl-side { display: flex; justify-content: center; }
+.bl-icon { width: 150px; height: 150px; border-radius: 50%; overflow: hidden; background: #f3e9d2; border: 5px solid var(--accent); box-shadow: 0 6px 14px rgba(0,0,0,.5); display: grid; place-items: center; font-size: 56px; font-weight: 800; color: var(--ink); }
+.bl-icon img { width: 100%; height: 100%; object-fit: cover; }
+.bl-card { position: relative; min-height: 130px; padding: 38px 60px 30px; display: grid; place-items: center; text-align: center; background: linear-gradient(#fbf4e3, #efe2c4); color: var(--ink); border: 4px solid #c9a45c; border-radius: 60px; box-shadow: inset 0 0 0 3px #fff8e8, 0 8px 18px rgba(0,0,0,.5); }
+.bl-text { font-size: 30px; font-weight: 700; line-height: 1.45; white-space: pre-wrap; word-break: keep-all; }
+.bl-name { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); min-width: 300px; padding: 4px 30px; border-radius: 24px; text-align: center; font-size: 28px; font-weight: 800; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.45); background: var(--c, #6b1f3a); border: 3px solid #c9a45c; }
+.bl-entry.me .bl-name { background: #c9a45c; color: #3a2418; text-shadow: none; }
+.bl-entry.narration .bl-card { background: rgba(243, 233, 210, .14); border-color: rgba(201,164,92,.5); box-shadow: none; color: var(--text); }
+.bl-entry.narration .bl-text { font-style: italic; font-weight: 500; }
+.bl-rewind { width: 76px; height: 76px; border-radius: 50%; font-size: 40px; font-weight: 900; color: #fff4dc; background: radial-gradient(circle at 35% 30%, #c8466a, #6b1f3a); border: 4px solid #c9a45c; box-shadow: 0 6px 12px rgba(0,0,0,.5); }
+.bl-rewind:hover { filter: brightness(1.2) drop-shadow(0 0 10px rgba(242,179,94,.8)); }
+.bl-choice span { display: inline-block; padding: 10px 36px; border-radius: 30px; font-size: 26px; font-weight: 700; color: var(--accent-2); border: 2px dashed rgba(242,179,94,.6); background: rgba(0,0,0,.35); }
+.backlog-screen .empty { font-size: 30px; color: var(--text-dim); }
 .nb-tabs { display: flex; gap: 8px; }
 .nb-tab { background: none; border: none; border-bottom: 4px solid transparent; padding: 8px 20px; }
 .nb-tab.on { border-color: var(--accent); color: var(--accent); }

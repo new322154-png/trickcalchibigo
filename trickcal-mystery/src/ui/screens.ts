@@ -184,13 +184,72 @@ export function openSettings() {
 
 // ── 지난 대화 ─────────────────────────────────────
 
+function nameTag(name: string, color: string) {
+  const el = h('div.bl-name', name);
+  el.style.setProperty('--c', color);
+  return el;
+}
+
+/**
+ * 대사 카드가 세로로 쌓이는 화면. 카드 위에 이름표, 왼쪽에 동그란 초상화(icon.png),
+ * 오른쪽에 "여기로 돌아가기" 버튼 (일반 대본 진행 중의 최근 대사만).
+ */
 export function openBacklog() {
-  const m = openModal(t('menu.backlog'), 'backlog');
-  if (backlog.length === 0) m.body.appendChild(h('p.empty', t('dialogue.backlog_empty')));
-  for (const b of backlog) {
-    m.body.appendChild(h('div.backlog-row', b.name ? h('b', { style: { color: b.color } }, b.name) : null, h('span', b.text)));
-  }
-  requestAnimationFrame(() => (m.body.scrollTop = m.body.scrollHeight));
+  if (document.querySelector('.backlog-screen')) return;
+  const list = h('div.bl-list');
+  const close = () => {
+    wrap.remove();
+    window.removeEventListener('keydown', onKey, true);
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      close();
+    }
+  };
+  const wrap = h(
+    'div.modal.backlog-screen',
+    { onclick: (e: Event) => e.target === wrap && close() },
+    h('div.bl-title', t('dialogue.backlog_title')),
+    h('button.bl-close', { onclick: close, title: t('settings.close') }, '✕'),
+    list,
+  );
+  if (backlog.length === 0) list.appendChild(h('p.empty', t('dialogue.backlog_empty')));
+  backlog.forEach((b, i) => {
+    if (b.kind === 'choice') {
+      list.appendChild(h('div.bl-choice', h('span', '▶ ' + b.text)));
+      return;
+    }
+    const def = b.speakerId ? C.characters[b.speakerId] : undefined;
+    let icon: HTMLElement | null = null;
+    if (def && !def.player) {
+      const img = h('img', { src: asset(`characters/${b.speakerId}/icon.png`), alt: def.name }) as HTMLImageElement;
+      img.onerror = () => img.replaceWith(h('span', def.name.slice(0, 1)));
+      icon = h('div.bl-icon', img);
+    }
+    const rewind = b.snap
+      ? h('button.bl-rewind', {
+          title: t('dialogue.rewind'),
+          onclick: async () => {
+            if (!(await confirm(t('confirm.rewind'), '이 대사로 돌아갈까요? 그 뒤의 진행은 사라집니다.'))) return;
+            close();
+            game.rewindTo(i);
+          },
+        }, '↺')
+      : null;
+    const color = b.color && !isTodo(b.color) ? b.color : 'var(--name-default)';
+    list.appendChild(
+      h(`div.bl-entry${b.name ? '' : '.narration'}${def?.player ? '.me' : ''}`,
+        h('div.bl-side', icon),
+        h('div.bl-card',
+          b.name ? nameTag(b.name, color) : null,
+          h('div.bl-text', b.text)),
+        h('div.bl-side', rewind)),
+    );
+  });
+  layer('modal').appendChild(wrap);
+  window.addEventListener('keydown', onKey, true);
+  requestAnimationFrame(() => (list.scrollTop = list.scrollHeight));
 }
 
 // ── 수첩 ──────────────────────────────────────────

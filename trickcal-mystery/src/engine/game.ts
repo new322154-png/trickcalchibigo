@@ -38,6 +38,8 @@ class Game {
   resume: Resume = { mode: 'choices' };
   /** 모드 안에서 저장을 막을 때 true (재판 중) */
   saveLocked = false;
+  /** 조사·재판 같은 모드 안에 있는 깊이 (0 이면 일반 대본 진행 중) */
+  private modeDepth = 0;
   onTitle: () => void = () => {};
 
   // ── 시작 / 불러오기 ─────────────────────────────
@@ -53,15 +55,22 @@ class Game {
     });
   }
 
-  async loadSnapshot(snap: Snapshot) {
+  async loadSnapshot(snap: Snapshot, keepBacklog: dlg.BacklogEntry[] = []) {
     await this.start(async () => {
       applySnapshot(snap);
       scene.restoreStage();
       playBgm(S.stage.bgm);
-      dlg.backlog.length = 0;
+      dlg.backlog.splice(0, dlg.backlog.length, ...keepBacklog);
       events.emit('stateLoaded', {});
-      await this.resumeFrom(snap.resume);
+      await this.resumeFrom(snap.resume, snap);
     });
+  }
+
+  /** 지난 대화에서 고른 대사로 되돌아가기 (그 뒤의 기록은 지워짐) */
+  rewindTo(index: number) {
+    const entry = dlg.backlog[index];
+    if (!entry?.snap) return;
+    void this.loadSnapshot(entry.snap as Snapshot, dlg.backlog.slice(0, index));
   }
 
   /** 디버그: 지금 상태 그대로 원하는 knot 으로 이동 */
@@ -84,6 +93,7 @@ class Game {
 
   private async start(setup: () => void | Promise<void>) {
     const id = ++this.runId;
+    this.modeDepth = 0;
     cancelAllWaits();
     closeAllModals();
     clear(layer('mode'));
@@ -108,10 +118,10 @@ class Game {
     if (id !== this.runId) throw new Aborted();
   }
 
-  private async resumeFrom(r: Resume) {
+  private async resumeFrom(r: Resume, snap?: Snapshot) {
     const id = this.runId;
     if (r.mode === 'line' && r.line) {
-      await this.showLine(r.line);
+      await this.showLine(r.line, snap);
       this.check(id);
       await this.runDeferred(r.line.tags);
     } else if (r.mode === 'trial' && r.id) {
@@ -135,7 +145,9 @@ class Game {
         this.check(id);
         if (line.body.trim()) {
           this.resume = { mode: 'line', line };
-          await this.showLine(line);
+          // 일반 대본 진행 중일 때만 되돌아가기 지점을 남긴다 (조사·재판 안에서는 X)
+          const snap = this.modeDepth === 0 && !this.saveLocked ? makeSnapshot(this.resume) : undefined;
+          await this.showLine(line, snap);
           this.check(id);
         }
         await this.flushQueued();
@@ -150,7 +162,7 @@ class Game {
         this.nextChoiceTimer = 0;
         const idx = await dlg.choose(choices.map((c) => ({ text: c.text })), timer);
         this.check(id);
-        dlg.backlog.push({ name: '▶', color: 'var(--accent)', text: names(choices[idx].text) });
+        dlg.backlog.push({ kind: 'choice', name: '', color: '', text: names(choices[idx].text) });
         story.choose(choices[idx].index);
         continue;
       }
@@ -172,7 +184,7 @@ class Game {
     if (line.speakerId) this.lastSpeaker = line.speakerId;
   }
 
-  private async showLine(line: Line) {
+  private async showLine(line: Line, snap?: Snapshot) {
     this.fillSpeaker(line);
     // 감정만 바뀌는 경우 표정 갱신
     if (line.speakerId && line.emotion) {
@@ -180,7 +192,7 @@ class Game {
     }
     const def = line.speakerId ? C.characters[line.speakerId] : undefined;
     const suspectable = !!def && !def.player;
-    await dlg.say(line, { suspectable });
+    await dlg.say(line, { suspectable, snap });
   }
 
   /** yaml 에 적힌 대사 목록 재생 */
@@ -290,34 +302,39 @@ class Game {
     const runId = this.runId;
     let next: ModeResult = null;
     dlg.stopAutoSkip();
-    switch (mode) {
-      case 'investigate':
-        this.resume = { mode: 'investigate', id };
-        next = await runInvestigation(id);
-        break;
-      case 'board':
-        this.resume = { mode: 'board', id };
-        next = await runBoard(id);
-        break;
-      case 'trial':
-        this.checkpoint(C.trials[id]?.checkpoint ?? id, { mode: 'trial', id });
-        this.saveLocked = true;
-        try {
-          next = await runTrial(id);
-        } finally {
-          this.saveLocked = false;
-        }
-        break;
-      case 'phone':
-        next = await runPhoneThread(id, true);
-        break;
-      case 'ending':
-        await runEnding(id);
-        // runEnding 이 체크포인트/타이틀로 이동시키므로 여기로 돌아오지 않음
-        throw new Aborted();
-      case 'title':
-        this.toTitle();
-        throw new Aborted();
+    this.modeDepth++;
+    try {
+      switch (mode) {
+        case 'investigate':
+          this.resume = { mode: 'investigate', id };
+          next = await runInvestigation(id);
+          break;
+        case 'board':
+          this.resume = { mode: 'board', id };
+          next = await runBoard(id);
+          break;
+        case 'trial':
+          this.checkpoint(C.trials[id]?.checkpoint ?? id, { mode: 'trial', id });
+          this.saveLocked = true;
+          try {
+            next = await runTrial(id);
+          } finally {
+            this.saveLocked = false;
+          }
+          break;
+        case 'phone':
+          next = await runPhoneThread(id, true);
+          break;
+        case 'ending':
+          await runEnding(id);
+          // runEnding 이 체크포인트/타이틀로 이동시키므로 여기로 돌아오지 않음
+          throw new Aborted();
+        case 'title':
+          this.toTitle();
+          throw new Aborted();
+      }
+    } finally {
+      if (this.runId === runId) this.modeDepth--;
     }
     this.check(runId);
     if (next) {

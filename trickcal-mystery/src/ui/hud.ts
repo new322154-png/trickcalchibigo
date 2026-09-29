@@ -1,5 +1,6 @@
 /**
- * 화면 위에 늘 떠 있는 것들: 인원 체크(일행 초상화), 교주 의심도 게이지, 새 메시지 표시.
+ * 화면 위에 늘 떠 있는 것들: 인원 체크(일행 초상화), 교주 의심도 게이지,
+ * 오른쪽 위 버튼 줄(오토·스킵·지난 대화·수첩·무전기·설정, 새 메시지 표시).
  * 게임 상태 이벤트를 듣고 알림(토스트)도 여기서 띄운다.
  */
 import { C, cfg, charName, t } from '../engine/content';
@@ -7,25 +8,37 @@ import { events } from '../engine/events';
 import { S } from '../engine/state';
 import { asset, clear, h, layer } from './dom';
 import { toast } from './modal';
+import { toggleAuto, toggleSkip } from './dialogue';
 
 let partyEl: HTMLElement;
 let suspEl: HTMLElement;
 let phoneBadge: HTMLElement;
 
-export function buildHud(handlers: { onMenu: () => void; onNotebook: () => void; onPhone: () => void }) {
+export function buildHud(handlers: { onMenu: () => void; onNotebook: () => void; onPhone: () => void; onBacklog: () => void }) {
   const root = clear(layer('hud'));
-  const onPhone = handlers.onPhone;
-  // 오른쪽 위 버튼 (조사 화면처럼 대화창이 없을 때도 메뉴를 열 수 있게)
+  const btn = (label: string, onclick: () => void, extra = '') =>
+    h(`button.btn.hud-pill${extra}`, { onclick: (e: Event) => { e.stopPropagation(); onclick(); } }, label);
+  // 오른쪽 위 버튼 줄. 오토·스킵은 대화창이 떠 있을 때만 보인다 (dialogue.showBox)
+  const auto = btn(t('menu.auto'), () => toggleAuto(), '.hud-dlg-only.hidden');
+  auto.dataset.k = 'auto';
+  const skip = btn(t('menu.skip'), () => toggleSkip(), '.hud-dlg-only.hidden');
+  skip.dataset.k = 'skip';
+  const phone = btn(t('menu.phone'), handlers.onPhone);
+  phoneBadge = h('span.hud-dot.hidden');
+  phone.appendChild(phoneBadge);
   const corner = h(
     'div.hud-corner',
-    h('button.hud-btn', { onclick: handlers.onNotebook, title: C.game.names.notebook }, '📓'),
-    h('button.hud-btn', { onclick: handlers.onMenu, title: t('menu.settings') }, '⚙'),
+    auto,
+    skip,
+    btn(t('menu.backlog'), handlers.onBacklog),
+    btn(t('menu.notebook'), handlers.onNotebook),
+    phone,
+    btn(t('menu.settings'), handlers.onMenu),
   );
   root.appendChild(corner);
   partyEl = h('div.party-bar', { title: C.game.names.party_bar });
   suspEl = h('div.susp-meter', h('span.susp-label', C.game.names.suspicion), h('div.susp-track', h('div.susp-fill')));
-  phoneBadge = h('button.phone-badge.hidden', { onclick: onPhone }, '✉');
-  root.append(partyEl, suspEl, phoneBadge);
+  root.append(partyEl, suspEl);
   suspEl.style.display = cfg('suspicion.show_meter', true) ? '' : 'none';
   refreshHud();
 }

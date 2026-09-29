@@ -31,7 +31,7 @@ try {
   setState(newState());
   createStory();
   buildStage();
-  buildHud({ onMenu: () => openGameMenu(), onNotebook: () => openNotebook(), onPhone: () => openPhoneApp() });
+  buildHud({ onMenu: () => openGameMenu(), onNotebook: () => openNotebook(), onPhone: () => openPhoneApp(), onBacklog: () => openBacklog() });
   window.addEventListener('keydown', (e) => {
     // ESC: 열린 창이 없으면 게임 메뉴
     if (e.key === 'Escape' && !document.querySelector('#layer-modal > *')) openGameMenu();

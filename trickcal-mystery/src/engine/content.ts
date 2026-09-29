@@ -14,6 +14,8 @@ export interface CharacterDef {
   name: string;
   player?: boolean;
   show_sprite?: boolean | string;
+  /** 대화창 위 상반신 위치 보정 [가로, 세로] px */
+  bust?: [number, number];
   persuasion?: 'emotion' | 'evidence' | 'trust';
   start_affinity?: number;
   color?: string;
