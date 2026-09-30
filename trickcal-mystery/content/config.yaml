@@ -96,6 +96,7 @@ save:
 # 타이틀 로고 그림 (public/assets/ui/ 안). 비워 두면 코드로 그린 금빛 글자 로고
 #  예) title_logo: title_logo.png
 title_logo: title_logo_gold.png
+title_logo_mask: title_logo_gold_mask.png   # 반짝임이 지나갈 글자 모양 (그림자 없는 원본)
 title_logo_fx: true
 title_fx: rain           # 타이틀 위 분위기 입자: rain(비) / dust(먼지) / embers(불티) / none      # 로고 효과 (촛불 일렁임·반짝임·달빛)
 

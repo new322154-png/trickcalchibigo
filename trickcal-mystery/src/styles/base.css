@@ -801,11 +801,11 @@ body.debug-spots .hotspot-label { display: block; }
 
 /* ── 그림 로고 + 효과 ──
    영상 배경 위라서 블렌드 모드·큰 흐림 필터는 쓰지 않는다 (영상이 멈추거나 버벅이는 원인) */
-.title-logo:has(.logo-art) { left: 90px; top: 50px; }
-.logo-art { position: relative; width: 600px; }
-.logo-art .title-logo-img { position: relative; display: block; width: 100%; opacity: 0; transform-origin: 50% 50%; will-change: opacity, transform;
-  filter: drop-shadow(0 0 1px rgba(20,8,30,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.65)); }
-.logo-art.ready .title-logo-img { animation: logoReveal 2.4s cubic-bezier(.22,.61,.36,1) .15s both; }
+.title-logo:has(.logo-art) { left: 70px; top: 30px; }
+.logo-art { position: relative; width: 640px; }
+.logo-art .title-logo-img { position: relative; display: block; width: 100%; opacity: 0; animation: none; transform-origin: 50% 50%; will-change: opacity, transform; filter: none; }
+/* 그림자는 그림 파일에 미리 구워 둠 (필터로 그리면 매 프레임 다시 계산해서 버벅임) */
+.logo-art.ready .title-logo-img { animation: logoReveal 2.4s cubic-bezier(.22,.61,.36,1) .5s both; }
 @keyframes logoReveal { 0% { opacity: 0; transform: translateY(14px) scale(1.035) } 100% { opacity: 1; transform: none } }
 /* 뒤쪽 은은한 빛 (흐림 필터 대신 부드러운 그라데이션) — 나타난 뒤 촛불처럼 일렁임 */
 .logo-art.fx::before { content: ''; position: absolute; inset: -22% -26%; pointer-events: none; opacity: 0;
@@ -818,13 +818,16 @@ body.debug-spots .hotspot-label { display: block; }
 .logo-art.ready .logo-flash { animation: logoFlash 2.6s ease-out .2s both; }
 @keyframes logoFlash { 0% { opacity: 0 } 35% { opacity: 1 } 100% { opacity: 0 } }
 /* 글자 모양 그대로 빛이 스치는 반짝임 */
-.logo-shine { position: absolute; inset: 0; pointer-events: none; opacity: 0; -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+.logo-shine { position: absolute; inset: 0; will-change: background-position; pointer-events: none; opacity: 0; -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
   background: linear-gradient(105deg, transparent 42%, rgba(255,246,220,.55) 50%, transparent 58%) no-repeat; background-size: 250% 100%; background-position: 150% 0; }
 .logo-art.ready .logo-shine { opacity: 1; animation: logoShine 7s ease-in-out 2.8s infinite; }
 @keyframes logoShine { 0% { background-position: 150% 0 } 28%, 100% { background-position: -60% 0 } }
 /* 초승달 빛 */
-.logo-moon { position: absolute; right: -3%; top: -6%; width: 18%; aspect-ratio: 1; pointer-events: none; opacity: 0;
+.logo-moon { position: absolute; right: 1%; top: -1%; width: 16%; aspect-ratio: 1; pointer-events: none; opacity: 0;
   background: radial-gradient(closest-side, rgba(255,236,190,.4), rgba(255,220,160,.1) 60%, transparent); }
 .logo-art.ready .logo-moon { animation: glowIn 1.5s ease-out 1.6s forwards, moonPulse 6s ease-in-out 3.2s infinite; }
 @keyframes moonPulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.15) } }
 .title-screen > .ambient { z-index: 0; pointer-events: none; }
+
+/* 예전 그림 로고용 규칙(떨어지는 등장·둥실·뒤쪽 큰 빛)이 새 로고에 섞여 먼저 나타났다가 다시 시작되며 튀던 것 막기 */
+.title-logo:has(.logo-art)::before { content: none; }

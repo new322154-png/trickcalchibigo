@@ -94,7 +94,9 @@ export function showTitle() {
         // 그림 로고 + 효과: 촛불 일렁임, 글자 위로 빛이 스치는 반짝임, 초승달 빛 (config.yaml title_logo_fx)
         const url = asset(`ui/${file}`);
         const fx = cfg('title_logo_fx', true);
-        const mask = { WebkitMaskImage: `url("${url}")`, maskImage: `url("${url}")` } as Record<string, string>;
+        // 반짝임은 그림자 없는 글자 모양(…_mask.png)에만. 파일이 없으면 로고 그림 그대로
+        const murl = asset(`ui/${String(cfg('title_logo_mask', '') || file)}`);
+        const mask = { WebkitMaskImage: `url("${murl}")`, maskImage: `url("${murl}")` } as Record<string, string>;
         const img = h('img.title-logo-img', { src: url, alt: txt(C.game.title, '') }) as HTMLImageElement;
         const art = h(`div.logo-art${fx ? '.fx' : ''}`,
           img,
