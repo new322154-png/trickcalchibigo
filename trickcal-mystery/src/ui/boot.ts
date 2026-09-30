@@ -51,7 +51,7 @@ export function showBoot(onDone: () => void) {
   setAmbient('none');
   const root = clear(layer('modal'));
   const apps: BootApp[] = (cfg('boot.apps', null) as BootApp[] | null) ?? DEFAULT_APPS;
-  const gameTitle = s(C.game.title, '트릭컬 미스터리');
+  const gameTitle = s(C.game.title, '트릭컬 더 할로윈');
 
   // ── 시계 ──
   const now = () => {

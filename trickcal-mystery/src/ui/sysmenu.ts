@@ -124,7 +124,7 @@ export function openSystem(tab: SysTab = 'config') {
     runCleanups();
     clear(side);
     side.appendChild(
-      h('div.sys-logo', h('small', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL MYSTERY')), h('b', txt(C.game.title, '제목 미정'))),
+      h('div.sys-logo', h('small', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL THE HALLOWEEN')), h('b', txt(C.game.title, '제목 미정'))),
     );
     let found: TabDef | undefined;
     for (const g of tabs()) {

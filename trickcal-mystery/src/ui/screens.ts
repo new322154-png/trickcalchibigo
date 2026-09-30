@@ -65,8 +65,8 @@ export function showTitle() {
   // 제목: 작은 머리글(✦ 선) + 명조 제목 + 부제. 글자는 game.yaml 의 title / subtitle
   const logo = h(
     'div.title-logo',
-    h('div.title-kicker', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL MYSTERY')),
-    h('h1.title-text', ...[...txt(C.game.title, '제목 미정')].map((ch, i) => h('span.tl', { style: { animationDelay: `${0.4 + i * 0.09}s` } }, ch))),
+    h('div.title-kicker', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL THE HALLOWEEN')),
+    h('h1.title-text', ...[...txt(C.game.title, '제목 미정')].map((ch, i) => h('span.tl', { style: { animationDelay: `${0.4 + i * 0.09}s` } }, ch === ' ' ? '\u00a0' : ch))),
     h('div.title-sub', txt(C.game.subtitle)),
   );
   // 움직이는 배경: public/assets/ui/title_bg.webm / .mp4 (소리 없이 반복). 없거나 재생이 막히면 그림 배경만 보인다

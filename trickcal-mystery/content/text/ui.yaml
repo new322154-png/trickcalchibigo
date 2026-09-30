@@ -10,7 +10,7 @@
 # ── 타이틀 화면 ──
 title:
   # 제목 위 작은 머리글 (영문 대문자 추천). 비우려면 ""
-  kicker: TRICKCAL MYSTERY
+  kicker: TRICKCAL THE HALLOWEEN
   extra: 엑스트라            # CG · 음악 · 영상 · 엔딩
   new_game: 새로 시작
   continue: 이어하기          # 가장 최근 저장에서 시작
