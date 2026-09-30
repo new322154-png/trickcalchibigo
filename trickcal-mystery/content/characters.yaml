@@ -15,6 +15,7 @@
 #                대사를 수십만 자 쓰다 보면 말투가 흔들리니 여기 적어 두면 좋아요.
 #  emotions:     이 캐릭터가 가진 감정 파일 목록. 아래 emotion_aliases 의 영문 이름 기준.
 #  start_affinity: 게임 시작 시 교주 호감도 (config.yaml 의 min~max 범위)
+#  sink:         (선택) 옷자락·꼬리가 발보다 아래로 늘어진 그림이라 떠 보일 때, 그림을 몇 % 내릴지  예) sink: 16
 #  scale:        (선택) 그림 크기 보정. 다른 캐릭터와 머리 크기가 안 맞을 때  예) scale: 0.9
 #  bust:         (선택) 대화창 위 상반신 위치 보정 [가로, 세로] px. 예) bust: [0, 40] → 40px 아래로
 #  habits:       평소 습관 도감 (가짜 찾기용). 수첩 인물 탭에 모인 만큼 보임
@@ -295,6 +296,7 @@ tig:
 uros:
   name: 우로스
   scale: 1.05             # 옷자락이 넓어 원본이 살짝 작게 그려져 있음
+  sink: 16                # 옷자락 끝이 발보다 앞·아래로 늘어져 있어 발이 바닥에 닿게 내림
   persuasion: emotion
   start_affinity: 0
   color: TODO

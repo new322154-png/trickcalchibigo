@@ -16,7 +16,8 @@ export interface CharacterDef {
   show_sprite?: boolean | string;
   /** 대화창 위 상반신 위치 보정 [가로, 세로] px */
   bust?: [number, number];
-  scale?: number;               // 캐릭터 그림 크기 보정 (1 = 기본). 캐릭터끼리 머리 크기를 맞출 때
+  scale?: number;
+  sink?: number;                // 발 아래로 옷자락 등이 늘어진 캐릭터: 그림을 이만큼(%) 내려 발이 바닥에 닿게               // 캐릭터 그림 크기 보정 (1 = 기본). 캐릭터끼리 머리 크기를 맞출 때
   persuasion?: 'emotion' | 'evidence' | 'trust';
   start_affinity?: number;
   color?: string;

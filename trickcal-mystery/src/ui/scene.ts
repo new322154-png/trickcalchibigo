@@ -215,7 +215,10 @@ function renderSprite(id: string) {
   el.style.left = x + '%';
   // 캐릭터 크기·서 있는 높이 (config.yaml characters.height / characters.bottom)
   el.style.height = `calc(${cfg('characters.height', '92%')} * ${C.characters[id]?.scale ?? 1})`;
-  el.style.bottom = String(cfg('characters.bottom', '0%'));
+  // sink: 옷자락이 발보다 아래로 늘어진 그림은 그만큼 내려서 발이 바닥에 닿게
+  const sc = C.characters[id]?.scale ?? 1;
+  const sink = (C.characters[id]?.sink ?? 0) / 100;
+  el.style.bottom = sink ? `calc(${cfg('characters.bottom', '0%')} - ${cfg('characters.height', '92%')} * ${sc * sink})` : String(cfg('characters.bottom', '0%'));
   el.dataset.emotion = st.emotion;
   checkTalk(id, st.emotion);
   const img = h('img') as HTMLImageElement;
