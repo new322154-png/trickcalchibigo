@@ -17,6 +17,7 @@ import { isTodo, sleep } from '../engine/util';
 import { asset, clear, h, layer } from './dom';
 import { confirm, toast } from './modal';
 import { sfx } from './sfx';
+import { enterFullscreen, exitFullscreen, isFullscreen } from './fullscreen';
 
 export type SysTab = 'save' | 'load' | 'config' | 'controls' | 'cg' | 'music' | 'video' | 'endings' | 'flowchart';
 
@@ -304,10 +305,10 @@ function renderConfig(body: HTMLElement) {
     if (e.key === 'Enter') applyName();
   };
 
-  const isFull = () => !!document.fullscreenElement;
+  const isFull = () => isFullscreen();
   const setFull = (v: boolean) => {
-    if (v && !isFull()) document.documentElement.requestFullscreen().catch(() => {});
-    if (!v && isFull()) document.exitFullscreen().catch(() => {});
+    if (v && !isFull()) void enterFullscreen();
+    if (!v && isFull()) void exitFullscreen();
   };
 
   body.append(

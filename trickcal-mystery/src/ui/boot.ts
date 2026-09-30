@@ -15,6 +15,7 @@ import { setHudVisible } from './hud';
 import { preloadSfx, sfx } from './sfx';
 import { setAmbient } from './effects';
 import { preloadTitle } from './screens';
+import { autoFullscreen } from './fullscreen';
 
 interface BootApp {
   id: string;
@@ -171,6 +172,7 @@ export function showBoot(onDone: () => void) {
 
   async function launchGame(btn: Element) {
     busy = true;
+    autoFullscreen(); // 모바일: 게임 앱을 누르는 순간 전체화면 + 가로 고정
     sfx('open');
     const logo = h('img.splash-logo', { src: asset(`ui/boot/${s(cfg('boot.splash_image', ''), 'fanmade.png')}`), alt: '' });
     const panel = h('div.boot-panel.splash', logo);
