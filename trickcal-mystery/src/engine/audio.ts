@@ -52,6 +52,11 @@ function loadBuffer(name: string): Promise<AudioBuffer | null> {
   return buffers.get(name)!;
 }
 
+/** 미리 받아서 풀어 두기 (타이틀 음악을 첫 화면에서 준비) */
+export function preloadBgm(name: string) {
+  if (name && name !== 'none') void loadBuffer(name);
+}
+
 /** extras.yaml 의 music 항목에 적힌 반복 구간 [시작초, 끝초] */
 function loopOf(name: string): [number, number] | null {
   const loop = C.extras?.music?.find((m) => m.id === name)?.loop;

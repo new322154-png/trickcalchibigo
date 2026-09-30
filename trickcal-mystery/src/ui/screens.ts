@@ -5,7 +5,7 @@ import { C, cfg, charColor, charName, names, t } from '../engine/content';
 import { game } from '../engine/game';
 import { P, S } from '../engine/state';
 import { latestSlot } from '../engine/save';
-import { playBgm } from '../engine/audio';
+import { preloadBgm, playBgm } from '../engine/audio';
 import { isTodo } from '../engine/util';
 import { asset, clear, h, layer } from './dom';
 import { backlog } from './dialogue';
@@ -55,6 +55,30 @@ function typeLogo(title: string) {
     h('h1.title-text.tl-main', ...letters),
     h('div.tl-en', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL THE HALLOWEEN')),
   );
+}
+
+/** 타이틀에 쓰는 그림·영상·음악을 미리 받아서 풀어 둔다 (스마트폰 첫 화면이 떠 있는 동안).
+ *  타이틀이 뜨는 순간 한꺼번에 불러오느라 한 번 멈췄다 나오던 것 방지 */
+const warm: unknown[] = [];
+export function preloadTitle() {
+  const imgs = ['ui/title_bg.jpg'];
+  const logo = String(cfg('title_logo', '') ?? '');
+  if (logo) imgs.push(`ui/${logo}`);
+  const mask = String(cfg('title_logo_mask', '') ?? '');
+  if (mask) imgs.push(`ui/${mask}`);
+  for (const p of imgs) {
+    const im = new Image();
+    im.src = asset(p);
+    void im.decode().catch(() => {});
+    warm.push(im);
+  }
+  const v = document.createElement('video');
+  v.muted = true;
+  v.preload = 'auto';
+  v.src = asset(v.canPlayType('video/webm') ? 'ui/title_bg.webm' : 'ui/title_bg.mp4');
+  v.load();
+  warm.push(v);
+  preloadBgm(cfg('title_bgm', 'title'));
 }
 
 export function showTitle() {
@@ -117,13 +141,14 @@ export function showTitle() {
   // 움직이는 배경: public/assets/ui/title_bg.webm / .mp4 (소리 없이 반복). 없거나 재생이 막히면 그림 배경만 보인다
   const video = h(
     'video.title-video',
-    { autoplay: true, muted: true, loop: true, playsinline: true, preload: 'auto' },
+    { muted: true, loop: true, playsinline: true, preload: 'auto' },
     h('source', { src: asset('ui/title_bg.webm'), type: 'video/webm' }),
     h('source', { src: asset('ui/title_bg.mp4'), type: 'video/mp4' }),
   ) as HTMLVideoElement;
   video.muted = true;
   video.addEventListener('playing', () => video.classList.add('ready'));
-  void video.play().catch(() => {});
+  // 화면을 먼저 그린 뒤 영상·비를 차례로 시작 (한꺼번에 시작하면 한 번 멈칫함)
+  setTimeout(() => void video.play().catch(() => {}), 250);
   const screen = h(
     'div.title-screen',
     video,
@@ -135,7 +160,7 @@ export function showTitle() {
   screen.style.backgroundImage = `url(${asset('ui/title_bg.jpg')}), url(${asset('ui/title_bg.png')}), radial-gradient(circle at 50% 30%, #3a2850, #120c18)`;
   root.appendChild(screen);
   // 타이틀 위로 내리는 비 (코드로 그림). config.yaml 의 title_fx: rain / dust / embers / none
-  setAmbient(String(cfg('title_fx', 'rain')), screen);
+  setTimeout(() => { if (screen.isConnected) setAmbient(String(cfg('title_fx', 'rain')), screen); }, 700);
 }
 
 // ── 게임 중 메뉴 · 저장 · 설정 ─────────────────────

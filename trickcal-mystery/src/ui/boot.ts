@@ -14,6 +14,7 @@ import { asset, clear, h, layer } from './dom';
 import { setHudVisible } from './hud';
 import { preloadSfx, sfx } from './sfx';
 import { setAmbient } from './effects';
+import { preloadTitle } from './screens';
 
 interface BootApp {
   id: string;
@@ -50,6 +51,7 @@ export function showBoot(onDone: () => void) {
   (layer('dialogue').querySelector('.dlg-box') as HTMLElement)?.classList.add('hidden');
   setAmbient('none');
   preloadSfx(['pop']);
+  preloadTitle();
   const root = clear(layer('modal'));
   const apps: BootApp[] = (cfg('boot.apps', null) as BootApp[] | null) ?? DEFAULT_APPS;
   const gameTitle = s(C.game.title, '트릭컬 더 할로윈');
@@ -111,7 +113,7 @@ export function showBoot(onDone: () => void) {
 
   const screen = h(
     'div.ph-screen',
-    { style: { backgroundImage: `url(${asset(s(cfg('boot.wallpaper', ''), 'ui/title_bg.jpg'))})` } },
+    { style: { backgroundImage: `url(${asset(s(cfg('boot.wallpaper', ''), 'ui/boot/wallpaper.jpg'))})` } },
     h('div.ph-status', statusTime, h('span.ph-sys', h('i.sig'), h('i.wifi'), h('i.bat'))),
     h('div.ph-widget', clockBig, clockDate),
     grid,
@@ -121,7 +123,7 @@ export function showBoot(onDone: () => void) {
   const phone = h('div.ph', screen, h('img.ph-frame', { src: asset('ui/boot/phone_frame.png'), alt: '' }));
   const hint = h('div.boot-hint', s(cfg('boot.hint', ''), '앱을 눌러 게임을 시작하세요'));
   const wrap = h('div.boot', phone, hint);
-  wrap.style.setProperty('--boot-bg', `url("${new URL(asset(s(cfg('boot.wallpaper', ''), 'ui/title_bg.jpg')), location.href).href}")`);
+  wrap.style.setProperty('--boot-bg', `url("${new URL(asset(s(cfg('boot.backdrop', ''), 'ui/title_bg.jpg')), location.href).href}")`);
   root.appendChild(wrap);
 
   // 데스크톱: Enter 로 바로 게임 앱
