@@ -18,11 +18,13 @@ text:
   rewind_limit: 60        # 지난 대화에서 "여기로 돌아가기"가 되는 최근 대사 수
 
 characters:
-  ext: gif                # 캐릭터 파일 확장자: gif / webp / png
+  ext: webp               # 캐릭터 파일 확장자: webp(권장, 움직이는 것도 됨) / gif / png. 없으면 다른 확장자도 찾아봄
   talk_suffix: _talk      # 말하는 모션 파일 꼬리표. smile_talk.gif 가 있으면 대사 출력 중에만 사용
   default_emotion: normal
   dim_listeners: true     # 말하지 않는 캐릭터를 살짝 어둡게
-  bust: true              # 대화창 리본 위에 말하는 캐릭터 상반신 띄우기
+  height: 58%             # 캐릭터 그림 높이 (화면 높이 기준). SD 캐릭터라 작게
+  bottom: 26%             # 화면 아래에서 발까지 높이. 대화창 바로 위에 서 있게
+  bust: false             # 대화창 옆에 말하는 캐릭터 상반신 띄우기 (SD 캐릭터는 전신이 보이니 끔)
   bust_height: 900        # 상반신으로 띄울 때 그림 높이(px). 캐릭터별 위치는 characters.yaml 의 bust: [가로, 세로]
 
 # ── 조사·추리 ──

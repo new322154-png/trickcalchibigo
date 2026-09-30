@@ -148,8 +148,12 @@ export function setCg(name: string) {
 // ── 캐릭터 ──
 const talkAvailable = new Map<string, boolean>();
 
-export function spritePath(id: string, emotion: string, talk = false) {
-  const ext = cfg('characters.ext', 'gif');
+/** 캐릭터마다 실제로 찾은 확장자 (webp / gif / png 섞여 있어도 됨) */
+const extOf = new Map<string, string>();
+const EXTS = () => [...new Set([cfg('characters.ext', 'webp'), 'webp', 'gif', 'png'])];
+
+export function spritePath(id: string, emotion: string, talk = false, extOverride?: string) {
+  const ext = extOverride ?? extOf.get(id) ?? cfg('characters.ext', 'webp');
   const suffix = talk ? cfg('characters.talk_suffix', '_talk') : '';
   return `characters/${id}/${emotion}${suffix}.${ext}`;
 }
@@ -209,20 +213,39 @@ function renderSprite(id: string) {
   }
   const x = POSITIONS[st.pos] ?? (Number.parseFloat(st.pos) || 50);
   el.style.left = x + '%';
+  // 캐릭터 크기·서 있는 높이 (config.yaml characters.height / characters.bottom)
+  el.style.height = String(cfg('characters.height', '92%'));
+  el.style.bottom = String(cfg('characters.bottom', '0%'));
   el.dataset.emotion = st.emotion;
   checkTalk(id, st.emotion);
   const img = h('img') as HTMLImageElement;
-  img.src = asset(spritePath(id, st.emotion));
-  img.onerror = () => {
-    // 그 표정 그림이 없으면 기본 표정으로, 그것도 없으면 임시 표시
-    if (st.emotion !== 'normal' && !img.dataset.fellBack) {
-      img.dataset.fellBack = '1';
-      img.src = asset(spritePath(id, 'normal'));
-      return;
-    }
-    img.replaceWith(h('div.sprite-missing', charName(id), h('small', st.emotion)));
+  // 표정을 바꿀 때는 새 그림이 다 불러와진 뒤에 바꿔 끼운다 (그 사이 빈 화면·깜빡임 방지)
+  const req = String((Number(el.dataset.req) || 0) + 1);
+  el.dataset.req = req;
+  const box = el;
+  const old = [...box.children];
+  const put = (node: Element) => {
+    if (box.dataset.req !== req) return; // 그 사이 다른 표정으로 바뀜
+    old.forEach((o) => o.remove());
+    if (!node.isConnected) box.appendChild(node);
   };
-  clear(el).appendChild(img);
+  // 확장자를 차례로 시도 → 그 표정이 없으면 기본 표정 → 그것도 없으면 임시 표시
+  const tries: [string, string][] = [];
+  const exts = extOf.has(id) ? [extOf.get(id)!, ...EXTS().filter((e) => e !== extOf.get(id))] : EXTS();
+  for (const emo of st.emotion === 'normal' ? ['normal'] : [st.emotion, 'normal']) for (const e of exts) tries.push([emo, e]);
+  let n = 0;
+  const next = () => {
+    const t = tries[n++];
+    if (!t) return put(h('div.sprite-missing', charName(id), h('small', st.emotion)));
+    img.onload = () => {
+      extOf.set(id, t[1]);
+      put(img);
+    };
+    img.src = asset(spritePath(id, t[0], false, t[1]));
+  };
+  img.onerror = next;
+  next();
+  if (!old.length) box.appendChild(img);
 }
 
 /** 대사가 출력되는 동안 말하는 모션으로 교체 (파일이 있을 때만) */
