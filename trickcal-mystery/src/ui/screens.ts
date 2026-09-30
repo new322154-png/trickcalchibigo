@@ -34,6 +34,29 @@ const ICONS: Record<string, string> = {
 
 // ── 타이틀 ────────────────────────────────────────
 
+/** 글자 로고: "트릭컬" 을 작은 머리글로, 나머지를 큰 금빛 명조로. 한 글자 위에 작은 초승달 */
+function typeLogo(title: string) {
+  const parts = title.split(' ');
+  const head = parts.length > 1 ? parts[0] : '';
+  const main = parts.length > 1 ? parts.slice(1).join(' ') : title;
+  const moon = `<svg viewBox="0 0 40 40" class="tl-moon"><path d="M27 4a17 17 0 1 0 9 26A14 14 0 0 1 27 4z"/></svg>`;
+  let idx = 0;
+  const letters = [...main].map((ch) => {
+    const i = idx++;
+    const span = h('span.tl', { style: { animationDelay: `${0.7 + i * 0.12}s` } }, ch === ' ' ? '\u00a0' : ch);
+    return span;
+  });
+  // 초승달은 마지막에서 두 번째 글자(할로"윈"의 앞, "로") 위에
+  const target = letters[Math.max(0, letters.length - 2)];
+  target.classList.add('has-moon');
+  target.insertAdjacentHTML('beforeend', moon);
+  return h('div.type-logo',
+    head ? h('div.tl-head', h('i'), h('span', head), h('i')) : null,
+    h('h1.title-text.tl-main', ...letters),
+    h('div.tl-en', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL THE HALLOWEEN')),
+  );
+}
+
 export function showTitle() {
   setHudVisible(false);
   const root = layer('modal');
@@ -65,12 +88,11 @@ export function showTitle() {
   // 제목: 작은 머리글(✦ 선) + 명조 제목 + 부제. 글자는 game.yaml 의 title / subtitle
   const logo = h(
     'div.title-logo',
-    // 로고 그림(public/assets/ui/title_logo.png)이 있으면 그림으로, 없으면 글자 제목
+    // 로고: config.yaml 의 title_logo 에 그림 파일을 적으면 그림, 비워 두면 코드로 그린 글자 로고
     (() => {
-      const text = h('h1.title-text', ...[...txt(C.game.title, '제목 미정')].map((ch, i) => h('span.tl', { style: { animationDelay: `${0.4 + i * 0.09}s` } }, ch === ' ' ? '\u00a0' : ch)));
-      const img = h('img.title-logo-img', { src: asset('ui/title_logo.png'), alt: txt(C.game.title, '') }) as HTMLImageElement;
-      img.onerror = () => img.replaceWith(h('div.title-kicker', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL THE HALLOWEEN')), text);
-      return img;
+      const file = String(cfg('title_logo', '') ?? '');
+      if (file) return h('img.title-logo-img', { src: asset(`ui/${file}`), alt: txt(C.game.title, '') });
+      return typeLogo(txt(C.game.title, '제목 미정'));
     })(),
     h('div.title-sub', txt(C.game.subtitle)),
   );

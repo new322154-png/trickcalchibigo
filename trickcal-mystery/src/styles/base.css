@@ -779,3 +779,22 @@ body.debug-spots .hotspot-label { display: block; }
 @keyframes logoFloat { 0%,100% { transform: translateY(0) rotate(0) } 50% { transform: translateY(-10px) rotate(-.6deg) } }
 .title-logo:has(.title-logo-img) .title-sub { margin-left: 40px; }
 .boot-panel.splash .splash-logo { width: 760px; }
+
+/* ── 글자 로고 (코드로 그림): 금빛 명조 + 촛불 일렁임 + 작은 초승달 ── */
+.title-logo:has(.type-logo) { left: 120px; top: 96px; }
+.type-logo { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.type-logo::before { content: ''; position: absolute; left: -120px; right: -120px; top: -60px; bottom: -60px; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 55%, rgba(12,6,24,.55), transparent 70%); }
+.tl-head { display: flex; align-items: center; gap: 22px; font-family: var(--font-title); font-size: 34px; font-weight: 600; letter-spacing: 22px; padding-left: 22px; color: #e8cf98; opacity: 0;
+  text-shadow: 0 0 14px rgba(242,179,94,.35); animation: fadeUp 1s .3s forwards; }
+.tl-head i { width: 90px; height: 1px; background: linear-gradient(90deg, transparent, rgba(232,207,152,.8)); }
+.tl-head i:last-child { transform: scaleX(-1); }
+.tl-main.title-text { font-family: var(--font-title); font-size: 138px; font-weight: 700; letter-spacing: 10px; line-height: 1.05; max-width: none; white-space: nowrap;
+  animation: none; filter: drop-shadow(0 6px 18px rgba(0,0,0,.6)); }
+.tl-main .tl { position: relative;
+  background: linear-gradient(180deg, #fff3d6 0%, #f0cf86 38%, #c9934a 62%, #f3d99a 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: tlIn 1.1s cubic-bezier(.2,.8,.3,1) forwards, flicker 5s ease-in-out 2.5s infinite; }
+@keyframes flicker { 0%,100% { filter: drop-shadow(0 0 10px rgba(255,170,80,.35)) } 40% { filter: drop-shadow(0 0 18px rgba(255,170,80,.55)) } 55% { filter: drop-shadow(0 0 8px rgba(255,170,80,.25)) } 70% { filter: drop-shadow(0 0 15px rgba(255,170,80,.45)) } }
+.tl-main .has-moon .tl-moon { position: absolute; width: 46px; height: 46px; right: -14px; top: -26px; fill: #f3e2b4; transform: rotate(-18deg);
+  filter: drop-shadow(0 0 10px rgba(255,230,170,.8)); opacity: 0; animation: fadein 1.2s 2s forwards; }
+.tl-en { margin-top: 4px; font-size: 18px; letter-spacing: 12px; padding-left: 12px; color: rgba(210,190,235,.75); opacity: 0; animation: fadeUp 1s 1.8s forwards; }
