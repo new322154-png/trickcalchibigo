@@ -15,6 +15,7 @@ import {
 } from '../engine/state';
 import { asArray, isTodo, pick, waitFor } from '../engine/util';
 import { asset, clear, h, layer } from '../ui/dom';
+import { setAmbient } from '../ui/effects';
 import * as dlg from '../ui/dialogue';
 import { openModal, toast } from '../ui/modal';
 import { pickThing } from '../ui/picker';
@@ -23,7 +24,7 @@ import * as scene from '../ui/scene';
 type Action =
   | { type: 'spot'; spot: Hotspot }
   | { type: 'person'; person: SpotPerson }
-  | { type: 'door'; to: string }
+  | { type: 'door'; to: string; kind?: string; rect?: [number, number, number, number] }
   | { type: 'photo' }
   | { type: 'compare' }
   | { type: 'finish' };
@@ -70,15 +71,17 @@ export async function runInvestigation(id: string): Promise<string | null> {
           await game.sayLines(target.locked_text?.length ? target.locked_text : [t('investigation.locked_door')]);
           continue;
         }
+        const kind = action.kind ?? exitKind(room, action.to);
+        await scene.travel(kind, action.rect);
         room = action.to;
-        await enterRoom(inv, room);
+        await enterRoom(inv, room, kind);
       } else if (action.type === 'photo') {
         takePhoto(inv, room);
         await game.tutorial('camera');
       } else if (action.type === 'compare') {
         await game.tutorial('compare');
         await compareView(inv, room);
-        scene.setBg(roomBg(inv, room));
+        scene.setBg(roomBg(inv, room), bgChain(room));
       } else if (action.type === 'finish') {
         const missing = (inv.required ?? []).filter((c) => !S.evidence.includes(c));
         if (missing.length > 0) {
@@ -112,15 +115,23 @@ function peopleIn(inv: InvestigationDef, roomId: string): SpotPerson[] {
   });
 }
 
-async function enterRoom(inv: InvestigationDef, roomId: string) {
+/** 두 방 사이 이동 연출: 배경 속 출구에 적힌 kind, 없으면 페이드 */
+function exitKind(from: string, to: string) {
+  return C.rooms[from]?.exits?.find((e) => e.to === to)?.kind ?? 'fade';
+}
+
+async function enterRoom(inv: InvestigationDef, roomId: string, kind?: string) {
   const room = C.rooms[roomId];
   if (!room) {
     console.warn('[조사] locations.yaml 에 없는 방:', roomId);
+    if (kind) await scene.arrive(kind);
     return;
   }
   scene.hideAll();
-  scene.setBg(roomBg(inv, roomId));
+  scene.setBg(roomBg(inv, roomId), bgChain(roomId));
+  setAmbient(room.ambient ?? cfg('investigation.ambient', 'dust'));
   for (const p of peopleIn(inv, roomId)) scene.showChar(p.who, p.emotion, p.pos);
+  if (kind) await scene.arrive(kind);
   if (!S.visitedRooms.includes(roomId)) {
     S.visitedRooms.push(roomId);
     await game.sayLines(room.first_enter);
@@ -157,6 +168,19 @@ function render(root: HTMLElement, invId: string, inv: InvestigationDef, roomId:
     wrap.appendChild(spotButton(sp, checked, () => resolve({ type: 'spot', spot: sp })));
   }
 
+  // 배경 속 출구 (문·계단) — 누르면 연출과 함께 이동
+  for (const ex of room?.exits ?? []) {
+    if (!inv.rooms.includes(ex.to) || (ex.needs && !S.flags[ex.needs])) continue;
+    const [x, y, w, hh] = ex.rect ?? [0, 0, 10, 10];
+    const label = ex.label ?? (S.visitedRooms.includes(ex.to) ? roomName(ex.to) : t('investigation.unknown_room'));
+    const icon = ex.kind === 'stairs_up' ? '▲' : ex.kind === 'stairs_down' ? '▼' : '➜';
+    wrap.appendChild(h('button.hotspot.exit', {
+      style: { left: x + '%', top: y + '%', width: w + '%', height: hh + '%' },
+      title: label,
+      onclick: () => resolve({ type: 'door', to: ex.to, kind: ex.kind ?? 'zoom', rect: ex.rect }),
+    }, h('span.hotspot-label', `${icon} ${label}`)));
+  }
+
   // 방에 있는 사람 — 캐릭터 그림을 눌러 대화
   for (const p of peopleIn(inv, roomId)) {
     const el = layer('chars').querySelector(`[data-id="${p.who}"]`) as HTMLElement | null;
@@ -166,12 +190,21 @@ function render(root: HTMLElement, invId: string, inv: InvestigationDef, roomId:
     }
   }
 
-  const doors = (room?.doors ?? []).filter((d) => inv.rooms.includes(d));
+  const doors = [...new Set([...(room?.doors ?? []), ...(room?.exits ?? []).map((e) => e.to)])].filter((d) => inv.rooms.includes(d));
+  const doorBtn = (d: string) =>
+    h('button.btn.inv-door', { onclick: () => resolve({ type: 'door', to: d }) }, '→ ' + (S.visitedRooms.includes(d) ? roomName(d) : t('investigation.unknown_room')));
+  // 문이 많으면 "이동 ▾" 버튼 하나로 묶어 목록을 펼친다
+  const doorButtons = () => {
+    if (doors.length <= 3) return doors.map(doorBtn);
+    const pop = h('div.inv-door-pop', ...doors.map(doorBtn));
+    const btn = h('button.btn.inv-move', { onclick: (e: Event) => { e.stopPropagation(); pop.classList.toggle('open'); } }, `${tt('investigation.move', '이동')} ▾`);
+    return [h('div.inv-move-wrap', btn, pop)];
+  };
   const oldPhoto = S.photos.some((p) => p.room === roomId && (p.day !== S.day || p.time !== S.time || p.bg !== roomBg(inv, roomId)));
   const nav = h(
     'div.inv-nav',
     h('div.inv-room', roomName(roomId)),
-    ...doors.map((d) => h('button.btn.inv-door', { onclick: () => resolve({ type: 'door', to: d }) }, '→ ' + (S.visitedRooms.includes(d) ? roomName(d) : t('investigation.unknown_room')))),
+    ...doorButtons(),
     h('button.btn', { onclick: () => openMap(inv, roomId, (to) => resolve({ type: 'door', to })) }, t('investigation.open_map')),
     cfg('camera.enabled', true) ? h('button.btn', { onclick: () => resolve({ type: 'photo' }) }, tt('investigation.photo', '사진 찍기')) : null,
     oldPhoto && inv.diffs?.[roomId]?.length ? h('button.btn.inv-compare', { onclick: () => resolve({ type: 'compare' }) }, tt('investigation.compare', '사진과 비교')) : null,
@@ -184,6 +217,19 @@ function render(root: HTMLElement, invId: string, inv: InvestigationDef, roomId:
 
   wrap.append(header, nav);
   root.appendChild(wrap);
+}
+
+/** 대체 배경 목록: 이 방의 bg_fallback → 그 배경을 쓰는 방의 bg_fallback → … (마지막엔 복도) */
+function bgChain(roomId: string): string[] {
+  const out: string[] = [];
+  let fb = C.rooms[roomId]?.bg_fallback;
+  while (fb && !out.includes(fb)) {
+    out.push(fb);
+    const owner = Object.values(C.rooms).find((r) => r.bg === fb);
+    fb = owner?.bg_fallback;
+  }
+  if (!out.includes('corridor')) out.push('corridor');
+  return out;
 }
 
 // ═══ 조사 지점 ═══════════════════════════════════════════════

@@ -26,7 +26,18 @@ characters:
   bust_height: 900        # 상반신으로 띄울 때 그림 높이(px). 캐릭터별 위치는 characters.yaml 의 bust: [가로, 세로]
 
 # ── 조사·추리 ──
+effects:
+  ambient: true           # 분위기 입자 (먼지·비·불티)
+  ui_sound: true          # 버튼 효과음 (코드로 만든 소리)
+
+mansion:
+  speakers: [저택]        # 이 이름으로 말하면 "저택의 목소리" 연출
+
+accuse:
+  chances: 1              # 하루에 지목할 수 있는 횟수
+
 investigation:
+  ambient: dust           # 방에 ambient 가 없을 때 기본 분위기 입자
   bgm: mansion            # 조사 중 기본 배경음악 (investigations 파일에서 bgm: 으로 조사마다 바꿀 수 있음)
 
 suspect:

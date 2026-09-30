@@ -26,6 +26,8 @@ export interface GameEvents {
   anomaly: { who: string; habit: string };
   time: { time: string };
   photo: { id: string };
+  found: { day: number; who: string };
+  day: { day: number; vanished: string | null };
 }
 
 type Handler<T> = (payload: T) => void;

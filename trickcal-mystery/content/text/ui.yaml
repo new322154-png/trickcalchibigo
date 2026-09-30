@@ -385,3 +385,18 @@ loading_tips:
 # ── 모바일 ──
 # Q: 휴대폰을 세로로 들고 있을 때 "가로로 돌려 주세요" 안내 문구는?
 rotate_hint: TODO
+
+# 날짜 카드 (#next_day) — {name} 은 사라진 사람 이름
+day:
+  kicker: THE MANSION WAKES
+  vanished: 밤사이, {name}이(가) 사라졌다.
+  safe: 어젯밤은 아무도 사라지지 않았다.
+  rule: 오늘도, 이 중 한 명은 가짜다.
+
+# 지목 화면 (#accuse)
+accuse:
+  title: 오늘, 이 저택이 흉내 내고 있는 사람은?
+  guide: 습관과 어긋난 말, 사진 속 달라진 것들을 떠올려 보세요. 기회는 한 번뿐입니다.
+  confirm: "{name}을(를) 지목할까요?"
+  found: 찾았다.
+  missed: …아니었다.

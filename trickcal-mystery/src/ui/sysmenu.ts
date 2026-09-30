@@ -16,6 +16,7 @@ import { applyVolume, bgmSrc, pauseBgm } from '../engine/audio';
 import { isTodo, sleep } from '../engine/util';
 import { asset, clear, h, layer } from './dom';
 import { confirm, toast } from './modal';
+import { sfx } from './sfx';
 
 export type SysTab = 'save' | 'load' | 'config' | 'controls' | 'cg' | 'music' | 'video' | 'endings' | 'flowchart';
 
@@ -79,6 +80,7 @@ export function openSystem(tab: SysTab = 'config') {
   const body = h('div.sys-body');
   const close = () => {
     runCleanups();
+    sfx('close');
     el.remove();
     window.removeEventListener('keydown', onKey, true);
     current = null;
@@ -149,6 +151,7 @@ export function openSystem(tab: SysTab = 'config') {
   };
 
   layer('modal').appendChild(el);
+  sfx('open');
   window.addEventListener('keydown', onKey, true);
   current = { el, close };
   render();

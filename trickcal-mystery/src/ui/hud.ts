@@ -9,6 +9,7 @@ import { S } from '../engine/state';
 import { asset, clear, h, layer } from './dom';
 import { toast } from './modal';
 import { toggleAuto, toggleSkip } from './dialogue';
+import { sfx } from './sfx';
 
 let partyEl: HTMLElement;
 let suspEl: HTMLElement;
@@ -71,6 +72,7 @@ export function refreshHud() {
 
 // ── 이벤트 → 알림 ──
 events.on('clue', ({ id, update }) => {
+  sfx('clue');
   const name = C.evidence[id]?.name ?? id;
   toast(t(update ? 'toast.clue_update' : 'toast.clue_get', { name }), 'clue');
 });
@@ -110,6 +112,7 @@ const tx = (key: string, fb: string, vars: Record<string, string> = {}) => {
   return v;
 };
 events.on('item', ({ id, gained }) => {
+  if (gained) sfx('item');
   const name = C.items[id]?.name && C.items[id].name !== 'TODO' ? C.items[id].name : id;
   toast(gained ? tx('toast.item_get', '{name}을(를) 얻었다.', { name }) : tx('toast.item_used', '{name}을(를) 썼다.', { name }), gained ? 'clue' : '');
 });
@@ -118,6 +121,7 @@ events.on('confine', ({ who, confined }) => {
   toast(confined ? tx('toast.confined', '{name}이(가) 갇혔다.', { name: charName(who) }) : tx('toast.released', '{name}이(가) 풀려났다.', { name: charName(who) }), confined ? 'warn' : 'up');
 });
 events.on('truth', ({ id }) => {
+  sfx('clue');
   const title = C.truths[id]?.title && C.truths[id].title !== 'TODO' ? C.truths[id].title : '';
   toast(tx('toast.truth', '진실 조각을 얻었다{title}', { title: title ? `: ${title}` : '.' }), 'clue');
 });

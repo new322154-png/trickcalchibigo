@@ -13,7 +13,7 @@ button:disabled { opacity: 0.45; cursor: default; }
 .fatal { white-space: pre-wrap; color: #fff; background: #3a0d18; padding: 32px; margin: 32px; border-radius: 12px; font-size: 22px; max-width: 1600px; user-select: text; }
 .layer { position: absolute; inset: 0; pointer-events: none; isolation: isolate; } /* 레이어마다 따로 쌓기: 아래 레이어의 z-index 가 위 레이어를 넘지 않게 */
 .layer > * { pointer-events: auto; }
-#layer-chars > *, #layer-bg > *, #layer-cg > *, #layer-fx > *, #layer-toast > * { pointer-events: none; }
+#layer-chars > *, #layer-bg > *, #layer-cg > *, #layer-fx > *, #layer-toast > *, #layer-ambient > * { pointer-events: none; }
 #layer-chars > .clickable { pointer-events: auto; cursor: pointer; }
 #layer-fx > .chapter-card { pointer-events: auto; }
 .hidden { display: none !important; }
@@ -23,6 +23,8 @@ body.portrait #rotate-hint { display: grid; place-items: center; position: fixed
 
 /* ── 배경·캐릭터 ── */
 .bg-img, .cg-img { width: 100%; height: 100%; object-fit: cover; }
+#layer-bg .bg-img, #layer-bg .bg-missing { position: absolute; inset: 0; transition: opacity .45s; }
+#layer-bg .bg-img.entering { opacity: 0; }
 .bg-missing { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-dim); font-size: 22px; background: linear-gradient(160deg, #2a2036, #140e1c); }
 .sprite { position: absolute; bottom: 0; transform: translateX(-50%); height: 92%; display: flex; align-items: flex-end; transition: filter .2s, left .3s; }
 .sprite img { height: 100%; width: auto; }
@@ -587,3 +589,123 @@ body.debug-spots .hotspot-label { display: block; }
 
 .hud-clock { position: absolute; top: 92px; right: 40px; font-size: 18px; letter-spacing: 2px; color: var(--text-dim); text-shadow: 0 2px 6px rgba(0,0,0,.8); }
 .closeup-box:has(.closeup-noimg) + .closeup-text { display: none; }
+.travel-fade { position: absolute; inset: 0; background: #000; opacity: 0; }
+.ambient { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ═══════════════════════════════════════════════════════════
+   이 게임만의 연출 — 고딕 아치 · 촛불빛 · 가면(진짜와 가짜)
+   ═══════════════════════════════════════════════════════════ */
+
+/* 마우스 커서: 금빛 별 */
+#stage { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M14 2 L16 12 L26 14 L16 16 L14 26 L12 16 L2 14 L12 12 Z' fill='%23f1ebe2' stroke='%23d9b872' stroke-width='1.2'/%3E%3C/svg%3E") 14 14, auto; }
+#stage button, #stage .hotspot, #stage .clickable { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23d9b872' stroke-width='1' opacity='.6'/%3E%3Cpath d='M16 3 L18.3 13.7 L29 16 L18.3 18.3 L16 29 L13.7 18.3 L3 16 L13.7 13.7 Z' fill='%23d9b872'/%3E%3C/svg%3E") 16 16, pointer; }
+
+/* 대화창 위 가운데: 뾰족한 고딕 아치 + 초승달 */
+.dlg-frame::after { content: ''; position: absolute; left: 50%; top: -30px; width: 150px; height: 46px; transform: translateX(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 46'%3E%3Cpath d='M6 45 V30 C6 16 40 8 75 2 C110 8 144 16 144 30 V45' fill='%23120d1a' fill-opacity='.9' stroke='%23d9b872' stroke-width='1.3'/%3E%3Cpath d='M22 45 V33 C22 24 48 17 75 13 C102 17 128 24 128 33 V45' fill='none' stroke='%23d9b872' stroke-opacity='.35'/%3E%3Cpath d='M80 22 a8 8 0 1 1 -9 -8 a6 6 0 1 0 9 8 z' fill='%23d9b872'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* 다음 표시: 천천히 도는 별 */
+.dlg-next { font-size: 0 !important; }
+.dlg-next::before { content: '✦'; display: inline-block; font-size: 26px; color: var(--accent); text-shadow: 0 0 10px rgba(217,184,114,.8); animation: starSpin 2.4s linear infinite; }
+@keyframes starSpin { to { transform: rotate(360deg) } }
+
+/* 선택지: 양끝이 뾰족한 칼끝 모양 + 차례로 떠오름 + 빛이 스치는 효과 */
+.choice { isolation: isolate; border: none !important; background: rgba(241,235,226,.3) !important; backdrop-filter: none; -webkit-backdrop-filter: none;
+  clip-path: polygon(30px 0, calc(100% - 30px) 0, 100% 50%, calc(100% - 30px) 100%, 30px 100%, 0 50%); animation: choiceIn .4s cubic-bezier(.2,.8,.3,1) both; overflow: hidden; }
+.choice::after { content: ''; position: absolute; inset: 1px; z-index: -1; clip-path: polygon(29px 0, calc(100% - 29px) 0, 100% 50%, calc(100% - 29px) 100%, 29px 100%, 0 50%);
+  background: linear-gradient(90deg, rgba(14,10,20,.92), rgba(24,17,34,.88) 50%, rgba(14,10,20,.92)); transition: background .2s; }
+.choice::before { z-index: 1; left: 48px !important; }
+.choice:hover:not(:disabled) { background: linear-gradient(90deg, #8a6a2c, #d9b872, #8a6a2c) !important; transform: translateX(0) scale(1.015) !important; }
+.choice:hover:not(:disabled)::after { background: linear-gradient(90deg, rgba(30,20,14,.94), rgba(58,40,22,.9) 50%, rgba(30,20,14,.94)); }
+.choice:hover:not(:disabled) { color: #fff4dc; text-shadow: 0 0 12px rgba(217,184,114,.6); }
+@keyframes choiceIn { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+
+/* 버튼: 마우스를 올리면 빛이 한 번 스침 */
+.btn, .title-btn .tb-icon, .sys-tab { position: relative; overflow: hidden; }
+.btn::after, .sys-tab::before { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 50%; background: linear-gradient(100deg, transparent, rgba(255,235,190,.22), transparent); transform: skewX(-20deg); opacity: 0; pointer-events: none; }
+.btn:hover::after, .sys-tab:hover::before { animation: sweep .7s ease-out; }
+@keyframes sweep { 0% { left: -60%; opacity: 1 } 100% { left: 130%; opacity: 0 } }
+
+/* 창이 열릴 때 */
+.modal-panel { animation: panelIn .28s cubic-bezier(.2,.8,.3,1); }
+@keyframes panelIn { from { opacity: 0; transform: translateY(10px) scale(.985) } to { opacity: 1; transform: none } }
+
+/* 배경 속 출구: 은은히 숨 쉬는 금빛 점 */
+.hotspot.exit::before { content: ''; position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px; border-radius: 50%; background: rgba(217,184,114,.85); box-shadow: 0 0 14px 5px rgba(217,184,114,.45); animation: breathe 2s ease-in-out infinite; }
+.hotspot.exit:hover { box-shadow: 0 0 0 2px var(--accent) inset, 0 0 40px rgba(217,184,114,.4) inset; }
+@keyframes breathe { 50% { transform: scale(1.5); opacity: .5 } }
+
+/* 타이틀: 글자가 하나씩 촛불처럼 켜짐, 메뉴는 차례로 */
+.title-text .tl { display: inline-block; opacity: 0; filter: blur(14px); transform: translateY(14px); animation: tlIn 1s cubic-bezier(.2,.8,.3,1) forwards; }
+.title-text { animation: candle 4s ease-in-out infinite 2s; }
+@keyframes tlIn { to { opacity: 1; filter: blur(0); transform: none } }
+@keyframes candle { 0%,100% { text-shadow: 0 4px 30px rgba(0,0,0,.7), 0 0 24px rgba(242,179,94,.25) } 45% { text-shadow: 0 4px 30px rgba(0,0,0,.7), 0 0 34px rgba(242,179,94,.45) } 60% { text-shadow: 0 4px 30px rgba(0,0,0,.7), 0 0 18px rgba(242,179,94,.2) } }
+.title-kicker { animation: fadeUp .9s .2s both; }
+.title-sub { animation: fadeUp .9s 1.2s both; }
+.title-btn { animation: fadeUp .6s both; }
+.title-btn:nth-child(1) { animation-delay: 1.3s } .title-btn:nth-child(2) { animation-delay: 1.4s } .title-btn:nth-child(3) { animation-delay: 1.5s }
+.title-btn:nth-child(4) { animation-delay: 1.6s } .title-btn:nth-child(5) { animation-delay: 1.7s } .title-btn:nth-child(6) { animation-delay: 1.8s } .title-btn:nth-child(7) { animation-delay: 1.9s }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+
+/* ── 저택의 목소리: 대화창 없이, 어두워진 화면 가운데 붉은 글씨 ── */
+#layer-bg, #layer-chars { transition: filter .6s; }
+#stage.mansion-voice #layer-bg, #stage.mansion-voice #layer-chars { filter: brightness(.3) saturate(.4) sepia(.35) hue-rotate(-25deg); }
+.dlg-box.mansion .dlg-frame, .dlg-box.mansion .dlg-name, .dlg-box.mansion .dlg-suspect, .dlg-box.mansion .dlg-bust { display: none !important; }
+.dlg-box.mansion { left: 0; right: 0; top: 0; bottom: 0; height: auto; padding: 0 220px; display: flex; align-items: center; justify-content: center; }
+#stage.mansion-voice #layer-bg::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 20%, rgba(60, 0, 14, .85) 100%); animation: fadein .6s; }
+.dlg-box.mansion .dlg-text { text-align: center; font-family: var(--font-title); font-size: 50px; font-style: normal !important; font-weight: 700; letter-spacing: 6px; line-height: 1.7;
+  color: #f0b3c0 !important; text-shadow: 0 0 18px rgba(192,68,95,.95), 0 0 50px rgba(120,0,20,.9); animation: mansionPulse 3.2s ease-in-out infinite; }
+.dlg-box.mansion .dlg-next { right: 50%; bottom: 200px; }
+@keyframes mansionPulse { 50% { text-shadow: 0 0 26px rgba(192,68,95,1), 0 0 70px rgba(150,0,30,.95); letter-spacing: 7px } }
+
+/* ── 번개 ── */
+.lightning { position: absolute; inset: 0; background: #e9e4ff; mix-blend-mode: screen; animation: bolt .7s forwards; }
+@keyframes bolt { 0% { opacity: 0 } 8% { opacity: .85 } 16% { opacity: .1 } 26% { opacity: .6 } 100% { opacity: 0 } }
+
+/* ── 글리치: 가면이 벗겨지는 순간 ── */
+#stage.glitching #layer-bg, #stage.glitching #layer-chars, #stage.glitching #layer-dialogue { animation: glitch .16s steps(2) infinite; }
+@keyframes glitch {
+  0% { transform: translate(0, 0); filter: drop-shadow(4px 0 0 rgba(255,0,60,.7)) drop-shadow(-4px 0 0 rgba(0,220,255,.7)); }
+  50% { transform: translate(-6px, 2px); filter: drop-shadow(-6px 0 0 rgba(255,0,60,.7)) drop-shadow(6px 0 0 rgba(0,220,255,.7)); }
+  100% { transform: translate(5px, -2px); filter: drop-shadow(3px 0 0 rgba(255,0,60,.7)) drop-shadow(-3px 0 0 rgba(0,220,255,.7)); }
+}
+.glitch-lines { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 2px, transparent 2px 5px), linear-gradient(transparent 30%, rgba(192,68,95,.35) 31%, transparent 33%, transparent 62%, rgba(0,220,255,.3) 63%, transparent 64%);
+  animation: glitchBars .2s steps(3) infinite; }
+@keyframes glitchBars { 33% { background-position: 0 0, 0 -120px } 66% { background-position: 0 3px, 0 90px } }
+
+/* ── 날짜 카드 ── */
+.day-card { position: absolute; inset: 0; z-index: 3; background: radial-gradient(ellipse at 50% 45%, #1a1022, #050308 70%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; pointer-events: auto; animation: fadein .8s; }
+.day-card.out { animation: fadeOut .6s forwards; }
+@keyframes fadeOut { to { opacity: 0 } }
+.day-ring { position: relative; width: 150px; height: 150px; border-radius: 50%; border: 1px solid rgba(217,184,114,.5); box-shadow: 0 0 40px rgba(217,184,114,.15) inset; animation: ringIn 1.4s cubic-bezier(.2,.8,.3,1); }
+.day-ring::before { content: ''; position: absolute; inset: -14px; border-radius: 50%; border: 1px dashed rgba(217,184,114,.25); animation: starSpin 30s linear infinite; }
+.day-moon { position: absolute; left: 50%; top: 50%; width: 70px; height: 70px; margin: -35px; border-radius: 50%; box-shadow: 14px -6px 0 0 #e9d9ae; transform: rotate(-20deg); filter: drop-shadow(0 0 14px rgba(233,217,174,.6)); }
+@keyframes ringIn { from { opacity: 0; transform: scale(.7) rotate(-40deg) } to { opacity: 1; transform: none } }
+.day-kicker { font-size: 16px; letter-spacing: 10px; color: var(--accent); animation: fadeUp .8s .4s both; }
+.day-num { font-family: var(--font-title); font-size: 120px; font-weight: 700; letter-spacing: 16px; color: var(--text); text-shadow: 0 0 30px rgba(242,179,94,.25); animation: tlIn 1.1s .5s both; opacity: 0; filter: blur(14px); }
+.day-sub { font-size: 30px; color: #f0a0b0; letter-spacing: 2px; min-height: 40px; animation: fadeUp .8s 1.2s both; }
+.day-rule { font-size: 22px; letter-spacing: 4px; color: var(--text-dim); animation: fadeUp .8s 1.6s both; }
+
+/* ── 지목 화면 ── */
+.accuse { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, rgba(40,6,18,.85), rgba(6,4,10,.95) 70%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; pointer-events: auto; animation: fadein .5s; }
+.acc-day { font-size: 18px; letter-spacing: 10px; color: var(--accent-2); }
+.acc-title { margin: 0; font-family: var(--font-title); font-size: 52px; font-weight: 700; letter-spacing: 4px; text-shadow: 0 0 24px rgba(192,68,95,.5); }
+.acc-guide { margin: 0 0 24px; font-size: 22px; color: var(--text-dim); }
+.acc-grid { display: grid; grid-template-columns: repeat(5, 200px); gap: 22px; }
+.acc-card { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 10px 18px; background: rgba(241,235,226,.04); border: 1px solid var(--line); border-radius: 100px 100px 18px 18px; transition: transform .2s, border-color .2s, box-shadow .2s; animation: choiceIn .5s both; }
+.acc-card:nth-child(2) { animation-delay: .05s } .acc-card:nth-child(3) { animation-delay: .1s } .acc-card:nth-child(4) { animation-delay: .15s } .acc-card:nth-child(5) { animation-delay: .2s }
+.acc-card:nth-child(n+6) { animation-delay: .25s }
+.acc-face { width: 130px; height: 130px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: 48px; font-weight: 700; background: var(--glass); border: 2px solid var(--line-strong); transition: .2s; }
+.acc-face img { width: 100%; height: 100%; object-fit: cover; }
+.acc-card b { font-size: 24px; }
+.acc-card:hover { transform: translateY(-8px); border-color: var(--accent-2); box-shadow: 0 10px 30px rgba(192,68,95,.35); }
+.acc-card:hover .acc-face { border-color: var(--accent-2); box-shadow: 0 0 24px rgba(192,68,95,.6); }
+
+/* 문이 많은 방: 이동 목록 */
+.inv-move-wrap { position: relative; }
+.inv-door-pop { position: absolute; bottom: calc(100% + 12px); left: 0; display: none; grid-template-columns: repeat(2, minmax(220px, auto)); gap: 8px; padding: 14px; background: rgba(14,10,20,.94); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+.inv-door-pop.open { display: grid; animation: panelIn .2s; }
+.inv-door-pop .inv-door { white-space: nowrap; justify-content: flex-start; }
+.inv-nav .btn { white-space: nowrap; }
+.inv-room { white-space: nowrap; }
+.hotspot.exit::after { opacity: .75; }

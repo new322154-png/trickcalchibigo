@@ -184,6 +184,7 @@ const flow = data.flowchart?.nodes ?? {};
 const tutorials = data['text/tutorial'] ?? {};
 const items = data.items?.items ?? {};
 const truths = data.truths?.truths ?? {};
+const days = data.days?.days ?? {};
 
 // ── 검사 도우미 ──
 const needKnot = (file, where, k) => {
@@ -262,6 +263,13 @@ function checkSpots(f, where, list, inv) {
     }
     if (!Array.isArray(sp.rect) || sp.rect.length !== 4) warn(f, `${w}: rect 는 [가로, 세로, 너비, 높이] 4개 숫자여야 합니다`);
   }
+}
+for (const [d, def] of Object.entries(days)) {
+  const f = `days(${d})`;
+  needChar(f, 'impostor', def?.impostor);
+  needChar(f, 'vanish_if_missed', def?.vanish_if_missed);
+  needKnot(f, 'on_found', def?.on_found);
+  needKnot(f, 'on_missed', def?.on_missed);
 }
 for (const [id, tr] of Object.entries(trials)) {
   if (tr?.if_suspected && !trials[tr.if_suspected]) err(`trials(${id})`, `if_suspected: trials 폴더에 "${tr.if_suspected}" 가 없습니다`);
@@ -373,6 +381,7 @@ for (const f of inkFiles) {
         case 'confine': case 'release': needChar(where, `#${cmd}`, arg); break;
         case 'truth': if (!truths[arg]) err(where, `#truth: truths.yaml 에 "${arg}" 가 없습니다`); break;
         case 'habit': case 'mismatch': needHabit(where, `#${cmd}`, arg); break;
+        case 'fx': if (!['dust', 'rain', 'embers', 'none'].includes(arg)) warn(where, `#fx: dust / rain / embers / none 중 하나여야 합니다`); break;
         case 'time': if (!['morning', 'day', 'night'].includes(arg)) warn(where, `#time: morning / day / night 중 하나여야 합니다`); break;
         case 'chapter': if (!(data.chapters ?? {})[arg]) warn(where, `#chapter: chapters.yaml 에 "${arg}" 가 없습니다`); break;
       }

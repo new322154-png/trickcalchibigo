@@ -4,7 +4,7 @@
  */
 import { C, cfg, charName, names } from '../../engine/content';
 import { game } from '../../engine/game';
-import { S } from '../../engine/state';
+import { S, impostorToday, markFound } from '../../engine/state';
 import { isTodo } from '../../engine/util';
 import { clear, layer } from '../../ui/dom';
 import { cutin } from '../../ui/modal';
@@ -49,7 +49,10 @@ export async function runTrial(id: string): Promise<string | null> {
     if (trial.opinion) {
       await game.tutorial('trial_opinion');
       await game.tutorial('vote');
-      return await runOpinion(trial, ctx);
+      const res = await runOpinion(trial, ctx);
+      // 투표로 오늘의 가짜를 지목했다면 "찾아냄"
+      if (S.lastVote && S.lastVote === impostorToday()) markFound();
+      return res;
     }
     return r.correct;
   } finally {

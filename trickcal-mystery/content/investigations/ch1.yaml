@@ -45,7 +45,7 @@ ch1_search:
   title: TODO
   start_room: entrance
   # 이번 조사에서 갈 수 있는 방 (locations.yaml 의 id)
-  rooms: [entrance, dining, kitchen, corridor, guest_rooms, study]
+  rooms: [front_yard, shore, back_yard, shed, entrance, dining, kitchen, parlor, basement, wine_cellar, cell, corridor, corridor_east, study, master_bedroom, guest_rooms, room_kyoju, room_erpin, room_joan, room_ner, room_elena, room_amelia, room_daya, room_sila, room_shady, room_tig, room_uros, attic]
   # 필수 단서: 이걸 모두 얻어야 조사를 끝낼 수 있음
   required: [example_clue]
   # Q: 조사 시작할 때 나오는 대사는? (누가 "흩어져서 찾아보자" 같은 말을 하나요?)

@@ -22,6 +22,7 @@
 // #confine:진범id
 // Q: 이번 재판으로 얻는 "진실 조각"은? (content/truths.yaml)
 #truth:truth_ch1
+// 하루를 마칠 때:  #next_day  (오늘 가짜를 못 찾았으면 이때 days.yaml 의 vanish_if_missed 가 사라지고 날짜 카드가 뜸)
 -> ending_hint
 
 = ending_hint

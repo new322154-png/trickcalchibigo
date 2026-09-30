@@ -164,6 +164,10 @@ async function sayInner(line: Line, opts: { suspectable?: boolean; snap?: unknow
   nameEl.style.display = name ? '' : 'none';
   nameEl.style.setProperty('--name-color', charColor(line.speakerId ?? line.speakerName));
   box.classList.toggle('narration', !name);
+  // 저택의 목소리: 대화창 없이 화면 가운데에 붉은 글씨로 (config.yaml 의 mansion.speakers)
+  const mansion = !!line.speakerName && (cfg('mansion.speakers', ['저택']) as string[]).includes(line.speakerName);
+  box.classList.toggle('mansion', mansion);
+  document.getElementById('stage')!.classList.toggle('mansion-voice', mansion);
   setBust(line);
 
   const text = names(line.body);
@@ -268,6 +272,7 @@ export function choose(items: { text: string; disabled?: boolean }[], timer = 0)
     items.forEach((it, i) => {
       const b = h('button.choice', { onclick: (e: Event) => { e.stopPropagation(); resolve(i); } }, names(it.text));
       if (it.disabled) b.setAttribute('disabled', '');
+      b.style.animationDelay = `${i * 70}ms`;
       choicesEl.appendChild(b);
     });
     if (timer > 0) {

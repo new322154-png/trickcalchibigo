@@ -14,6 +14,7 @@ import { buildDialogue } from './ui/dialogue';
 import { openBacklog, openGameMenu, openNotebook, showTitle } from './ui/screens';
 import { openPhoneApp } from './modes/phone';
 import { installDebug } from './ui/debug';
+import { installUiSounds } from './ui/sfx';
 
 function showFatal(e: unknown) {
   const el = document.getElementById('loading') ?? document.body;
@@ -44,6 +45,7 @@ try {
     onNotebook: () => openNotebook(),
     onPhone: () => openPhoneApp(),
   });
+  installUiSounds();
   installDebug(); // 배포 버전에서 디버그 메뉴를 숨기려면 이 줄을 지우세요
   game.onTitle = showTitle;
   showTitle();

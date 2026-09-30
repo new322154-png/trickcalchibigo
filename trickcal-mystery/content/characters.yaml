@@ -36,6 +36,8 @@ emotion_aliases:
 # Q: 캐릭터 목록에 없는 화자가 있나요? 있으면 이름과 이름표 색을 추가하세요.
 extra_speakers:
   "???": { color: "#999999" }
+  # 저택(주인)의 목소리 — 대화창 없이 화면 가운데 붉은 글씨로 뜹니다 (config.yaml 의 mansion.speakers)
+  저택: { color: "#c0445f" }
   # 무전기: { color: "#7fd1b9" }
 
 # ── 주인공 ──

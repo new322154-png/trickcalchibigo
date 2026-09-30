@@ -4,11 +4,12 @@
  * 모드 태그(#investigate, #board, #trial, #phone, #ending)를 만나면 그 모드로 넘겼다가
  * 모드가 알려주는 knot 에서 대본을 이어간다.
  */
-import { C, cfg, charId, names, t } from './content';
+import { C, cfg, charId, charName, names, t } from './content';
 import { events } from './events';
 import {
   P, S, addAffinity, addSuspicion, applyEffect, confine, giveClue, giveConclusion, giveItem, giveTruth,
-  learnHabit, logAction, loseItem, newState, release, savePersist, setFlag, setState, setTime, unvanish, vanish,
+  isPresent, learnHabit, logAction, loseItem, markFound, newState, release, savePersist, setFlag, setState, setTime,
+  todayDef, impostorToday, unvanish, vanish,
 } from './state';
 import * as story from './story';
 import type { Line } from './story';
@@ -25,9 +26,11 @@ import { runBoard } from '../modes/board';
 import { runPhoneThread } from '../modes/phone';
 import { runTrial } from '../modes/trial';
 import { runEnding } from '../modes/ending';
+import { runAccuse } from '../modes/accuse';
+import { dayCard, glitch, lightning, setAmbient } from '../ui/effects';
 
 /** 대사 다음에 실행되는 태그 (화면이 바뀌는 것들) */
-const DEFERRED = new Set(['investigate', 'board', 'trial', 'phone', 'ending', 'title']);
+const DEFERRED = new Set(['investigate', 'board', 'trial', 'phone', 'ending', 'title', 'accuse']);
 
 export type ModeResult = string | null; // 이어갈 knot 이름 (null 이면 원래 흐름 계속)
 
@@ -52,6 +55,7 @@ class Game {
       scene.hideAll();
       scene.setBg('');
       scene.setCg('');
+      setAmbient('dust');
       dlg.backlog.length = 0;
     });
   }
@@ -60,6 +64,7 @@ class Game {
     await this.start(async () => {
       applySnapshot(snap);
       scene.restoreStage();
+      setAmbient(S.stage.fx ?? 'dust');
       playBgm(S.stage.bgm);
       dlg.backlog.splice(0, dlg.backlog.length, ...keepBacklog);
       events.emit('stateLoaded', {});
@@ -245,7 +250,18 @@ class Game {
     const args = arg.split(/\s+/).filter(Boolean);
     switch (cmd) {
       // 화면
-      case 'bg': scene.setBg(arg); break;
+      case 'bg': {
+        // #bg:이름  또는  #bg:이름 zoom  (이동 연출: zoom / stairs_up / stairs_down / left / right / fade)
+        const how = args[1];
+        if (how) await scene.travel(how);
+        scene.setBg(args[0] ?? arg);
+        if (how) await scene.arrive(how);
+        break;
+      }
+      case 'move': await scene.travel(arg || 'fade'); await scene.arrive(arg || 'fade'); break;
+      case 'fx': setAmbient(arg); break;
+      case 'lightning': await lightning(); break;
+      case 'next_day': await this.nextDay(); break;
       case 'cg': scene.setCg(arg); break;
       case 'show': {
         const who = charId(args[0]);
@@ -339,6 +355,9 @@ class Game {
         case 'phone':
           next = await runPhoneThread(id, true);
           break;
+        case 'accuse':
+          next = await runAccuse();
+          break;
         case 'ending':
           await runEnding(id);
           // runEnding 이 체크포인트/타이틀로 이동시키므로 여기로 돌아오지 않음
@@ -356,6 +375,30 @@ class Game {
     }
   }
 
+  // ── 날짜 넘기기 (가짜를 못 찾았으면 한 명이 사라진다) ─────
+
+  async nextDay() {
+    const def = todayDef();
+    const found = S.found.includes(S.day);
+    let vanishedName: string | null = null;
+    if (def && !found) {
+      const who = def.vanish_if_missed && !isTodo(def.vanish_if_missed) ? charId(def.vanish_if_missed) ?? def.vanish_if_missed : '';
+      if (who && isPresent(who)) {
+        vanish(who);
+        scene.hideChar(who);
+        vanishedName = charName(who);
+      }
+    }
+    S.day += 1;
+    S.accusedToday = 0;
+    setTime('morning');
+    refreshHud();
+    dlg.showBox(false);
+    await dayCard(S.day, vanishedName, def ? found : null);
+    await this.tutorial('day');
+    this.autosave();
+  }
+
   // ── 의심 표시 ───────────────────────────────────
 
   onSuspect(line: Line) {
@@ -370,6 +413,7 @@ class Game {
           S.anomalies.push({ who: owner, habit, text: line.body });
           events.emit('anomaly', { who: owner, habit });
         }
+        void glitch(650);
         toast(t('toast.anomaly_found').replace(/^\[.*\]$/, '평소와 다르다… 수첩에 기록했다.'), 'warn');
         void this.tutorial('mismatch');
       } else {

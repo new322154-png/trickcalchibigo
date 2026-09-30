@@ -28,6 +28,7 @@ export interface StageState {
   bg: string;
   bgm: string;
   cg: string;
+  fx?: string;
   sprites: Record<string, { emotion: string; pos: string }>;
 }
 
@@ -68,6 +69,10 @@ export interface GameState {
   topicsSeen: string[];
   /** 사진 비교로 찾은 달라진 곳 */
   diffsFound: string[];
+  /** 가짜를 찾아낸 날 */
+  found: number[];
+  /** 오늘 지목한 횟수 */
+  accusedToday: number;
 }
 
 export interface Photo {
@@ -115,6 +120,8 @@ export function newState(): GameState {
     photos: [],
     topicsSeen: [],
     diffsFound: [],
+    found: [],
+    accusedToday: 0,
   };
 }
 
@@ -221,6 +228,28 @@ export function learnHabit(key: string) {
   if (!key || S.habits.includes(key)) return;
   S.habits.push(key);
   events.emit('habit', { key });
+}
+
+// ── 날마다 바뀌는 가짜 ──
+
+export function todayDef() {
+  return C.days[String(S.day)];
+}
+
+/** 오늘 저택이 변장한 캐릭터 id (없으면 "") */
+export function impostorToday() {
+  return todayDef()?.impostor ?? '';
+}
+
+/** 그 캐릭터가 지금까지 가짜였던 날들 (오늘 포함) */
+export function impostorDays(who: string) {
+  return Object.entries(C.days).filter(([d, def]) => Number(d) <= S.day && def.impostor === who).map(([d]) => Number(d));
+}
+
+export function markFound() {
+  if (S.found.includes(S.day)) return;
+  S.found.push(S.day);
+  events.emit('found', { day: S.day, who: impostorToday() });
 }
 
 export function setTime(time: string) {

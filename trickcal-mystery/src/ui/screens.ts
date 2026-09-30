@@ -12,6 +12,7 @@ import { backlog } from './dialogue';
 import { confirm, openModal, toast } from './modal';
 import { setHudVisible } from './hud';
 import { openSystem } from './sysmenu';
+import { setAmbient } from './effects';
 
 const txt = (v: any, fallback = '') => (isTodo(v) || v === undefined ? fallback : names(String(v)));
 const tt = (key: string, fallback: string) => {
@@ -60,11 +61,12 @@ export function showTitle() {
     item(t('title.credits'), 'CREDITS', 'info', () => openCredits()),
   );
   playBgm(cfg('title_bgm', 'title'));
+  setAmbient('embers');
   // 제목: 작은 머리글(✦ 선) + 명조 제목 + 부제. 글자는 game.yaml 의 title / subtitle
   const logo = h(
     'div.title-logo',
     h('div.title-kicker', t('title.kicker').replace(/^\[.*\]$/, 'TRICKCAL MYSTERY')),
-    h('h1.title-text', txt(C.game.title, '제목 미정')),
+    h('h1.title-text', ...[...txt(C.game.title, '제목 미정')].map((ch, i) => h('span.tl', { style: { animationDelay: `${0.4 + i * 0.09}s` } }, ch))),
     h('div.title-sub', txt(C.game.subtitle)),
   );
   // 움직이는 배경: public/assets/ui/title_bg.webm / .mp4 (소리 없이 반복). 없거나 재생이 막히면 그림 배경만 보인다

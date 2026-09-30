@@ -7,6 +7,7 @@ import { C, cfg, charName, emotionKey } from '../engine/content';
 import { S, markSeen } from '../engine/state';
 import { orDefault, sleep } from '../engine/util';
 import { asset, clear, h, imageWithFallback, layer } from './dom';
+import { sfx } from './sfx';
 
 const POSITIONS: Record<string, number> = {
   farleft: 12, left: 25, center: 50, right: 75, farright: 88,
@@ -14,20 +15,122 @@ const POSITIONS: Record<string, number> = {
 };
 
 // ── 배경 ──
-export function setBg(name: string) {
+/** 배경 바꾸기. 이전 배경 위로 새 배경이 부드럽게 겹쳐 나타난다. fallback: 그림이 없을 때 대신 쓸 배경 */
+export function setBg(name: string, fallback?: string | string[]) {
   S.stage.bg = name;
-  const el = clear(layer('bg'));
-  if (!name || name === 'none') return;
+  const el = layer('bg');
+  if (!name || name === 'none') {
+    clear(el);
+    return;
+  }
   if (name === 'black') {
+    clear(el);
     el.style.background = '#000';
     return;
   }
   el.style.background = '';
-  const img = h('img.bg-img') as HTMLImageElement;
-  imageWithFallback(img, `bg/${name}`, ['jpg', 'png', 'webp'], () => {
-    img.replaceWith(h('div.bg-missing', `배경 없음: assets/bg/${name}`));
-  });
+  const old = [...el.children];
+  const img = h('img.bg-img.entering') as HTMLImageElement;
+  const show = () => {
+    requestAnimationFrame(() => img.classList.remove('entering'));
+    setTimeout(() => old.forEach((o) => o.remove()), 500);
+  };
+  img.addEventListener('load', show, { once: true });
+  const missing = () => {
+    const m = h('div.bg-missing', `배경 없음: assets/bg/${name}`);
+    img.replaceWith(m);
+    old.forEach((o) => o.remove());
+  };
+  // 그림이 없으면 대체 배경을 차례로 시도 (캐릭터 방 → 빈 객실 → 복도 …)
+  const chain = (Array.isArray(fallback) ? fallback : fallback ? [fallback] : []).filter((f) => f && f !== name);
+  const tryNext = (i: number) => {
+    if (i >= chain.length) return missing();
+    imageWithFallback(img, `bg/${chain[i]}`, ['jpg', 'png', 'webp'], () => tryNext(i + 1));
+  };
+  imageWithFallback(img, `bg/${name}`, ['jpg', 'png', 'webp'], () => tryNext(0));
   el.appendChild(img);
+}
+
+// ── 이동 연출 ──
+// travel(): 지금 화면에서 떠나는 움직임 → (그 사이에 배경을 바꾸고) → arrive(): 새 화면에 도착하는 움직임
+//   zoom:        문·통로를 향해 확대되며 어두워짐 (rect = 그 문 위치 %)
+//   stairs_up:   계단을 오르듯 화면이 위아래로 흔들리며 어두워짐
+//   stairs_down: 내려가듯
+//   left/right:  옆으로 걸어가듯 밀려남
+//   fade:        그냥 어두워졌다 밝아짐
+export type TravelKind = 'zoom' | 'stairs_up' | 'stairs_down' | 'left' | 'right' | 'fade' | 'cut';
+
+function travelFade() {
+  const fx = layer('fx');
+  let f = fx.querySelector('.travel-fade') as HTMLElement | null;
+  if (!f) {
+    f = h('div.travel-fade');
+    fx.appendChild(f);
+  }
+  return f;
+}
+
+const moving = () => [layer('bg'), layer('chars'), layer('cg')];
+
+export async function travel(kind: string = 'fade', rect?: [number, number, number, number]) {
+  if (kind === 'cut') return;
+  const f = travelFade();
+  const targets = moving();
+  const opts = { fill: 'forwards' as FillMode };
+  if (kind === 'zoom') {
+    const [x, y, w, hh] = rect ?? [40, 30, 20, 40];
+    targets.forEach((t) => (t.style.transformOrigin = `${x + w / 2}% ${y + hh / 2}%`));
+    sfx('door');
+    targets.forEach((t) => t.animate([{ transform: 'scale(1)' }, { transform: 'scale(2.1)' }], { duration: 750, easing: 'cubic-bezier(.55,0,.85,.4)', ...opts }));
+    f.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], { duration: 750, ...opts });
+    await sleep(760);
+  } else if (kind === 'stairs_up' || kind === 'stairs_down') {
+    const d = kind === 'stairs_up' ? 1 : -1;
+    const frames: Keyframe[] = [];
+    for (let i = 0; i <= 8; i++) {
+      const bob = i % 2 ? 16 : 2;
+      frames.push({ transform: `translateY(${d * (bob + i * 6)}px) scale(${1 + i * 0.012})` });
+    }
+    targets.forEach((t) => t.animate(frames, { duration: 1100, easing: 'linear', ...opts }));
+    for (let i = 0; i < 4; i++) setTimeout(() => sfx('step'), i * 260);
+    f.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], { duration: 1100, ...opts });
+    await sleep(1110);
+  } else if (kind === 'left' || kind === 'right') {
+    const d = kind === 'left' ? 1 : -1;
+    for (let i = 0; i < 3; i++) setTimeout(() => sfx('step'), i * 200);
+    targets.forEach((t) => t.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${d * 240}px) scale(1.04)` }], { duration: 600, easing: 'ease-in', ...opts }));
+    f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, ...opts });
+    await sleep(610);
+  } else {
+    f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 350, ...opts });
+    await sleep(360);
+  }
+}
+
+export async function arrive(kind: string = 'fade') {
+  if (kind === 'cut') return;
+  const f = travelFade();
+  const targets = moving();
+  targets.forEach((t) => {
+    t.getAnimations().forEach((a) => a.cancel());
+    t.style.transformOrigin = '';
+  });
+  let dur = 450;
+  if (kind === 'zoom') {
+    targets.forEach((t) => t.animate([{ transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 700, easing: 'cubic-bezier(.2,.7,.3,1)' }));
+    dur = 600;
+  } else if (kind === 'stairs_up' || kind === 'stairs_down') {
+    const d = kind === 'stairs_up' ? 1 : -1;
+    targets.forEach((t) => t.animate([{ transform: `translateY(${-d * 30}px)` }, { transform: `translateY(${d * 8}px)` }, { transform: 'translateY(0)' }], { duration: 700, easing: 'ease-out' }));
+    dur = 600;
+  } else if (kind === 'left' || kind === 'right') {
+    const d = kind === 'left' ? 1 : -1;
+    targets.forEach((t) => t.animate([{ transform: `translateX(${-d * 200}px)` }, { transform: 'translateX(0)' }], { duration: 600, easing: 'ease-out' }));
+  }
+  f.getAnimations().forEach((a) => a.cancel());
+  f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: dur, fill: 'forwards' });
+  await sleep(dur);
+  f.remove();
 }
 
 export function setCg(name: string) {

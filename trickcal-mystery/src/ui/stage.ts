@@ -1,12 +1,12 @@
 /**
  * 16:9 고정 무대. 모든 UI는 1920×1080 좌표로 만들고, 창 크기에 맞춰 통째로 확대/축소한다.
- * 레이어 순서(아래 → 위): bg, cg, chars, mode(조사·폰·재판 화면), hud, dialogue, fx, modal, toast, debug
+ * 레이어 순서(아래 → 위): bg, cg, chars, ambient(먼지·비), mode(조사·폰·재판 화면), hud, dialogue, fx, modal, toast, debug
  * 레이어는 기본적으로 클릭을 통과시키고, 버튼 같은 요소만 클릭을 받는다 (.layer > * 에 pointer-events)
  */
 import { cfg, t } from '../engine/content';
 import { h } from './dom';
 
-export const LAYERS = ['bg', 'cg', 'chars', 'mode', 'hud', 'dialogue', 'fx', 'modal', 'toast', 'debug'] as const;
+export const LAYERS = ['bg', 'cg', 'chars', 'ambient', 'mode', 'hud', 'dialogue', 'fx', 'modal', 'toast', 'debug'] as const;
 
 export function buildStage() {
   const stage = document.getElementById('stage')!;

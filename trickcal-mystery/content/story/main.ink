@@ -33,6 +33,10 @@ EXTERNAL knows_habit(key)    // 그 습관을 알고 있나? 예) knows_habit("e
 EXTERNAL anomalies(who)      // 그 캐릭터에게서 잡아낸 어긋남 개수 ("" 이면 전체)
 EXTERNAL time_now()          // 지금 시간대 (morning / day / night)
 EXTERNAL day()               // 며칠째인가
+EXTERNAL impostor()          // 오늘 저택이 변장한 캐릭터 id (days.yaml)
+EXTERNAL was_impostor(who)   // 그 캐릭터가 지금까지 한 번이라도 가짜였나 (= 그날의 기억이 없다)
+EXTERNAL found_today()       // 오늘 가짜를 찾아냈나
+EXTERNAL found_day(n)        // n일째에 가짜를 찾아냈나
 
 -> start
 
@@ -73,3 +77,11 @@ EXTERNAL day()               // 며칠째인가
 ~ return "morning"
 === function day() ===
 ~ return 1
+=== function impostor() ===
+~ return ""
+=== function was_impostor(who) ===
+~ return false
+=== function found_today() ===
+~ return false
+=== function found_day(n) ===
+~ return false

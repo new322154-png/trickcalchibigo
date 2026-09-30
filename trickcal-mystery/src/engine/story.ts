@@ -6,7 +6,7 @@
 import { Story as InkStory } from 'inkjs';
 import storyJson from 'virtual:ink-story';
 import { C, charId, emotionKey } from './content';
-import { P, S, isPresent } from './state';
+import { P, S, impostorDays, impostorToday, isPresent } from './state';
 import { hash } from './util';
 
 export interface Line {
@@ -61,6 +61,10 @@ function bindExternals() {
   bind('anomalies', (who: string) => S.anomalies.filter((a) => !who || a.who === (charId(who) ?? who)).length);
   bind('time_now', () => S.time);
   bind('day', () => S.day);
+  bind('impostor', () => impostorToday());
+  bind('was_impostor', (who: string) => impostorDays(charId(who) ?? who).length > 0);
+  bind('found_today', () => S.found.includes(S.day));
+  bind('found_day', (d: number) => S.found.includes(Number(d)));
 }
 
 export function inkStory() {

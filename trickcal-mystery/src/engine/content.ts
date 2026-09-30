@@ -26,10 +26,26 @@ export interface CharacterDef {
   habits?: Record<string, string>;
 }
 
+export interface ExitDef {
+  to: string;                                   // 이어지는 방 id
+  rect: [number, number, number, number];       // 배경 그림 위 문·계단 위치 [가로%, 세로%, 너비%, 높이%]
+  kind?: 'zoom' | 'stairs_up' | 'stairs_down' | 'left' | 'right' | 'fade'; // 이동 연출 (기본 zoom)
+  label?: string;                               // 마우스를 올렸을 때 (없으면 방 이름)
+  needs?: string;                               // 이 flag 가 켜져야 보임
+}
+
 export interface RoomDef {
   name: string;
   bg: string;
-  floor?: number;
+  /** 그림이 아직 없을 때 대신 쓸 배경 (예: 캐릭터 방 → guest_rooms) */
+  bg_fallback?: string;
+  /** 분위기 입자: dust(먼지) / rain(비) / embers(불티) / none */
+  ambient?: string;
+  /** 배경 그림 속 문·계단을 눌러 이동 */
+  exits?: ExitDef[];
+  /** 이 방 주인 (캐릭터 방) */
+  owner?: string;
+  floor?: number | string;   // 1, 2, -1(지하), attic(다락), outside(바깥)
   map_pos?: [number, number];
   doors?: string[];
   first_enter?: Lines;
@@ -297,7 +313,17 @@ export interface Content {
   flowchart: Record<string, FlowNode>;
   extras: ExtrasDef;
   items: Record<string, { name: string; desc?: string; image?: string }>;
+  days: Record<string, DayDef>;
   truths: Record<string, { title: string; text?: string; chapter?: string }>;
+}
+
+/** 날마다 바뀌는 가짜 — content/days.yaml */
+export interface DayDef {
+  impostor: string;           // 오늘 저택(주인)이 변장한 모습 = 이 캐릭터
+  vanish_if_missed?: string;  // 오늘 못 찾으면 다음 날 아침 사라지는 사람
+  on_found?: string;          // 지목에 성공하면 이어질 knot
+  on_missed?: string;         // 지목에 실패하면 이어질 knot
+  note?: string;
 }
 
 /** 엑스트라(갤러리) — content/extras.yaml */
@@ -442,6 +468,7 @@ export function loadContent(): Content {
     endings: f['endings']?.endings ?? {},
     flowchart: f['flowchart']?.nodes ?? {},
     items: f['items']?.items ?? {},
+    days: Object.fromEntries(Object.entries(f['days']?.days ?? {}).map(([k, v]) => [String(k), v as DayDef])),
     truths: f['truths']?.truths ?? {},
     extras: {
       cg: listOf(f['extras']?.cg),
