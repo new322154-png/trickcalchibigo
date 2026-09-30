@@ -243,6 +243,7 @@ sila:
 
 shady:
   name: 셰이디
+  scale: 1.25             # 낫을 든 그림이라 원본이 작게 그려져 있어 키움
   persuasion: trust
   start_affinity: 5
   color: TODO
