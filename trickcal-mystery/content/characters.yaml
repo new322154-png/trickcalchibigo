@@ -295,7 +295,7 @@ tig:
 
 uros:
   name: 우로스
-  scale: 1.05             # 옷자락이 넓어 원본이 살짝 작게 그려져 있음
+  scale: 1.25             # 옷자락이 넓어 원본이 작게 그려져 있어 키움 (티그와 비슷한 키)
   sink: 16                # 옷자락 끝이 발보다 앞·아래로 늘어져 있어 발이 바닥에 닿게 내림
   persuasion: emotion
   start_affinity: 0
