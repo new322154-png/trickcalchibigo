@@ -264,13 +264,32 @@ function checkSpots(f, where, list, inv) {
     if (!Array.isArray(sp.rect) || sp.rect.length !== 4) warn(f, `${w}: rect 는 [가로, 세로, 너비, 높이] 4개 숫자여야 합니다`);
   }
 }
+const protect = data.days?.protect ?? {};
+for (const [who, until] of Object.entries(protect)) needChar('days(protect)', who, who);
 for (const [d, def] of Object.entries(days)) {
   const f = `days(${d})`;
   needChar(f, 'impostor', def?.impostor);
   needChar(f, 'vanish_if_missed', def?.vanish_if_missed);
   needKnot(f, 'on_found', def?.on_found);
   needKnot(f, 'on_missed', def?.on_missed);
+  const v = toChar(def?.vanish_if_missed);
+  if (v && Number(protect[v] ?? 0) >= Number(d) + 1)
+    err(f, `vanish_if_missed: ${v} 는 protect 로 ${protect[v]}일째까지 보호됩니다 — ${Number(d) + 1}일째 아침에 사라질 수 없어요`);
+  if (v && toChar(def?.impostor) === v) warn(f, '가짜와 사라질 사람이 같습니다 (의도한 것인지 확인)');
+  if (def?.critical) {
+    if (!def.bad_ending || isTodo(def.bad_ending)) warn(f, 'critical: 이 날 실패했을 때의 bad_ending 을 적어 주세요');
+    else if (!endings[def.bad_ending]) err(f, `bad_ending: endings.yaml 에 "${def.bad_ending}" 가 없습니다`);
+  }
 }
+/** 그 날(D일째)에 이미 사라졌을 수도 있는 사람 → 사라진 날 */
+const mayBeGone = (day) => {
+  const out = new Map();
+  for (const [d, def] of Object.entries(days)) {
+    const v = toChar(def?.vanish_if_missed);
+    if (v && Number(d) + 1 <= day && !out.has(v)) out.set(v, Number(d) + 1);
+  }
+  return out;
+};
 for (const [id, tr] of Object.entries(trials)) {
   if (tr?.if_suspected && !trials[tr.if_suspected]) err(`trials(${id})`, `if_suspected: trials 폴더에 "${tr.if_suspected}" 가 없습니다`);
 }
@@ -386,6 +405,45 @@ for (const f of inkFiles) {
         case 'chapter': if (!(data.chapters ?? {})[arg]) warn(where, `#chapter: chapters.yaml 에 "${arg}" 가 없습니다`); break;
       }
     }
+  });
+}
+
+// ── 이야기 줄기 지키기: 사라졌을 수도 있는 사람의 대사 ──
+// 대본 파일(또는 knot)에  // @day 3  처럼 며칠째 장면인지 적어 두면,
+// 그날까지 사라졌을 수 있는 캐릭터가 { present("sila"): … } 없이 말할 때 경고한다.
+// #next_day 를 지나면 날짜가 하나 올라간 것으로 본다.
+const speakerRe = /^\s*([^\s:#{}()\-*+][^:#{}()]{0,14}?)\s*(?:\([^)]*\))?\s*:\s*\S/;
+for (const f of inkFiles) {
+  const lines = fs.readFileSync(f, 'utf-8').split('\n');
+  let day = 0;
+  const stack = []; // 열린 { } 블록마다 그 안에서 보장되는 캐릭터
+  let reported = new Set();
+  lines.forEach((raw, i) => {
+    const dayMark = raw.match(/\/\/\s*@day\s*:?\s*(\d+)/);
+    if (dayMark) { day = Number(dayMark[1]); reported = new Set(); }
+    const line = raw.replace(/\/\/.*$/, '');
+    // 블록 안의 분기  - present("x"): …
+    const branch = line.match(/^\s*-\s*[^:]*present\(\s*"(\w+)"\s*\)[^:]*:/);
+    if (branch && stack.length) stack[stack.length - 1] = toChar(branch[1]) ?? branch[1];
+    else if (/^\s*-\s*(else)?\s*:/.test(line) && stack.length) stack[stack.length - 1] = null;
+    const inlineGuards = [...line.matchAll(/present\(\s*"(\w+)"\s*\)/g)].map((m) => toChar(m[1]) ?? m[1]);
+    if (day > 0) {
+      const gone = mayBeGone(day);
+      const sp = line.replace(/^\s*\{[^:{}]*:\s*/, '').match(speakerRe);
+      const who = sp ? toChar(sp[1].trim()) : null;
+      if (who && gone.has(who) && !stack.includes(who) && !inlineGuards.includes(who) && !reported.has(who)) {
+        reported.add(who);
+        warn(`${rel(f)}:${i + 1}`, `${day}일째 장면인데 ${who} 는 ${gone.get(who)}일째 아침부터 사라졌을 수 있어요 → { present("${who}"): … | 없을 때 대사 } 로 나눠 주세요`);
+      }
+    }
+    // 블록 열고 닫기
+    for (const ch of line) {
+      if (ch === '{') {
+        const g = line.match(/\{\s*[^:{}]*present\(\s*"(\w+)"\s*\)[^:{}]*:/);
+        stack.push(g ? toChar(g[1]) ?? g[1] : null);
+      } else if (ch === '}') stack.pop();
+    }
+    if (/#\s*next_day\b/.test(line) && day > 0) { day += 1; reported = new Set(); }
   });
 }
 

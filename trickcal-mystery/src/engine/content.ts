@@ -314,6 +314,8 @@ export interface Content {
   extras: ExtrasDef;
   items: Record<string, { name: string; desc?: string; image?: string }>;
   days: Record<string, DayDef>;
+  /** 캐릭터별 보호 기간: 이 날까지는 절대 사라지지 않음 (이야기에 꼭 필요한 사람) */
+  dayProtect: Record<string, number>;
   truths: Record<string, { title: string; text?: string; chapter?: string }>;
 }
 
@@ -324,6 +326,8 @@ export interface DayDef {
   on_found?: string;          // 지목에 성공하면 이어질 knot
   on_missed?: string;         // 지목에 실패하면 이어질 knot
   note?: string;
+  critical?: boolean;         // 이야기상 꼭 맞혀야 하는 날: 못 찾으면 bad_ending 으로
+  bad_ending?: string;        // critical 인 날 실패했을 때의 엔딩 id (endings.yaml)
 }
 
 /** 엑스트라(갤러리) — content/extras.yaml */
@@ -468,6 +472,7 @@ export function loadContent(): Content {
     endings: f['endings']?.endings ?? {},
     flowchart: f['flowchart']?.nodes ?? {},
     items: f['items']?.items ?? {},
+    dayProtect: Object.fromEntries(Object.entries((f['days']?.protect ?? {}) as Record<string, unknown>).map(([k, v]) => [k, Number(v) || 0])),
     days: Object.fromEntries(Object.entries(f['days']?.days ?? {}).map(([k, v]) => [String(k), v as DayDef])),
     truths: f['truths']?.truths ?? {},
     extras: {

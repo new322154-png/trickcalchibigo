@@ -381,9 +381,16 @@ class Game {
     const def = todayDef();
     const found = S.found.includes(S.day);
     let vanishedName: string | null = null;
+    // 꼭 맞혀야 하는 날에 실패 → 배드 엔딩 (체크포인트에서 다시)
+    if (def?.critical && !found && def.bad_ending && !isTodo(def.bad_ending)) {
+      await this.enterMode('ending', def.bad_ending);
+      return;
+    }
     if (def && !found) {
       const who = def.vanish_if_missed && !isTodo(def.vanish_if_missed) ? charId(def.vanish_if_missed) ?? def.vanish_if_missed : '';
-      if (who && isPresent(who)) {
+      const guard = who ? C.dayProtect[who] ?? 0 : 0;
+      if (who && guard >= S.day + 1) console.warn(`[날짜] ${who} 는 ${guard}일째까지 보호되어 사라지지 않습니다 (days.yaml protect)`);
+      else if (who && isPresent(who)) {
         vanish(who);
         scene.hideChar(who);
         vanishedName = charName(who);
@@ -396,6 +403,8 @@ class Game {
     dlg.showBox(false);
     await dayCard(S.day, vanishedName, def ? found : null);
     await this.tutorial('day');
+    // 매일 아침 체크포인트 — 꼭 맞혀야 하는 날에 실패해도 이 날 아침부터 다시
+    this.checkpoint(`day${S.day}`, this.resume);
     this.autosave();
   }
 
