@@ -12,7 +12,7 @@ import { C, cfg } from '../engine/content';
 import { isTodo, sleep } from '../engine/util';
 import { asset, clear, h, layer } from './dom';
 import { setHudVisible } from './hud';
-import { sfx } from './sfx';
+import { preloadSfx, sfx } from './sfx';
 import { setAmbient } from './effects';
 
 interface BootApp {
@@ -49,6 +49,7 @@ export function showBoot(onDone: () => void) {
   setHudVisible(false);
   (layer('dialogue').querySelector('.dlg-box') as HTMLElement)?.classList.add('hidden');
   setAmbient('none');
+  preloadSfx(['pop']);
   const root = clear(layer('modal'));
   const apps: BootApp[] = (cfg('boot.apps', null) as BootApp[] | null) ?? DEFAULT_APPS;
   const gameTitle = s(C.game.title, '트릭컬 더 할로윈');
@@ -169,15 +170,19 @@ export function showBoot(onDone: () => void) {
   async function launchGame(btn: Element) {
     busy = true;
     sfx('open');
-    const logo = h('img.splash-logo', { src: asset(`ui/boot/${s(cfg('boot.splash_image', ''), 'fanmade.jpg')}`), alt: '' });
+    const logo = h('img.splash-logo', { src: asset(`ui/boot/${s(cfg('boot.splash_image', ''), 'fanmade.png')}`), alt: '' });
     const panel = h('div.boot-panel.splash', logo);
     await zoomFrom(btn, panel).finished;
     await sleep(250);
     logo.classList.add('pop');
     sfx('pop');
     await sleep(Number(cfg('boot.splash_seconds', 1.8)) * 1000);
-    panel.classList.add('fade-black');
-    await sleep(650);
+    // 로고와 흰 바탕을 한 번에 검게 → 타이틀 (잔상 없이)
+    await Promise.all([
+      logo.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.96)' }], { duration: 450, easing: 'ease-in', fill: 'forwards' }).finished,
+      panel.animate([{ backgroundColor: '#fff' }, { backgroundColor: '#000' }], { duration: 650, easing: 'ease-in-out', fill: 'forwards' }).finished,
+    ]);
+    await sleep(120);
     clearInterval(tick);
     window.removeEventListener('keydown', onKey);
     onDone();

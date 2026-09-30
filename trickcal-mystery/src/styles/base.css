@@ -768,3 +768,14 @@ body.debug-spots .hotspot-label { display: block; }
   text-shadow: 0 3px 0 rgba(0,0,0,.6), 0 0 2px #7a1026, 0 0 22px rgba(192,68,95,.75); transform: skewX(-6deg); transform-origin: left center; animation: shoutIn .35s cubic-bezier(.3,1.6,.5,1); }
 .dlg-box.shout .dlg-frame { border-color: rgba(192,68,95,.7); box-shadow: var(--shadow), inset 0 0 60px rgba(192,68,95,.18); }
 @keyframes shoutIn { from { transform: skewX(-6deg) scale(1.25); opacity: 0 } to { transform: skewX(-6deg) scale(1); opacity: 1 } }
+
+/* 타이틀 로고 그림: 톡 떨어져 자리 잡은 뒤 둥실둥실, 뒤로 은은한 호박빛 */
+.title-logo:has(.title-logo-img) { left: 70px; top: 40px; }
+.title-logo:has(.title-logo-img)::before { content: ''; position: absolute; left: -60px; top: -40px; width: 860px; height: 700px; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 45% 50%, rgba(255,150,60,.28), rgba(140,60,200,.18) 45%, transparent 70%); filter: blur(10px); animation: fadein 2s .6s both; }
+.title-logo-img { width: 700px; height: auto; transform-origin: 50% 80%; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(255,160,70,.25));
+  animation: logoDrop .9s cubic-bezier(.3,1.5,.5,1) .2s both, logoFloat 5s ease-in-out 1.2s infinite; }
+@keyframes logoDrop { 0% { opacity: 0; transform: translateY(-60px) scale(.85) rotate(-3deg) } 100% { opacity: 1; transform: none } }
+@keyframes logoFloat { 0%,100% { transform: translateY(0) rotate(0) } 50% { transform: translateY(-10px) rotate(-.6deg) } }
+.title-logo:has(.title-logo-img) .title-sub { margin-left: 40px; }
+.boot-panel.splash .splash-logo { width: 760px; }

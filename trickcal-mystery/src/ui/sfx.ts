@@ -80,6 +80,18 @@ const SYNTH: Record<string, () => void> = {
   wrong: () => { tone(220, 0.25, 'square', 0.04); tone(180, 0.3, 'square', 0.04, 0.12); },
 };
 
+/** 파일 효과음을 미리 불러 둔다 (처음 한 번이 코드 소리로 나오지 않게) */
+export function preloadSfx(list: string[]) {
+  for (const name of list) {
+    if (fileOk.has(name)) continue;
+    const probe = new Audio(asset(`se/ui_${name}.mp3`));
+    probe.preload = 'auto';
+    fileOk.set(name, null);
+    probe.oncanplaythrough = () => fileOk.set(name, probe);
+    probe.load();
+  }
+}
+
 export function sfx(name: string) {
   if (!cfg('effects.ui_sound', true)) return;
   // 파일이 있으면 파일 우선 (public/assets/se/ui_이름.mp3)
