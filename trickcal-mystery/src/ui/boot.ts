@@ -123,8 +123,7 @@ export function showBoot(onDone: () => void) {
   );
   const phone = h('div.ph', screen, h('img.ph-frame', { src: asset('ui/boot/phone_frame.png'), alt: '' }));
   const hint = h('div.boot-hint', s(cfg('boot.hint', ''), '앱을 눌러 게임을 시작하세요'));
-  const notice = h('div.fan-notice', s(C.game.notice, '비공식 팬게임 · 에피드게임즈와 무관 · 비영리 무료 배포'));
-  const wrap = h('div.boot', phone, hint, notice);
+  const wrap = h('div.boot', phone, hint);
   wrap.style.setProperty('--boot-bg', `url("${new URL(asset(s(cfg('boot.backdrop', ''), 'ui/title_bg.jpg')), location.href).href}")`);
   root.appendChild(wrap);
 

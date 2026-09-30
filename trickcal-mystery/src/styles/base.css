@@ -848,5 +848,4 @@ body.portrait #rotate-hint { cursor: pointer; }
 
 /* ── 비공식 팬게임 고지 (game.yaml 의 notice) ── */
 .fan-notice { position: absolute; z-index: 5; left: 0; right: 0; bottom: 14px; text-align: center; pointer-events: none; font-size: 24px; font-weight: 500; letter-spacing: 1.5px; color: rgba(255,255,255,.78); text-shadow: 0 1px 4px rgba(0,0,0,.9), 0 0 10px rgba(0,0,0,.6); }
-.boot > .fan-notice { bottom: auto; top: 14px; }
 .disclaimer { white-space: pre-line; line-height: 1.6; }

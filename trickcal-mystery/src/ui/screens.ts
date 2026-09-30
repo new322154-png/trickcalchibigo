@@ -155,7 +155,7 @@ export function showTitle() {
     logo,
     menu,
     h('div.title-author', txt(C.game.author)),
-    h('div.fan-notice', txt(C.game.notice, '비공식 팬게임 · 에피드게임즈와 무관 · 비영리 무료 배포')),
+    h('div.fan-notice', txt(C.game.notice, '본 게임은 트릭컬 리바이브의 비공식 팬게임입니다.')),
   );
   // 타이틀 배경: public/assets/ui/title_bg.jpg 또는 .png (없으면 그라데이션)
   screen.style.backgroundImage = `url(${asset('ui/title_bg.jpg')}), url(${asset('ui/title_bg.png')}), radial-gradient(circle at 50% 30%, #3a2850, #120c18)`;
