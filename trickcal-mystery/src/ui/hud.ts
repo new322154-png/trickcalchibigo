@@ -88,6 +88,7 @@ events.on('suspicion', ({ delta }) => {
 });
 events.on('vanish', ({ who }) => {
   refreshHud();
+  sfx('vanish');
   toast(t('toast.member_vanished', { name: charName(who) }), 'warn');
 });
 events.on('return', ({ who }) => {
@@ -97,6 +98,7 @@ events.on('return', ({ who }) => {
 events.on('phone', ({ thread, notify }) => {
   refreshHud();
   if (notify) {
+    sfx('phone');
     const th = C.threads[thread];
     const who = th ? (C.groups[th.with]?.name ?? charName(th.with)) : thread;
     toast(t('toast.new_message', { name: who }), 'phone');

@@ -3,6 +3,7 @@ import { t } from '../engine/content';
 import { events } from '../engine/events';
 import { isTodo, sleep, waitFor } from '../engine/util';
 import { h, layer } from './dom';
+import { sfx } from './sfx';
 
 export interface ModalHandle {
   el: HTMLElement;
@@ -76,6 +77,7 @@ export async function cutin(text: string, cls = '') {
   if (!text || isTodo(text)) return;
   const el = h(`div.cutin${cls ? '.' + cls : ''}`, h('span', text));
   layer('fx').appendChild(el);
+  sfx(cls === 'verdict' ? 'gavel' : 'cutin');
   await sleep(1100);
   el.remove();
 }

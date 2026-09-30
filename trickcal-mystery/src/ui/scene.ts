@@ -214,6 +214,12 @@ function renderSprite(id: string) {
   const img = h('img') as HTMLImageElement;
   img.src = asset(spritePath(id, st.emotion));
   img.onerror = () => {
+    // 그 표정 그림이 없으면 기본 표정으로, 그것도 없으면 임시 표시
+    if (st.emotion !== 'normal' && !img.dataset.fellBack) {
+      img.dataset.fellBack = '1';
+      img.src = asset(spritePath(id, 'normal'));
+      return;
+    }
     img.replaceWith(h('div.sprite-missing', charName(id), h('small', st.emotion)));
   };
   clear(el).appendChild(img);

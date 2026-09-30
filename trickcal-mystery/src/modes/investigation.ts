@@ -20,6 +20,7 @@ import * as dlg from '../ui/dialogue';
 import { openModal, toast } from '../ui/modal';
 import { pickThing } from '../ui/picker';
 import * as scene from '../ui/scene';
+import { sfx } from '../ui/sfx';
 
 type Action =
   | { type: 'spot'; spot: Hotspot }
@@ -305,6 +306,7 @@ async function doLock(inv: InvestigationDef, path: string, l: LockDef) {
     return;
   }
   setFlag(l.flag);
+  sfx('unlock');
   await game.sayLines(l.success);
   await afterSolve(inv, path, l);
 }
@@ -464,6 +466,7 @@ async function presentTo(p: SpotPerson) {
 // ═══ 휴대폰 카메라 ═══════════════════════════════════════════
 
 function takePhoto(inv: InvestigationDef, roomId: string) {
+  sfx('camera');
   const bg = roomBg(inv, roomId);
   const same = S.photos.find((p) => p.room === roomId && p.day === S.day && p.time === S.time && p.bg === bg);
   if (same) {

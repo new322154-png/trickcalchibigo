@@ -70,6 +70,12 @@ const SYNTH: Record<string, () => void> = {
   thunder: () => noise(1.6, 0.5, 180, 0.6, 60),
   door: () => { noise(0.5, 0.15, 400, 1.2, 150); tone(110, 0.4, 'triangle', 0.06); },
   step: () => noise(0.09, 0.12, 250, 2),
+  cutin: () => { noise(0.4, 0.25, 900, 0.7, 3000); tone(98, 0.5, 'sawtooth', 0.06); },
+  gavel: () => { noise(0.12, 0.5, 300, 1.5); tone(80, 0.3, 'sine', 0.2); },
+  vanish: () => { tone(880, 1.4, 'sine', 0.05, 0, 110); noise(1.2, 0.08, 4000, 0.5, 200); },
+  phone: () => { tone(1568, 0.12, 'sine', 0.07); tone(2093, 0.18, 'sine', 0.06, 0.12); },
+  camera: () => { noise(0.05, 0.3, 5000, 1); noise(0.1, 0.2, 1500, 1); },
+  unlock: () => { noise(0.06, 0.3, 2500, 3); tone(660, 0.15, 'triangle', 0.06, 0.08); tone(990, 0.3, 'sine', 0.05, 0.16); },
   wrong: () => { tone(220, 0.25, 'square', 0.04); tone(180, 0.3, 'square', 0.04, 0.12); },
 };
 
