@@ -92,6 +92,7 @@ erpin:
 
 joan:
   name: 죠안
+  scale: 1.12             # 원본이 조금 작게 그려져 있어 살짝 키움 (떠 있는 캐릭터라 발 맞춤은 안 함)
   persuasion: trust        # 교주 신뢰파 (처음부터 호감도 높음)
   start_affinity: 5
   color: TODO
