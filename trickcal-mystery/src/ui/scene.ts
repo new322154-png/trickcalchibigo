@@ -42,6 +42,18 @@ export function setBg(name: string, fallback?: string | string[]) {
     old.forEach((o) => o.remove());
   };
   // 그림이 없으면 대체 배경을 차례로 시도 (캐릭터 방 → 빈 객실 → 복도 …)
+  // 대체 배경을 안 줬으면 locations.yaml 에서 이 배경을 쓰는 방의 bg_fallback 을 찾아 쓴다 (#bg:trial_room → dining 등)
+  if (!fallback) {
+    const list: string[] = [];
+    let cur: string | undefined = name;
+    while (cur) {
+      const fb: string | undefined = Object.values(C.rooms).find((r) => r.bg === cur && r.bg_fallback)?.bg_fallback;
+      if (!fb || list.includes(fb)) break;
+      list.push(fb);
+      cur = fb;
+    }
+    fallback = list;
+  }
   const chain = (Array.isArray(fallback) ? fallback : fallback ? [fallback] : []).filter((f) => f && f !== name);
   const tryNext = (i: number) => {
     if (i >= chain.length) return missing();

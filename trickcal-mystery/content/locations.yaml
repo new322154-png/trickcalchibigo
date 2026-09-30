@@ -175,6 +175,7 @@ rooms:
   study:
     name: 서재
     bg: study
+    bg_fallback: corridor
     floor: 2
     map_pos: [35, 15]
     doors: [corridor]
@@ -202,6 +203,7 @@ rooms:
   guest_rooms:
     name: 빈 객실
     bg: guest_rooms
+    bg_fallback: corridor
     floor: 2
     map_pos: [90, 50]
     doors: [corridor_east]
