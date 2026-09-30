@@ -91,7 +91,17 @@ export function showTitle() {
     // 로고: config.yaml 의 title_logo 에 그림 파일을 적으면 그림, 비워 두면 코드로 그린 글자 로고
     (() => {
       const file = String(cfg('title_logo', '') ?? '');
-      if (file) return h('img.title-logo-img', { src: asset(`ui/${file}`), alt: txt(C.game.title, '') });
+      if (file) {
+        // 그림 로고 + 효과: 촛불 일렁임, 글자 위로 빛이 스치는 반짝임, 초승달 빛 (config.yaml title_logo_fx)
+        const url = asset(`ui/${file}`);
+        const fx = cfg('title_logo_fx', true);
+        const mask = { WebkitMaskImage: `url("${url}")`, maskImage: `url("${url}")` } as Record<string, string>;
+        return h(`div.logo-art${fx ? '.fx' : ''}`,
+          h('img.title-logo-img', { src: url, alt: txt(C.game.title, '') }),
+          fx ? h('div.logo-shine', { style: mask }) : null,
+          fx ? h('div.logo-moon') : null,
+        );
+      }
       return typeLogo(txt(C.game.title, '제목 미정'));
     })(),
     h('div.title-sub', txt(C.game.subtitle)),

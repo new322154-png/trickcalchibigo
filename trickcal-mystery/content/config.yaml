@@ -95,7 +95,8 @@ save:
 
 # 타이틀 로고 그림 (public/assets/ui/ 안). 비워 두면 코드로 그린 금빛 글자 로고
 #  예) title_logo: title_logo.png
-title_logo: ""
+title_logo: title_logo_gold.png
+title_logo_fx: true      # 로고 효과 (촛불 일렁임·반짝임·달빛)
 
 # ── 첫 화면: 스마트폰 홈 (제4의 벽) ──
 #  브라우저는 첫 클릭 전에 소리를 못 내서, 게임 시작 전에 폰 홈 화면을 보여 주고 게임 앱을 누르게 합니다.
