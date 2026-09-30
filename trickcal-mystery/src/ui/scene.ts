@@ -214,7 +214,7 @@ function renderSprite(id: string) {
   const x = POSITIONS[st.pos] ?? (Number.parseFloat(st.pos) || 50);
   el.style.left = x + '%';
   // 캐릭터 크기·서 있는 높이 (config.yaml characters.height / characters.bottom)
-  el.style.height = String(cfg('characters.height', '92%'));
+  el.style.height = `calc(${cfg('characters.height', '92%')} * ${C.characters[id]?.scale ?? 1})`;
   el.style.bottom = String(cfg('characters.bottom', '0%'));
   el.dataset.emotion = st.emotion;
   checkTalk(id, st.emotion);

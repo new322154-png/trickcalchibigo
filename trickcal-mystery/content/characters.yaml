@@ -15,6 +15,7 @@
 #                대사를 수십만 자 쓰다 보면 말투가 흔들리니 여기 적어 두면 좋아요.
 #  emotions:     이 캐릭터가 가진 감정 파일 목록. 아래 emotion_aliases 의 영문 이름 기준.
 #  start_affinity: 게임 시작 시 교주 호감도 (config.yaml 의 min~max 범위)
+#  scale:        (선택) 그림 크기 보정. 다른 캐릭터와 머리 크기가 안 맞을 때  예) scale: 0.9
 #  bust:         (선택) 대화창 위 상반신 위치 보정 [가로, 세로] px. 예) bust: [0, 40] → 40px 아래로
 #  habits:       평소 습관 도감 (가짜 찾기용). 수첩 인물 탭에 모인 만큼 보임
 #  reactions:    상황별 "기본 반응 대사". 여러 줄 쓰면 그중 하나가 무작위로 나옵니다.
@@ -139,6 +140,7 @@ ner:
 
 elena:
   name: 엘레나
+  scale: 0.88             # 그림이 다른 캐릭터보다 크게 그려져 있어 살짝 줄임
   persuasion: evidence     # 증거파
   start_affinity: 0
   color: TODO
