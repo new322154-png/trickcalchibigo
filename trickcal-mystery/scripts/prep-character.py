@@ -1,6 +1,7 @@
 """캐릭터 표정 애니메이션 정리: 크기 맞춤 + 발 위치 맞춤 + 같은 캔버스 + 프레임 절반
 사용: python3 scripts/prep-character.py '{"normal":["원본.webp",1],"smile":["원본2.webp",1.05]}' 출력폴더 [프레임간격=2]
   숫자 = 크기 배율 (표정마다 그려진 크기가 다를 때 머리 크기가 같아지게 조절)
+"""
 import sys, json
 from PIL import Image
 import numpy as np
