@@ -92,3 +92,24 @@ trial:
 save:
   slots: 12
   autosave: true           # 장이 바뀔 때 자동 저장
+
+# ── 첫 화면: 스마트폰 홈 (제4의 벽) ──
+#  브라우저는 첫 클릭 전에 소리를 못 내서, 게임 시작 전에 폰 홈 화면을 보여 주고 게임 앱을 누르게 합니다.
+#  그림은 public/assets/ui/boot/ 안.  주소 끝에 ?skip 을 붙이면 건너뜀 (테스트용)
+boot:
+  enabled: true
+  hint: 앱을 눌러 게임을 시작하세요
+  closed_toast: 서비스가 종료된 앱입니다.
+  bigwood_back: 스마트폰으로 돌아가기
+  splash_seconds: 1.8
+  # kind: closed(서비스 종료) / bigwood(빅우드 화면) / game(이 게임, 이름을 비우면 게임 제목)
+  apps:
+    - { id: paint_heroes,   name: 페인트 히어로즈,        icon: icon_paint_heroes.jpg,   kind: closed }
+    - { id: log,            name: 로그(LOG) - 항해의 시작, icon: icon_log.jpg,            kind: closed }
+    - { id: roll_the_chess, name: 롤 더 체스,             icon: icon_roll_the_chess.jpg, kind: closed }
+    - { id: black_citadel,  name: 블랙 시타델,            icon: icon_black_citadel.jpg,  kind: closed }
+    - { id: tingting_space, name: 팅팅 스페이스,          icon: icon_tingting_space.jpg, kind: closed }
+    - { id: lifting_nut,    name: 리프팅 너트,            icon: icon_lifting_nut.jpg,    kind: closed }
+    - { id: nyangbung,      name: 날아라! 냥붕,           icon: icon_nyangbung.jpg,      kind: closed }
+    - { id: fatima,         name: 트릭컬 파티마,          icon: icon_trickcal_fatima.jpg, kind: bigwood }
+    - { id: game,           name: "",                    icon: icon_game.jpg,           kind: game }

@@ -76,6 +76,7 @@ const SYNTH: Record<string, () => void> = {
   phone: () => { tone(1568, 0.12, 'sine', 0.07); tone(2093, 0.18, 'sine', 0.06, 0.12); },
   camera: () => { noise(0.05, 0.3, 5000, 1); noise(0.1, 0.2, 1500, 1); },
   unlock: () => { noise(0.06, 0.3, 2500, 3); tone(660, 0.15, 'triangle', 0.06, 0.08); tone(990, 0.3, 'sine', 0.05, 0.16); },
+  pop: () => { tone(520, 0.12, 'sine', 0.12, 0, 1400); tone(1760, 0.25, 'sine', 0.05, 0.08); tone(2637, 0.3, 'sine', 0.03, 0.14); },
   wrong: () => { tone(220, 0.25, 'square', 0.04); tone(180, 0.3, 'square', 0.04, 0.12); },
 };
 

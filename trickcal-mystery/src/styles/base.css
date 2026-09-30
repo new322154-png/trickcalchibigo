@@ -709,3 +709,52 @@ body.debug-spots .hotspot-label { display: block; }
 .inv-nav .btn { white-space: nowrap; }
 .inv-room { white-space: nowrap; }
 .hotspot.exit::after { opacity: .75; }
+
+/* ═══ 첫 화면: 스마트폰 홈 (제4의 벽) ═══ */
+.boot { position: absolute; inset: 0; overflow: hidden; background: #07050b; pointer-events: auto; animation: fadein .8s; }
+.boot::before { content: ''; position: absolute; inset: -40px; background: var(--boot-bg) center / cover; filter: blur(26px) brightness(.35) saturate(.8); }
+.boot::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,.75)); pointer-events: none; }
+.ph { position: absolute; left: 50%; top: 50%; width: 622px; height: 1000px; transform: translate(-50%, -50%); z-index: 1; animation: phIn 1s cubic-bezier(.2,.8,.2,1); filter: drop-shadow(0 30px 60px rgba(0,0,0,.7)); }
+@keyframes phIn { from { transform: translate(-50%, -44%) rotate(-2deg); opacity: 0 } to { transform: translate(-50%, -50%); opacity: 1 } }
+.ph-frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.ph-screen { position: absolute; left: 7.4%; right: 7.3%; top: 4.2%; bottom: 4.8%; border-radius: 34px; overflow: hidden; background: center / cover; display: flex; flex-direction: column; color: #fff; }
+.ph-screen::before { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(10,6,20,.35), rgba(10,6,20,.15) 40%, rgba(10,6,20,.55)); }
+.ph-screen > * { position: relative; }
+.ph-status { display: flex; justify-content: space-between; align-items: center; height: 44px; padding: 6px 30px 0; font-size: 17px; font-weight: 600; }
+.ph-sys { display: flex; gap: 7px; align-items: center; }
+.ph-sys i { display: block; background: #fff; }
+.ph-sys .sig { width: 17px; height: 11px; clip-path: polygon(0 100%, 100% 0, 100% 100%); }
+.ph-sys .wifi { width: 15px; height: 11px; border-radius: 15px 15px 0 0; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.ph-sys .bat { width: 24px; height: 11px; border-radius: 3px; box-shadow: inset 0 0 0 2px #fff; background: linear-gradient(90deg, #fff 70%, transparent 70%); background-clip: content-box; padding: 2px; }
+.ph-widget { text-align: center; margin: 34px 0 30px; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
+.ph-clock { font-size: 88px; font-weight: 300; letter-spacing: 2px; line-height: 1; }
+.ph-date { font-size: 20px; margin-top: 10px; opacity: .9; }
+.ph-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px 8px; padding: 0 22px; }
+.ph-app { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; color: #fff; cursor: pointer; padding: 0; }
+.ph-icon { width: 96px; height: 96px; border-radius: 24px; overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,.45); transition: transform .15s; background: #222; }
+.ph-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph-app:hover .ph-icon { transform: scale(1.06); }
+.ph-app:active .ph-icon { transform: scale(.9); }
+.ph-label { font-size: 15px; line-height: 1.25; max-width: 118px; text-align: center; word-break: keep-all; text-shadow: 0 1px 4px rgba(0,0,0,.9); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-app.game .ph-icon { box-shadow: 0 0 0 3px rgba(255,255,255,.85), 0 0 28px rgba(242,179,94,.8); animation: gameGlow 2.2s ease-in-out infinite 1.5s; }
+.ph-app.game .ph-label { font-weight: 700; }
+@keyframes gameGlow { 0%,100% { transform: scale(1) } 8% { transform: scale(1.12) rotate(-4deg) } 16% { transform: scale(1.1) rotate(4deg) } 24% { transform: scale(1) } }
+.ph-app.wiggle .ph-icon { animation: wiggle .45s; filter: grayscale(.6); }
+@keyframes wiggle { 20% { transform: rotate(-9deg) } 40% { transform: rotate(8deg) } 60% { transform: rotate(-6deg) } 80% { transform: rotate(4deg) } }
+.ph-dots { position: absolute !important; bottom: 34px; left: 0; right: 0; display: flex; justify-content: center; gap: 9px; }
+.ph-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.4); }
+.ph-dots i.on { background: #fff; }
+.ph-toast { position: absolute !important; left: 50%; bottom: 70px; transform: translate(-50%, 20px); padding: 12px 22px; border-radius: 22px; background: rgba(30,30,34,.92); font-size: 17px; white-space: nowrap; opacity: 0; transition: .25s; pointer-events: none; }
+.ph-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.boot-hint { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; z-index: 1; color: rgba(255,255,255,.55); font-size: 20px; letter-spacing: 3px; animation: hintBlink 2.4s ease-in-out infinite; }
+@keyframes hintBlink { 50% { opacity: .35 } }
+.boot-panel { position: absolute; inset: 0; z-index: 5; overflow: hidden; }
+.boot-panel.bigwood { background: #120d08; display: flex; align-items: center; justify-content: center; }
+.bw-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.bw-back { position: absolute; right: 40px; top: 36px; font-size: 24px; padding: 14px 32px; background: rgba(14,10,20,.85) !important; animation: fadeUp .5s .6s both; }
+.boot-panel.splash { background: #fff; display: flex; align-items: center; justify-content: center; transition: background .6s; }
+.splash-logo { width: 820px; transform: scale(0); }
+.splash-logo.pop { animation: logoPop .7s cubic-bezier(.3,1.6,.5,1) forwards; }
+@keyframes logoPop { 0% { transform: scale(0) rotate(-6deg) } 60% { transform: scale(1.12) rotate(2deg) } 100% { transform: scale(1) rotate(0) } }
+.boot-panel.splash.fade-black { background: #000; }
+.boot-panel.splash.fade-black .splash-logo { opacity: 0; transition: opacity .5s; }

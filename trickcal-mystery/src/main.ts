@@ -15,6 +15,7 @@ import { openBacklog, openGameMenu, openNotebook, showTitle } from './ui/screens
 import { openPhoneApp } from './modes/phone';
 import { installDebug } from './ui/debug';
 import { installUiSounds } from './ui/sfx';
+import { showBoot } from './ui/boot';
 
 function showFatal(e: unknown) {
   const el = document.getElementById('loading') ?? document.body;
@@ -48,7 +49,8 @@ try {
   installUiSounds();
   installDebug(); // 배포 버전에서 디버그 메뉴를 숨기려면 이 줄을 지우세요
   game.onTitle = showTitle;
-  showTitle();
+  // 첫 접속: 스마트폰 홈 화면 → 게임 앱을 누르면 (소리 켜짐) 로고 → 타이틀
+  showBoot(showTitle);
 } catch (e) {
   showFatal(e);
 }
