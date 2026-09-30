@@ -167,6 +167,10 @@ async function sayInner(line: Line, opts: { suspectable?: boolean; snap?: unknow
   // 저택의 목소리: 대화창 없이 화면 가운데에 붉은 글씨로 (config.yaml 의 mansion.speakers)
   const mansion = !!line.speakerName && (cfg('mansion.speakers', ['저택']) as string[]).includes(line.speakerName);
   box.classList.toggle('mansion', mansion);
+  // #shout 태그: 소리치는 대사 (크고 굵게, 창이 흔들림)
+  const shout = !mansion && line.tags.some((t) => t === 'shout' || t.startsWith('shout:'));
+  box.classList.toggle('shout', shout);
+  if (shout) box.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-7px,3px)' }, { transform: 'translate(6px,-3px)' }, { transform: 'translate(-4px,2px)' }, { transform: 'translate(0,0)' }], { duration: 320, easing: 'ease-out' });
   document.getElementById('stage')!.classList.toggle('mansion-voice', mansion);
   setBust(line);
 

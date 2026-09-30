@@ -272,6 +272,7 @@ class Game {
       case 'hide': { const who = charId(args[0]); if (who) scene.hideChar(who); break; }
       case 'hideall': scene.hideAll(); break;
       case 'shake': await scene.shake(Number(args[0] || 1)); break;
+      case 'shout': break; // 대화창에서 처리 (소리치는 대사)
       case 'flash': await scene.flash(args[0] || '#fff'); break;
       case 'fadeout': await scene.fade(true, Number(args[0] || 0.5) * 1000); break;
       case 'fadein': await scene.fade(false, Number(args[0] || 0.5) * 1000); break;

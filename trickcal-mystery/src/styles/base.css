@@ -758,3 +758,13 @@ body.debug-spots .hotspot-label { display: block; }
 @keyframes logoPop { 0% { transform: scale(0) rotate(-6deg) } 60% { transform: scale(1.12) rotate(2deg) } 100% { transform: scale(1) rotate(0) } }
 .boot-panel.splash.fade-black { background: #000; }
 .boot-panel.splash.fade-black .splash-logo { opacity: 0; transition: opacity .5s; }
+
+/* 이름표: 굵고 살짝 크게 */
+.dlg-name { font-size: calc(var(--font-size-name) * 1.15); font-weight: 900; letter-spacing: 3px; text-shadow: 0 2px 0 rgba(0,0,0,.55), 0 0 18px color-mix(in srgb, var(--name-color, #fff) 45%, transparent); }
+
+/* #shout — 소리치는 대사: 왼쪽 정렬·세로 가운데, 크고 굵게, 붉은 기운 */
+.dlg-box.shout { display: flex; align-items: center; }
+.dlg-box.shout .dlg-text { font-size: calc(var(--font-size-dialogue) * 1.32); font-weight: 900; letter-spacing: 1px; line-height: 1.35; color: #fff;
+  text-shadow: 0 3px 0 rgba(0,0,0,.6), 0 0 2px #7a1026, 0 0 22px rgba(192,68,95,.75); transform: skewX(-6deg); transform-origin: left center; animation: shoutIn .35s cubic-bezier(.3,1.6,.5,1); }
+.dlg-box.shout .dlg-frame { border-color: rgba(192,68,95,.7); box-shadow: var(--shadow), inset 0 0 60px rgba(192,68,95,.18); }
+@keyframes shoutIn { from { transform: skewX(-6deg) scale(1.25); opacity: 0 } to { transform: skewX(-6deg) scale(1); opacity: 1 } }
