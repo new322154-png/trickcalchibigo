@@ -17,6 +17,7 @@ import { isTodo, sleep } from '../engine/util';
 import { asset, clear, h, layer } from './dom';
 import { confirm, toast } from './modal';
 import { sfx } from './sfx';
+import { refreshSprites } from './scene';
 import { enterFullscreen, exitFullscreen, isFullscreen } from './fullscreen';
 
 export type SysTab = 'save' | 'load' | 'config' | 'controls' | 'cg' | 'music' | 'video' | 'endings' | 'flowchart';
@@ -327,6 +328,7 @@ function renderConfig(body: HTMLElement) {
       slider(t('settings.se'), 'se', 0, 1, 0.05, pct),
       h('h3.sys-h', tt('settings.group_screen', '화면')),
       toggle(tt('settings.screen_mode', '화면 모드'), [[tt('settings.windowed', '창 모드'), false], [t('settings.fullscreen'), true]], isFull, setFull),
+      toggle(tt('settings.char_motion', '캐릭터 움직임'), [[tt('settings.on', '켜기'), true], [tt('settings.off', '끄기'), false]], () => P.settings.charMotion !== false, (v) => { P.settings.charMotion = v; savePersist(); refreshSprites(); }),
       h('div.sys-row',
         h('div.sys-row-head', h('span', tt('settings.player_name', '교주 이름'))),
         h('div.sys-inline', nameInput, h('button.btn.small', { onclick: applyName }, tt('settings.apply', '변경')))),

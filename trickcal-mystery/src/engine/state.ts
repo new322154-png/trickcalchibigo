@@ -321,6 +321,8 @@ export interface Settings {
   windowOpacity: number;
   /** 플레이어가 정한 교주 이름 (빈 칸이면 characters.yaml 의 이름) */
   playerName: string;
+  /** 캐릭터 그림 움직임 (끄면 멈춘 그림 — 저사양 폰에서 깜빡일 때) */
+  charMotion: boolean;
 }
 
 export interface Persist {
@@ -363,6 +365,7 @@ export function loadPersist() {
       skipUnread: cfg('text.skip_unread', false),
       windowOpacity: 0.72,
       playerName: '',
+      charMotion: true,
       ...(saved.settings ?? {}),
     },
   };

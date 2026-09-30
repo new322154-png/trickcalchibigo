@@ -4,7 +4,7 @@
  * 그림이 없으면 이름과 감정을 적은 임시 카드가 대신 뜬다.
  */
 import { C, cfg, charName, emotionKey } from '../engine/content';
-import { S, markSeen } from '../engine/state';
+import { P, S, markSeen } from '../engine/state';
 import { orDefault, sleep } from '../engine/util';
 import { asset, clear, h, imageWithFallback, layer } from './dom';
 import { sfx } from './sfx';
@@ -166,6 +166,8 @@ const EXTS = () => [...new Set([cfg('characters.ext', 'webp'), 'webp', 'gif', 'p
 
 export function spritePath(id: string, emotion: string, talk = false, extOverride?: string) {
   const ext = extOverride ?? extOf.get(id) ?? cfg('characters.ext', 'webp');
+  // 움직임 끄기: 멈춘 그림(표정_still.webp) 사용
+  if (!talk && P?.settings?.charMotion === false && ext === 'webp') return `characters/${id}/${emotion}_still.webp`;
   const suffix = talk ? cfg('characters.talk_suffix', '_talk') : '';
   return `characters/${id}/${emotion}${suffix}.${ext}`;
 }
@@ -231,9 +233,13 @@ function renderSprite(id: string) {
   const sc = C.characters[id]?.scale ?? 1;
   const sink = (C.characters[id]?.sink ?? 0) / 100;
   el.style.bottom = sink ? `calc(${cfg('characters.bottom', '0%')} - ${cfg('characters.height', '92%')} * ${sc * sink})` : String(cfg('characters.bottom', '0%'));
+  const motionKey = P?.settings?.charMotion === false ? 'still' : 'anim';
+  // 같은 표정이 이미 떠 있으면 그림은 그대로 두고 위치만 바꾼다 (다시 불러오며 깜빡이는 것 방지)
+  if (el.dataset.emotion === st.emotion && el.dataset.motion === motionKey && el.querySelector('img')) return;
   el.dataset.emotion = st.emotion;
+  el.dataset.motion = motionKey;
   checkTalk(id, st.emotion);
-  const img = h('img') as HTMLImageElement;
+  const img = h('img', { decoding: 'async' }) as HTMLImageElement;
   // 표정을 바꿀 때는 새 그림이 다 불러와진 뒤에 바꿔 끼운다 (그 사이 빈 화면·깜빡임 방지)
   const req = String((Number(el.dataset.req) || 0) + 1);
   el.dataset.req = req;
@@ -254,13 +260,19 @@ function renderSprite(id: string) {
     if (!t) return put(h('div.sprite-missing', charName(id), h('small', st.emotion)));
     img.onload = () => {
       extOf.set(id, t[1]);
-      put(img);
+      // 그림을 다 풀어 둔 뒤에 바꿔 끼운다 (빈 칸이 한 프레임 보이며 깜빡이는 것 방지)
+      img.decode().catch(() => {}).then(() => put(img));
     };
     img.src = asset(spritePath(id, t[0], false, t[1]));
   };
   img.onerror = next;
   next();
-  if (!old.length) box.appendChild(img);
+  if (!old.length) {
+    // 처음 등장: 불러오는 동안은 숨겨 두었다가 준비되면 보이기
+    img.style.visibility = 'hidden';
+    img.addEventListener('load', () => img.decode().catch(() => {}).then(() => (img.style.visibility = '')), { once: true });
+    box.appendChild(img);
+  }
 }
 
 /** 대사가 출력되는 동안 말하는 모션으로 교체 (파일이 있을 때만) */
@@ -277,6 +289,11 @@ export function setTalking(id: string | undefined, talking: boolean) {
   if (!st || !el) return;
   if (!talkAvailable.get(`${id}/${st.emotion}`)) return;
   el.src = asset(spritePath(id, st.emotion, talking));
+}
+
+/** 설정에서 움직임을 켜고 끌 때: 떠 있는 캐릭터 그림 다시 그리기 */
+export function refreshSprites() {
+  for (const id of Object.keys(S.stage.sprites)) renderSprite(id);
 }
 
 /** 불러오기 후 화면 복원 */
