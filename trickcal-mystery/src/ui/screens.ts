@@ -96,11 +96,18 @@ export function showTitle() {
         const url = asset(`ui/${file}`);
         const fx = cfg('title_logo_fx', true);
         const mask = { WebkitMaskImage: `url("${url}")`, maskImage: `url("${url}")` } as Record<string, string>;
-        return h(`div.logo-art${fx ? '.fx' : ''}`,
-          h('img.title-logo-img', { src: url, alt: txt(C.game.title, '') }),
+        const img = h('img.title-logo-img', { src: url, alt: txt(C.game.title, '') }) as HTMLImageElement;
+        const art = h(`div.logo-art${fx ? '.fx' : ''}`,
+          img,
+          fx ? h('div.logo-flash') : null,
           fx ? h('div.logo-shine', { style: mask }) : null,
           fx ? h('div.logo-moon') : null,
         );
+        // 그림을 다 불러오고 풀어 둔 뒤에 연출 시작 (중간에 뚝 끊기지 않게)
+        const start = () => requestAnimationFrame(() => requestAnimationFrame(() => art.classList.add('ready')));
+        if (img.complete) start();
+        else img.decode().then(start, start);
+        return art;
       }
       return typeLogo(txt(C.game.title, '제목 미정'));
     })(),

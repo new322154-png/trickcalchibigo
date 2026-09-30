@@ -803,8 +803,9 @@ body.debug-spots .hotspot-label { display: block; }
 .title-logo:has(.logo-art) { left: 90px; top: 50px; }
 .logo-art { position: relative; width: 600px; }
 .logo-art .title-logo-img, .logo-art .logo-shine { filter: drop-shadow(0 0 1px rgba(20,8,30,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.65)); }
-.logo-art .title-logo-img { display: block; width: 100%; animation: logoReveal 2.2s cubic-bezier(.2,.7,.2,1) .2s both; filter: none; transform-origin: 50% 50%; }
-@keyframes logoReveal { 0% { opacity: 0; filter: blur(18px) brightness(2); transform: scale(1.06) } 60% { opacity: 1 } 100% { opacity: 1; filter: drop-shadow(0 0 1px rgba(20,8,30,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.65)); transform: none } }
+.logo-art .title-logo-img { display: block; width: 100%; opacity: 0; transform-origin: 50% 50%; will-change: opacity, transform; }
+.logo-art.ready .title-logo-img { animation: logoReveal 2.4s cubic-bezier(.22,.61,.36,1) .15s both; }
+@keyframes logoReveal { 0% { opacity: 0; transform: translateY(14px) scale(1.035) } 100% { opacity: 1; transform: none } }
 /* 촛불처럼 일렁이는 빛 (일렁임은 뒤쪽 빛 번짐에만) */
 .logo-art.fx::before { content: ''; position: absolute; inset: -18% -22%; z-index: -1; pointer-events: none; filter: blur(28px);
   background: radial-gradient(ellipse 50% 50% at 50% 52%, rgba(14,6,26,.55) 0%, rgba(40,18,50,.35) 40%, rgba(255,170,90,.08) 60%, transparent 100%);
@@ -819,3 +820,10 @@ body.debug-spots .hotspot-label { display: block; }
 .logo-moon { position: absolute; right: -3%; top: -6%; width: 18%; aspect-ratio: 1; border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
   background: radial-gradient(circle, rgba(255,236,190,.55), rgba(255,220,160,.12) 45%, transparent 70%); animation: fadein 1.5s 2s both, moonPulse 6s ease-in-out 3.5s infinite; }
 @keyframes moonPulse { 0%,100% { transform: scale(1); opacity: .8 } 50% { transform: scale(1.15); opacity: 1 } }
+
+.logo-art .logo-flash { position: absolute; inset: -10%; pointer-events: none; opacity: 0; mix-blend-mode: screen;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,225,170,.35), transparent 60%); }
+.logo-art.ready .logo-flash { animation: logoFlash 2.6s ease-out .2s both; }
+@keyframes logoFlash { 0% { opacity: 0 } 35% { opacity: 1 } 100% { opacity: 0 } }
+.logo-art .logo-shine, .logo-art .logo-moon, .logo-art.fx::before { visibility: hidden; }
+.logo-art.ready .logo-shine, .logo-art.ready .logo-moon, .logo-art.ready.fx::before { visibility: visible; }
