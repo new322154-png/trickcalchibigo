@@ -27,13 +27,16 @@ export function currentAmbient() {
   return kind;
 }
 
-export function setAmbient(next: string) {
+/** host 를 주면 그 요소 안에 그린다 (타이틀 화면처럼 스테이지 위를 덮는 화면용) */
+export function setAmbient(next: string, host?: HTMLElement) {
   const k = (['dust', 'rain', 'embers'].includes(next) ? next : 'none') as Kind;
-  if (S?.stage) S.stage.fx = k;
-  if (k === kind && canvas) return;
+  if (S?.stage && !host) S.stage.fx = k;
+  if (k === kind && canvas && !host && canvas.parentElement === layer('ambient')) return;
   kind = k;
   cancelAnimationFrame(raf);
-  const root = clear(layer('ambient'));
+  clear(layer('ambient'));
+  canvas?.remove();
+  const root = host ?? layer('ambient');
   parts = [];
   if (k === 'none' || !cfg('effects.ambient', true)) {
     canvas = null;

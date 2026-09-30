@@ -827,3 +827,4 @@ body.debug-spots .hotspot-label { display: block; }
   background: radial-gradient(closest-side, rgba(255,236,190,.4), rgba(255,220,160,.1) 60%, transparent); }
 .logo-art.ready .logo-moon { animation: glowIn 1.5s ease-out 1.6s forwards, moonPulse 6s ease-in-out 3.2s infinite; }
 @keyframes moonPulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.15) } }
+.title-screen > .ambient { z-index: 0; pointer-events: none; }

@@ -84,7 +84,6 @@ export function showTitle() {
     item(t('title.credits'), 'CREDITS', 'info', () => openCredits()),
   );
   playBgm(cfg('title_bgm', 'title'));
-  setAmbient('embers');
   // 제목: 작은 머리글(✦ 선) + 명조 제목 + 부제. 글자는 game.yaml 의 title / subtitle
   const logo = h(
     'div.title-logo',
@@ -133,6 +132,8 @@ export function showTitle() {
   // 타이틀 배경: public/assets/ui/title_bg.jpg 또는 .png (없으면 그라데이션)
   screen.style.backgroundImage = `url(${asset('ui/title_bg.jpg')}), url(${asset('ui/title_bg.png')}), radial-gradient(circle at 50% 30%, #3a2850, #120c18)`;
   root.appendChild(screen);
+  // 타이틀 위로 내리는 비 (코드로 그림). config.yaml 의 title_fx: rain / dust / embers / none
+  setAmbient(String(cfg('title_fx', 'rain')), screen);
 }
 
 // ── 게임 중 메뉴 · 저장 · 설정 ─────────────────────
