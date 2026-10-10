@@ -3,7 +3,7 @@ import { Game, type HumanIO } from '../src/engine/game';
 import type { Difficulty } from '../src/engine/types';
 
 const io: HumanIO = {
-  log() {}, update() {}, pause: async () => {},
+  log() {}, update() {}, pause: async () => {}, typing: async () => {},
   night: async () => null, batChoose: async () => 'citizen', day: async () => {},
   vote1: async () => null, defense: async () => '', vote2: async () => null,
   overturn: async () => false, agitate: async () => null, avenge: async () => null,

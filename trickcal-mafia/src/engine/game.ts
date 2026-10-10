@@ -23,6 +23,8 @@ export interface HumanIO {
   log(e: LogEntry): void;
   update(): void;
   pause(ms: number): Promise<void>;
+  /** 봇이 말하기 전 '입력 중…' 표시 */
+  typing(speaker: number, ms: number): Promise<void>;
   /** 밤 능력 대상 (null = 사용 안 함) */
   night(c: NightChoice): Promise<number | null>;
   /** 박쥐: 진영 고르기 */
@@ -77,6 +79,10 @@ export class Game {
   marks = new Map<number, string>();
   /** 사람 플레이어가 저택 쪽지를 이미 공개했나 */
   notePublished = false;
+  /** 최근에 쓰인 대사 틀 (여러 봇이 같은 말을 하지 않게) */
+  recentTemplates: string[] = [];
+  /** 오늘 이미 나온 질문 (대상:질문) */
+  asked = new Set<string>();
   /** 가짜 경찰 역을 맡은 마피아 봇 */
   fakeCop?: number;
   private stmtSeq = 0;
@@ -390,6 +396,7 @@ export class Game {
     this.day++;
     this.quota = { ask: 3, note: 1, contra: 2, claim: 2 };
     this.notePublished = false;
+    this.asked.clear();
     this.io.log({ kind: 'phase', text: `${this.day}일째 아침` });
     const m = this.pendingMorning!;
     this.pendingMorning = null;
@@ -398,7 +405,7 @@ export class Game {
       this.post({ kind: 'death', speaker: -1, night: this.night, who: d, text: `어젯밤 ${this.name(d)}가 사라졌다.` });
       this.io.log({ kind: 'death', text: `${this.name(d)}가 저택에서 사라졌습니다.` });
     }
-    for (const s of m.saved) this.sys(`누군가 습격당했지만 무사히 아침을 맞았다.`);
+    for (const _ of m.saved) this.sys(`누군가 습격당했지만 무사히 아침을 맞았다.`);
     for (const r of m.reveals) {
       this.players[r.who].revealed = true;
       this.post({ kind: 'reveal', speaker: -1, who: r.who, role: r.role, text: `저택의 계시: ${this.name(r.who)}의 정체는 ${roleName(r.role)}(${ROLES[r.role].job})이다.` });
@@ -432,23 +439,31 @@ export class Game {
       else this.brains.get(note.to)!.gotMansionNote(note.clue, note.night);
     }
 
-    // 증언판: 봇들의 아침 발언
+    // 사라진 사람에 대한 반응
+    const reactors = shuffle(this.rng, [...this.brains.values()].filter((b) => b.me.alive)).slice(0, m.deaths.length ? 2 : m.saved.length ? 1 : 0);
+    for (const b of reactors) {
+      const t = b.deathTalk(m.deaths, m.saved.length > 0);
+      if (t) await this.say(t);
+    }
+    // 증언판: 정보 공개 (조사 결과, 쪽지 등)
     await this.botWave('morning');
+    // 토론
+    await this.discuss(Math.round(3 + this.alive().length * 0.6));
     // 봇이 사람에게 보내는 익명 쪽지
     const h = this.human;
     if (h?.alive) {
       for (const b of this.brains.values()) {
         if (!b.me.alive) continue;
         const n = b.noteForHuman(h.id);
-        if (n) {
-          this.io.log({ kind: 'note', text: `✉ 익명 쪽지: ${n}`, privateTo: h.id });
-        }
+        if (n) this.io.log({ kind: 'note', text: `✉ 익명 쪽지: ${n}`, privateTo: h.id });
       }
     }
 
     // 사람 플레이어의 낮 행동
     if (h?.alive) await this.io.day();
-    // 오후: 봇들의 반응, 모순 지목
+    // 오후: 마지막 토론, 모순 지목, 투표 의사
+    this.sys('토론이 막바지에 이르렀다…');
+    await this.discuss(2);
     await this.botWave('afternoon');
     if (this.over) return;
 
@@ -459,46 +474,90 @@ export class Game {
     const order = shuffle(this.rng, [...this.brains.values()].filter((b) => b.me.alive));
     for (const b of order) {
       const posts = phase === 'morning' ? b.morningPosts() : b.afternoonPosts();
-      for (const p of posts) {
-        this.post(p);
-        await this.io.pause(phase === 'morning' ? 450 : 350);
+      for (const p of posts) await this.say(p);
+    }
+  }
+
+  /** 봇이 말할 때: 입력 중 표시 → 발언 */
+  async say(input: StmtInput): Promise<Stmt> {
+    if (input.speaker >= 0 && !this.players[input.speaker].human) {
+      const ms = Math.max(900, Math.min(3200, 500 + input.text.length * 42));
+      await this.io.typing(input.speaker, ms);
+    }
+    return this.post(input);
+  }
+
+  /** 오늘 누가 몇 번 말했나 */
+  private spokenToday(): Map<number, number> {
+    const m = new Map<number, number>();
+    for (const x of this.board) if (x.day === this.day && x.speaker >= 0 && !x.anon) m.set(x.speaker, (m.get(x.speaker) ?? 0) + 1);
+    return m;
+  }
+
+  /** 봇끼리 토론: 말할 사람을 골라 한 마디씩 */
+  async discuss(turns: number) {
+    let last = -1;
+    for (let i = 0; i < turns && !this.over; i++) {
+      const spoken = this.spokenToday();
+      const cands = [...this.brains.values()].filter((b) => b.me.alive && b.me.id !== last);
+      if (!cands.length) return;
+      const weights = cands.map((b) => {
+        const lastStmt = this.board[this.board.length - 1];
+        const accused = lastStmt && ((lastStmt.kind === 'suspect' && lastStmt.target === b.me.id) || (lastStmt.kind === 'contra' && lastStmt.blame === b.me.id));
+        return Math.max(0.1, 0.5 + b.persona.aggro * 0.8 + (accused ? 3 : 0) - (spoken.get(b.me.id) ?? 0) * 0.35);
+      });
+      let r = this.rng() * weights.reduce((a, x) => a + x, 0);
+      let who = cands[0];
+      for (let k = 0; k < cands.length; k++) { r -= weights[k]; if (r <= 0) { who = cands[k]; break; } }
+      const res = who.discussTurn(spoken);
+      if (!res) continue;
+      last = who.me.id;
+      await this.say(res.stmt);
+      if (res.ask) {
+        this.asked.add(`${res.ask.target}:${res.ask.q}`);
+        const tb = this.brains.get(res.ask.target);
+        if (tb && tb.me.alive) {
+          await this.say(tb.answer(res.ask.q, who.me.id));
+          last = tb.me.id;
+        }
       }
     }
   }
 
   // ── 사람 플레이어의 낮 행동 (화면에서 호출) ─────────
 
-  humanClaim(input: StmtInput) {
+  async humanClaim(input: StmtInput) {
     const h = this.human!;
     if (this.quota.claim <= 0 || !h.alive) return null;
     this.quota.claim--;
     const s = this.post({ ...input, speaker: h.id } as StmtInput);
     // 직업 주장이 겹치면 진짜 주인 봇이 반박
-    this.reactTo(s);
+    await this.reactTo(s);
     return s;
   }
 
   /** 사람 플레이어가 받은 저택 쪽지를 공개 (clue 를 바꾸면 위조) */
-  humanPublishNote(clue: Clue): Stmt | null {
+  async humanPublishNote(clue: Clue): Promise<Stmt | null> {
     const h = this.human!;
     const note = this.mansionNote;
     if (!note || note.to !== h.id || this.notePublished || !h.alive) return null;
     this.notePublished = true;
     const s = this.post({ kind: 'mnote', speaker: h.id, night: note.night, clue, text: `오늘 아침 봉인된 쪽지를 받았어. 내용은 ${clueText(clue, this.name)}` });
-    this.reactTo(s);
+    await this.reactTo(s);
     return s;
   }
 
-  humanAsk(target: number, q: 'role' | 'night' | 'suspect'): Stmt | null {
+  async humanAsk(target: number, q: 'role' | 'night' | 'suspect'): Promise<Stmt | null> {
     const h = this.human!;
     if (this.quota.ask <= 0 || !h.alive) return null;
     const b = this.brains.get(target);
     if (!b || !b.me.alive) return null;
     this.quota.ask--;
+    this.asked.add(`${target}:${q}`);
     const label = q === 'role' ? '직업이 뭐야?' : q === 'night' ? '어젯밤 뭐 했어?' : '누가 제일 수상해?';
     this.io.log({ kind: 'say', text: `${this.name(target)}, ${label}`, speaker: h.id });
-    const s = this.post(b.answer(q, h.id));
-    this.reactTo(s);
+    const s = await this.say(b.answer(q, h.id));
+    await this.reactTo(s, 1);
     return s;
   }
 
@@ -513,7 +572,7 @@ export class Game {
     return true;
   }
 
-  humanContra(a: number, b: number, blame: number): Stmt | null {
+  async humanContra(a: number, b: number, blame: number): Promise<Stmt | null> {
     const h = this.human!;
     if (this.quota.contra <= 0 || !h.alive) return null;
     const s1 = this.board.find((s) => s.id === a);
@@ -527,17 +586,19 @@ export class Game {
     });
     if (!valid) this.sys('…다들 고개를 갸웃했다. 두 말이 꼭 부딪히는 건 아닌 것 같다.');
     else this.sys('모두의 시선이 ' + this.name(blame) + '에게 쏠렸다.');
-    this.reactTo(s);
+    await this.reactTo(s);
     return s;
   }
 
   /** 방금 발언에 대한 봇들의 즉각 반응 */
-  private reactTo(s: Stmt) {
-    for (const b of this.brains.values()) {
+  private async reactTo(s: Stmt, extra = 2) {
+    for (const b of shuffle(this.rng, [...this.brains.values()])) {
       if (!b.me.alive) continue;
       const r = b.react(s);
-      if (r) this.post(r);
+      if (r) await this.say(r);
     }
+    // 이어지는 토론 한두 마디
+    await this.discuss(extra > 0 ? 1 + Math.floor(this.rng() * extra) : 0);
   }
 
   // ── 투표 ─────────────────────────────────────────
@@ -575,7 +636,12 @@ export class Game {
     for (const c of [a, b]) {
       if (c === null) continue;
       const p = this.players[c];
-      const text = p.human ? await this.io.defense() : this.brains.get(c)!.defense();
+      let text: string;
+      if (p.human) text = await this.io.defense();
+      else {
+        text = this.brains.get(c)!.defense();
+        await this.io.typing(c, Math.max(1100, Math.min(3200, 500 + text.length * 42)));
+      }
       this.io.log({ kind: 'say', text, speaker: c });
       for (const br of this.brains.values()) br.heardDefense(c);
       await this.io.pause(700);

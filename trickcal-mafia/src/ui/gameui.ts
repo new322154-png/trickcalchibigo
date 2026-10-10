@@ -90,7 +90,7 @@ export class GameUI implements HumanIO {
       case 'phase':
         el = h('div.f-phase', h('span', e.text));
         if (/밤/.test(e.text)) { this.isNight = true; sfx('night'); }
-        else if (/아침/.test(e.text)) { this.isNight = false; sfx('morning'); }
+        else if (/아침/.test(e.text)) { this.isNight = false; sfx('morning'); if (g.human?.alive) this.waitPanel('☀ 아침 — 토론이 시작됐어요'); }
         else sfx('gavel');
         this.update();
         break;
@@ -134,8 +134,39 @@ export class GameUI implements HumanIO {
     if (e.kind === 'say' || e.kind === 'death' || e.kind === 'vote') this.update();
   }
 
+  /** 빨리 넘기기: 지금 오가는 대화만 빠르게 */
+  private skipping = false;
+  private get speed() { return this.skipping ? 0.12 : this.fast ? 0.4 : 1; }
+
   async pause(ms: number) {
-    await sleep(this.fast ? ms * 0.3 : ms);
+    await sleep(ms * this.speed);
+  }
+
+  async typing(speaker: number, ms: number) {
+    const p = this.game.players[speaker];
+    const el = h('div.f-say.typing',
+      h('span.avatar.sm', { style: avatarStyle(speaker) }, p.name.slice(-1)),
+      h('div.bubble', h('div.who', p.name), h('div.dots', h('i'), h('i'), h('i'))));
+    this.feed.appendChild(el);
+    this.feed.scrollTop = this.feed.scrollHeight;
+    await sleep(ms * this.speed);
+    el.remove();
+  }
+
+  /** 봇들이 말하는 동안 패널 */
+  private waitPanel(title = '💬 대화가 오가는 중…') {
+    this.skipping = false;
+    clear(this.panel).append(
+      this.head(title, '다들 한마디씩 하고 있어요. 기록을 읽어 보세요.'),
+      h('button.btn.wide', { onclick: (e: Event) => { this.skipping = true; (e.currentTarget as HTMLButtonElement).disabled = true; } }, '⏩ 빨리 넘기기'),
+    );
+  }
+
+  private async busy(p: Promise<unknown>) {
+    this.waitPanel();
+    await p;
+    this.skipping = false;
+    this.dayMenu();
   }
 
   // ── 패널 도우미 ──────────────────────────────────
@@ -188,7 +219,8 @@ export class GameUI implements HumanIO {
 
   day(): Promise<void> {
     return new Promise<void>((resolve) => {
-      this.dayResolve = () => { this.dayResolve = null; this.exitPick(); clear(this.panel); this.update(); resolve(); };
+      this.skipping = false;
+      this.dayResolve = () => { this.dayResolve = null; this.exitPick(); this.waitPanel('🗳 투표 전 마지막 토론'); this.update(); resolve(); };
       this.update();
       this.dayMenu();
     });
@@ -226,7 +258,7 @@ export class GameUI implements HumanIO {
   private claimMenu() {
     const g = this.game;
     const night = g.night;
-    const submit = (input: StmtInput) => { g.humanClaim(input); this.dayMenu(); };
+    const submit = (input: StmtInput) => void this.busy(g.humanClaim(input));
     const pickPerson = (title: string, ids: number[], then: (id: number) => void) => {
       clear(this.panel).append(this.back(), this.head(title), this.peopleButtons(ids, then));
     };
@@ -268,9 +300,9 @@ export class GameUI implements HumanIO {
       this.peopleButtons(this.others(), (t) => {
         clear(this.panel).append(this.back(), this.head(`${g.name(t)}에게 질문`),
           h('div.acts',
-            h('button.act', { onclick: () => { g.humanAsk(t, 'role'); this.dayMenu(); } }, h('b', '직업이 뭐야?')),
-            h('button.act', { onclick: () => { g.humanAsk(t, 'night'); this.dayMenu(); } }, h('b', '어젯밤 뭐 했어?')),
-            h('button.act', { onclick: () => { g.humanAsk(t, 'suspect'); this.dayMenu(); } }, h('b', '누가 제일 수상해?')),
+            h('button.act', { onclick: () => void this.busy(g.humanAsk(t, 'role')) }, h('b', '직업이 뭐야?')),
+            h('button.act', { onclick: () => void this.busy(g.humanAsk(t, 'night')) }, h('b', '어젯밤 뭐 했어?')),
+            h('button.act', { onclick: () => void this.busy(g.humanAsk(t, 'suspect')) }, h('b', '누가 제일 수상해?')),
           ));
       }));
   }
@@ -294,7 +326,7 @@ export class GameUI implements HumanIO {
   private noteForm() {
     const g = this.game;
     const clue = this.pendingNote!;
-    const publish = (c: Clue) => { g.humanPublishNote(c); this.pendingNote = null; this.dayMenu(); };
+    const publish = (c: Clue) => { this.pendingNote = null; void this.busy(g.humanPublishNote(c)); };
     const forge = () => {
       const alive = g.alive().map((p) => p.id);
       const pick2 = (title: string, then: (a: number, b: number) => void) => {
@@ -333,7 +365,7 @@ export class GameUI implements HumanIO {
         if (!blames.length) { this.dayMenu(); return; }
         clear(this.panel).append(this.back(), this.head('누가 거짓말을 했나?'),
           h('div.quote', `「${sa.text}」`), h('div.quote', `「${sb.text}」`),
-          this.peopleButtons(blames, (blame) => { g.humanContra(a, b, blame); this.dayMenu(); }, { danger: true }));
+          this.peopleButtons(blames, (blame) => void this.busy(g.humanContra(a, b, blame)), { danger: true }));
       },
     };
     const refresh = () => (info.textContent = `가운데 기록에서 서로 안 맞는 발언 2개를 누르세요. (${this.pickMode?.picked.length ?? 0}/2)`);

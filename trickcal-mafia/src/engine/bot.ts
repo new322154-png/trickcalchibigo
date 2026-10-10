@@ -5,6 +5,7 @@
  *  - 마피아 봇은 진짜 정체를 알고, 시민처럼 보이게 거짓 직업·거짓 조사 결과·위조 쪽지를 쓴다.
  */
 import { LINES, PERSONAS, line, type Persona } from '../data/lines';
+import { REGISTER, TALK, fill, flavor } from '../data/talk';
 import { ROLES, roleName, type NightKind, type RoleId } from '../data/roles';
 import { factsOf, findContradictions, clueText } from './logic';
 import { pick } from './rng';
@@ -91,16 +92,55 @@ export class Brain {
     return this.sus[id];
   }
 
-  private bump(id: number, v: number) {
+  /** 의심 이유: 사람마다 "왜 의심하는지" 문장을 모아 두고, 말할 때 인용한다 */
+  reasons = new Map<number, { why: string; v: number; day: number; used: number }[]>();
+
+  private bump(id: number, v: number, why?: string) {
     if (id < 0 || id === this.me.id) return;
     this.sus[id] += v;
+    if (why && v > 0.25) this.addReason(id, why, v);
   }
 
-  private markBad(id: number) {
+  private addReason(id: number, why: string, v: number) {
+    const list = this.reasons.get(id) ?? [];
+    const old = list.find((x) => x.why === why);
+    if (old) { old.v += v; old.day = this.game.day; }
+    else list.push({ why, v, day: this.game.day, used: 0 });
+    this.reasons.set(id, list);
+  }
+
+  /** 이 사람을 의심하는 가장 좋은 이유 (덜 쓴 것, 최근 것 우선) */
+  reasonFor(id: number): string | null {
+    const list = this.reasons.get(id);
+    if (!list?.length) return null;
+    const best = [...list].sort((a, b) => (b.v - b.used * 1.5 + (b.day - this.game.day) * 0.3) - (a.v - a.used * 1.5 + (a.day - this.game.day) * 0.3))[0];
+    best.used++;
+    return best.why;
+  }
+
+  private markBad(id: number, why?: string) {
     if (id < 0 || id === this.me.id) return;
+    if (why) this.addReason(id, why, 5);
     if (this.isMafia) return; // 마피아는 진실을 이미 앎
     this.known.set(id, 'bad');
   }
+
+  /** 쓴 문장을 기억해서 같은 말을 되풀이하지 않는다 */
+  private said = new Map<string, number>();
+  talk(key: keyof typeof TALK, vars: Record<string, string> = {}): string {
+    const list = TALK[key][REGISTER[this.me.persona]];
+    let best = list[0], bu = Infinity;
+    const recent = this.game.recentTemplates;
+    for (const tpl of list) {
+      const u = (this.said.get(tpl) ?? 0) + (recent.includes(tpl) ? 3 : 0) + this.r() * 0.9;
+      if (u < bu) { bu = u; best = tpl; }
+    }
+    this.said.set(best, (this.said.get(best) ?? 0) + 1);
+    recent.push(best);
+    if (recent.length > 14) recent.shift();
+    return flavor(this.me.persona, fill(best, vars), this.r);
+  }
+  private R = (tpl: string, vars: Record<string, string>) => fill(tpl, vars);
 
   private alive(id: number) { return this.game.players[id]?.alive; }
 
@@ -148,7 +188,7 @@ export class Brain {
         for (const st of this.game.board) {
           if (st.kind === 'act' && st.act === 'investigate' && st.target === t && st.speaker >= 0) {
             const killer = s.role === 'nifel' || s.role === 'heir';
-            if ((st.result === 'mafia' && !killer && !bad) || (st.result === 'citizen' && s.role === 'nifel')) this.bump(st.speaker, 4);
+            if ((st.result === 'mafia' && !killer && !bad) || (st.result === 'citizen' && s.role === 'nifel')) this.bump(st.speaker, 4, this.R('{a}의 조사 결과가 계시와 달랐던 점', { a: this.n(st.speaker) }));
           }
         }
         break;
@@ -164,21 +204,21 @@ export class Brain {
         if (s.act === 'investigate' && s.target !== undefined) {
           const T = s.target;
           if (T === me) {
-            if (s.result === 'mafia' && !this.game.isKiller(this.me)) this.bump(S, 6);
+            if (s.result === 'mafia' && !this.game.isKiller(this.me)) this.bump(S, 6, this.R('{a:가} 나를 마피아라고 거짓말한 점', { a: this.n(S) }));
             if (s.result === 'citizen') this.bump(S, -0.3);
           } else if (!mates.includes(T)) {
-            this.bump(T, s.result === 'mafia' ? 2.4 * w : -1.3 * w);
+            this.bump(T, s.result === 'mafia' ? 2.4 * w : -1.3 * w, this.R('{a}의 조사에서 {b:가} 마피아로 나왔다는 점', { a: this.n(S), b: this.n(T) }));
           }
           // 내가 경찰이고 다른 결과를 알면 거짓
-          for (const p of this.priv) if (p.kind === 'investigate' && p.target === T && p.side !== s.result) this.bump(S, 5);
+          for (const p of this.priv) if (p.kind === 'investigate' && p.target === T && p.side !== s.result) this.bump(S, 5, this.R('{a}의 조사 결과가 사실과 다른 점', { a: this.n(S) }));
         }
-        if (s.act === 'protect' && s.target !== undefined && this.victimsOf(s.night).includes(s.target)) this.bump(S, 1.5);
+        if (s.act === 'protect' && s.target !== undefined && this.victimsOf(s.night).includes(s.target)) this.bump(S, 1.5, this.R('{a:가} 지켰다던 {b:가} 습격당한 점', { a: this.n(S), b: this.n(s.target) }));
         if (s.act === 'track' && s.target !== undefined && typeof s.result === 'number') {
           const T = s.target;
           if (T === me) {
             const real = this.game.visits.get(s.night)?.get(me) ?? -1;
-            if (real !== s.result) this.bump(S, 6);
-          } else if (s.result >= 0 && this.victimsOf(s.night).includes(s.result)) this.bump(T, 3 * w);
+            if (real !== s.result) this.bump(S, 6, this.R('{a:가} 내 밤 행동을 거짓으로 말한 점', { a: this.n(S) }));
+          } else if (s.result >= 0 && this.victimsOf(s.night).includes(s.result)) this.bump(T, 3 * w, this.R('{a:가} 밤에 {b}의 방에 갔다는 점', { a: this.n(T), b: this.n(s.result) }));
         }
         if (s.act === 'medium' && s.target !== undefined && typeof s.result === 'string') {
           const claimed = this.claimOf(s.target);
@@ -194,20 +234,20 @@ export class Brain {
         }
         if (s.act === 'stay') {
           const real = this.knownVisit(S, s.night);
-          if (real !== undefined && real !== -1) this.bump(S, 4);
+          if (real !== undefined && real !== -1) this.bump(S, 4, this.R('{a:가} 방에 있었다고 했는데 아니었던 점', { a: this.n(S) }));
         }
         break;
       }
       case 'suspect':
         if (s.target === me) {
-          if (!this.isMafia) this.bump(S, 0.45);
+          if (!this.isMafia) this.bump(S, 0.45, this.R('{a:가} 나를 몰아간 점', { a: this.n(S) }));
         } else if (!mates.includes(s.target)) {
-          if (this.known.get(s.target) === 'good') this.bump(S, 0.4);
-          else this.bump(s.target, 0.3 * w * (0.4 + this.persona.follow));
+          if (this.known.get(s.target) === 'good') this.bump(S, 0.4, this.R('{a:가} 믿을 만한 {b:를} 의심한 점', { a: this.n(S), b: this.n(s.target) }));
+          else this.bump(s.target, 0.3 * w * (0.4 + this.persona.follow), this.R('{a}도 {b:를} 의심했던 점', { a: this.n(S), b: this.n(s.target) }));
         }
         break;
       case 'trust':
-        if (this.known.get(s.target) === 'bad' && !this.isMafia) this.bump(S, 1.5);
+        if (this.known.get(s.target) === 'bad' && !this.isMafia) this.bump(S, 1.5, this.R('{a:가} 수상한 {b:를} 감싼 점', { a: this.n(S), b: this.n(s.target) }));
         else if (!mates.includes(s.target)) this.bump(s.target, -0.2 * w);
         break;
       case 'mnote':
@@ -215,10 +255,10 @@ export class Brain {
         break;
       case 'contra':
         if (s.blame === me) {
-          if (!this.isMafia) this.bump(S, s.valid ? 0.6 : 1.0);
+          if (!this.isMafia) this.bump(S, s.valid ? 0.6 : 1.0, this.R('{a:가} 나를 거짓말쟁이로 몬 점', { a: this.n(S) }));
         } else if (s.valid) {
-          if (!mates.includes(s.blame)) this.bump(s.blame, 1.7 * this.cred(S) * (0.5 + this.persona.trust * 0.5));
-        } else this.bump(S, 0.6);
+          if (!mates.includes(s.blame)) this.bump(s.blame, 1.7 * this.cred(S) * (0.5 + this.persona.trust * 0.5), this.R('{a}의 말에 모순이 있었던 점', { a: this.n(s.blame) }));
+        } else this.bump(S, 0.6, this.R('{a:가} 억지로 모순을 만든 점', { a: this.n(S) }));
         break;
     }
   }
@@ -228,14 +268,14 @@ export class Brain {
     if (S === me) return;
     if (R === this.me.role && UNIQUE_CLAIMABLE(R) && !this.isMafia) {
       // 내 직업을 사칭 → 확실한 거짓말
-      this.markBad(S);
+      this.markBad(S, this.R('{a:가} 내 직업을 사칭한 점', { a: this.n(S) }));
       if (!this.claimed) this.counterQueue.push(this.counterClaim(S));
       return;
     }
     const others = this.claimsOf(R).filter((c) => c !== S);
     if (others.length && UNIQUE_CLAIMABLE(R)) {
-      for (const o of others) this.bump(o, 0.8);
-      this.bump(S, 1.2);
+      for (const o of others) this.bump(o, 0.8, this.R('{a:와} {b:가} 둘 다 {r:이라고} 한 점', { a: this.n(o), b: this.n(S), r: roleName(R) }));
+      this.bump(S, 1.2, this.R('{a:가} 뒤늦게 {r:이라고} 나선 점', { a: this.n(S), r: roleName(R) }));
       return;
     }
     if (!viaAct && ROLES[R].key) this.bump(S, -0.35 * w);
@@ -248,20 +288,20 @@ export class Brain {
     // 내가 진짜 받은 사람인데 다른 사람이 받았다고 하면 거짓
     if (real && real.night === s.night && real.to === me && S !== me) {
       this.bump(S, 5);
-      this.markBad(S);
+      this.markBad(S, this.R('{a:가} 쪽지를 받았다고 거짓말한 점', { a: this.n(S) }));
       return;
     }
     const dup = this.game.board.filter((x) => x.kind === 'mnote' && x.night === s.night && x.speaker !== S && x.id !== s.id);
     if (dup.length) {
-      for (const x of dup) this.bump(x.speaker, 1.3);
-      this.bump(S, 1.5);
+      for (const x of dup) this.bump(x.speaker, 1.3, '쪽지를 받았다는 사람이 둘이나 나온 점');
+      this.bump(S, 1.5, this.R('{a:가} 쪽지를 받았다고 끼어든 점', { a: this.n(S) }));
       return;
     }
     const c = s.clue;
     const victims = this.victimsOf(s.night);
     // 내 행동과 다르면 위조
-    if (c.kind === 'stayed' && c.who === me && this.myVisit(s.night) !== -1) return this.bump(S, 5);
-    if (c.kind === 'visited' && c.who === me && this.myVisit(s.night) !== c.target) return this.bump(S, 5);
+    if (c.kind === 'stayed' && c.who === me && this.myVisit(s.night) !== -1) return this.bump(S, 5, this.R('{a}의 쪽지 내용이 사실과 다른 점', { a: this.n(S) }));
+    if (c.kind === 'visited' && c.who === me && this.myVisit(s.night) !== c.target) return this.bump(S, 5, this.R('{a}의 쪽지 내용이 사실과 다른 점', { a: this.n(S) }));
     if (c.kind === 'notMafia' && c.who === me && this.isMafia) return; // 마피아는 이득이라 조용히
     const mates = this.isMafia ? this.mates() : [];
     switch (c.kind) {
@@ -269,15 +309,16 @@ export class Brain {
         if (!mates.includes(c.who)) this.bump(c.who, -0.5 * w);
         break;
       case 'visited':
-        if (!mates.includes(c.who)) this.bump(c.who, victims.includes(c.target) ? 3.2 * w : 0.2 * w);
+        if (!mates.includes(c.who)) this.bump(c.who, victims.includes(c.target) ? 3.2 * w : 0.2 * w, this.R('쪽지에 {a:가} {b}의 방에 갔다고 나온 점', { a: this.n(c.who), b: this.n(c.target) }));
         break;
       case 'oneOf': {
         const [a, b] = [c.a, c.b];
-        if (a === me && !this.isMafia) { this.bump(b, 3 * w); break; }
-        if (b === me && !this.isMafia) { this.bump(a, 3 * w); break; }
-        if (this.known.get(a) === 'good') this.bump(b, 2.8 * w);
-        else if (this.known.get(b) === 'good') this.bump(a, 2.8 * w);
-        else { this.bump(a, 0.8 * w); this.bump(b, 0.8 * w); }
+        const why = (x: number) => this.R('쪽지에 {a}의 이름이 나온 점', { a: this.n(x) });
+        if (a === me && !this.isMafia) { this.bump(b, 3 * w, why(b)); break; }
+        if (b === me && !this.isMafia) { this.bump(a, 3 * w, why(a)); break; }
+        if (this.known.get(a) === 'good') this.bump(b, 2.8 * w, why(b));
+        else if (this.known.get(b) === 'good') this.bump(a, 2.8 * w, why(a));
+        else { this.bump(a, 0.8 * w, why(a)); this.bump(b, 0.8 * w, why(b)); }
         break;
       }
       case 'notMafia':
@@ -329,22 +370,29 @@ export class Brain {
       if (!this.known.has(id)) this.known.set(id, 'good');
       for (const s of this.game.board) {
         if (s.speaker !== id) continue;
-        if (s.kind === 'act' && s.act === 'investigate' && s.target !== undefined && s.target !== this.me.id) this.bump(s.target, s.result === 'mafia' ? 1.8 : -0.6);
-        if (s.kind === 'suspect' && s.target !== this.me.id) this.bump(s.target, 0.3);
-        if (s.kind === 'contra' && s.valid && s.blame !== this.me.id) this.bump(s.blame, 0.8);
+        const dw = (t: number) => this.R('죽은 {a:가} {b:를} 지목했던 점', { a: this.n(id), b: this.n(t) });
+        if (s.kind === 'act' && s.act === 'investigate' && s.target !== undefined && s.target !== this.me.id) this.bump(s.target, s.result === 'mafia' ? 1.8 : -0.6, dw(s.target));
+        if (s.kind === 'suspect' && s.target !== this.me.id) this.bump(s.target, 0.3, dw(s.target));
+        if (s.kind === 'contra' && s.valid && s.blame !== this.me.id) this.bump(s.blame, 0.8, dw(s.blame));
       }
+      // 밤에 죽은 사람(시민일 확률 높음)에게 표를 던졌던 사람
+      for (const log of this.voteLog.slice(-2))
+        for (const v of log.votes)
+          if (v.target === id && v.voter !== this.me.id) this.bump(v.voter, 0.35, this.R('{a:가} 시민이었을 {b}에게 표를 던졌던 점', { a: this.n(v.voter), b: this.n(id) }));
       // 내 추적 결과로 범인 확정
       for (const p of this.priv) if (p.kind === 'track' && p.went === id && p.night === this.game.night) this.markBad(p.target);
     }
   }
 
+  private voteLog: { day: number; votes: VoteRecord[] }[] = [];
   onVotes(votes: VoteRecord[], _label: string) {
+    this.voteLog.push({ day: this.game.day, votes });
     if (this.isMafia) return;
     for (const v of votes) {
       if (v.target === null || v.voter === this.me.id) continue;
-      if (this.known.get(v.target) === 'good') this.bump(v.voter, 0.35);
+      if (this.known.get(v.target) === 'good') this.bump(v.voter, 0.35, this.R('{a:가} 믿을 만한 {b}에게 표를 던진 점', { a: this.n(v.voter), b: this.n(v.target) }));
       if (this.known.get(v.target) === 'bad') this.bump(v.voter, -0.3);
-      if (v.target === this.me.id) this.bump(v.voter, 0.25);
+      if (v.target === this.me.id) this.bump(v.voter, 0.3, this.R('{a:가} 나에게 표를 던진 점', { a: this.n(v.voter) }));
     }
   }
 
@@ -573,13 +621,6 @@ export class Brain {
       }
     }
 
-    // 의심 발언
-    if (out.length < 2) {
-      const t = this.choosePersonaTarget();
-      const strong = t !== null && (this.isMafia ? true : this.score(t) > 0.6 - this.persona.aggro * 0.8);
-      if (t !== null && strong && this.r() < 0.4 + this.persona.aggro * 0.45) out.push({ kind: 'suspect', speaker: me, target: t, text: this.say('suspect', { t: this.n(t) }) });
-      else if (!out.length && this.r() < 0.3) out.push({ kind: 'chat', speaker: me, text: this.say('nosuspect') });
-    }
     return out.slice(0, 3);
   }
 
@@ -592,15 +633,17 @@ export class Brain {
       for (const [a, b] of pairs) {
         const key = `${a.id}-${b.id}`;
         if (this.calledContra.has(key)) continue;
-        const cands = [a.speaker, b.speaker].filter((x) => x >= 0 && x !== this.me.id && this.alive(x));
+        if (a.speaker === this.me.id || b.speaker === this.me.id) continue;
+        const cands = [a.speaker, b.speaker].filter((x) => x >= 0 && this.alive(x));
         if (!cands.length) continue;
         const mates = this.isMafia ? this.mates() : [];
         const pool = cands.filter((c) => !mates.includes(c));
         if (!pool.length) continue;
         const blame = pool.sort((x, y) => this.score(y) - this.score(x))[0];
         this.calledContra.add(key);
-        // 다른 봇이 이미 짚었으면 생략
-        if (this.game.board.some((s) => s.kind === 'contra' && ((s.a === a.id && s.b === b.id) || (s.a === b.id && s.b === a.id)))) continue;
+        // 다른 사람이 이미 같은 두 사람의 모순을 짚었으면 생략
+        const pair = [a.speaker, b.speaker].sort().join('-');
+        if (this.game.board.some((s) => s.kind === 'contra' && s.day === this.game.day && [this.game.board.find((x) => x.id === s.a)?.speaker, this.game.board.find((x) => x.id === s.b)?.speaker].sort().join('-') === pair)) continue;
         out.push({ kind: 'contra', speaker: this.me.id, a: a.id, b: b.id, blame, valid: true, text: this.say('contra', { a: this.n(a.speaker), b: this.n(b.speaker), t: this.n(blame) }) });
         break;
       }
@@ -608,7 +651,7 @@ export class Brain {
     // 투표 직전 마음 정하기
     if (!out.length && this.r() < 0.3 + this.persona.aggro * 0.35) {
       const t = this.choosePersonaTarget();
-      if (t !== null && (this.isMafia || this.score(t) > 0)) out.push({ kind: 'suspect', speaker: this.me.id, target: t, text: this.say('vote_intent', { t: this.n(t) }) });
+      if (t !== null && (this.isMafia || this.score(t) > 0)) out.push({ kind: 'suspect', speaker: this.me.id, target: t, text: this.talk('voteIntent', { t: this.n(t), why: this.reasonFor(t) ?? '여러 가지' }) });
     }
     return out;
   }
@@ -632,7 +675,7 @@ export class Brain {
           return { kind: 'act', speaker: me, night: res.night, act: 'investigate', target: res.target, result: res.side, text: this.say(res.side === 'mafia' ? 'investigate_m' : 'investigate_c', { t: this.n(res.target) }) };
         }
       }
-      return { kind: 'chat', speaker: me, text: this.say('accused', { t: this.n(s.speaker) }) };
+      return { kind: 'suspect', speaker: me, target: s.speaker, text: this.talk('defendSelf', { s: this.n(s.speaker) }) };
     }
     return null;
   }
@@ -643,7 +686,16 @@ export class Brain {
   }
 
   /** 심문에 대한 대답 */
-  answer(q: 'role' | 'night' | 'suspect', _asker: number): StmtInput {
+  private answered = new Map<string, number>();
+  answer(q: 'role' | 'night' | 'suspect', asker: number): StmtInput {
+    const key = `${this.game.day}:${q}`;
+    const n = this.answered.get(key) ?? 0;
+    this.answered.set(key, n + 1);
+    if (n > 0) return { kind: 'chat', speaker: this.me.id, text: this.talk('already') };
+    return this.answerFresh(q, asker);
+  }
+
+  private answerFresh(q: 'role' | 'night' | 'suspect', _asker: number): StmtInput {
     const me = this.me.id;
     const night = this.game.night;
     if (q === 'role') {
@@ -690,7 +742,8 @@ export class Brain {
     }
     const t = this.choosePersonaTarget();
     if (t === null || (!this.isMafia && this.score(t) < 0.2)) return { kind: 'chat', speaker: me, text: this.say('nosuspect') };
-    return { kind: 'suspect', speaker: me, target: t, text: this.say('suspect', { t: this.n(t) }) };
+    const why = this.reasonFor(t);
+    return { kind: 'suspect', speaker: me, target: t, text: why ? this.talk('accuse', { t: this.n(t), why }) : this.talk('accuseVague', { t: this.n(t) }) };
   }
 
   private roleToClaim(): RoleId | null {
@@ -728,6 +781,108 @@ export class Brain {
     return null;
   }
 
+  // ── 토론 ─────────────────────────────────────────
+
+  /** 아침: 사라진 사람에 대한 반응 */
+  deathTalk(victims: number[], saved: boolean): StmtInput | null {
+    const me = this.me.id;
+    if (!victims.length) return saved ? { kind: 'chat', speaker: me, text: this.talk('saved') } : null;
+    const v = pick(this.r, victims);
+    const claimed = this.claimOf(v);
+    if (claimed && ROLES[claimed].key) return { kind: 'chat', speaker: me, text: this.talk('deathClaimed', { v: this.n(v), r: roleName(claimed) }) };
+    const acc = [...this.game.board].reverse().find((x) => x.speaker === v && (x.kind === 'suspect' || (x.kind === 'contra' && x.valid)));
+    if (acc) {
+      const t = acc.kind === 'suspect' ? acc.target : (acc as Extract<Stmt, { kind: 'contra' }>).blame;
+      if (this.alive(t) && t !== me) return { kind: 'suspect', speaker: me, target: t, text: this.talk('deathAccused', { v: this.n(v), t: this.n(t) }) };
+    }
+    return { kind: 'chat', speaker: me, text: this.talk('deathPlain', { v: this.n(v) }) };
+  }
+
+  /** 토론 한 마디. ask 가 있으면 그 사람에게 질문한 것 (게임이 대답을 받아 온다) */
+  discussTurn(spoken: Map<number, number>): { stmt: StmtInput; ask?: { target: number; q: 'role' | 'night' | 'suspect' } } | null {
+    const me = this.me.id;
+    const g = this.game;
+    const today = g.board.filter((x) => x.day === g.day);
+    const recent = today.slice(-6);
+    const mates = this.isMafia ? this.mates() : [];
+    const options: { w: number; run: () => { stmt: StmtInput; ask?: { target: number; q: 'role' | 'night' | 'suspect' } } | null }[] = [];
+
+    // 1) 나를 지목한 사람에게 반박
+    const atMe = [...recent].reverse().find((x) => x.speaker !== me && x.speaker >= 0 && ((x.kind === 'suspect' && x.target === me) || (x.kind === 'contra' && x.blame === me)));
+    if (atMe && !today.some((x) => x.speaker === me && x.id > atMe.id)) {
+      options.push({ w: 3, run: () => ({ stmt: { kind: 'suspect', speaker: me, target: atMe.speaker, text: this.talk('defendSelf', { s: this.n(atMe.speaker) }) } }) });
+    }
+
+    // 2) 방금 나온 의심에 동조하거나 반대
+    const lastAcc = [...recent].reverse().find((x) => x.speaker !== me && x.speaker >= 0 && (x.kind === 'suspect' || (x.kind === 'contra' && x.valid)));
+    if (lastAcc) {
+      const t = lastAcc.kind === 'suspect' ? lastAcc.target : (lastAcc as Extract<Stmt, { kind: 'contra' }>).blame;
+      if (t !== me && this.alive(t)) {
+        const agreeScore = this.isMafia ? (mates.includes(t) ? -5 : 1) : this.score(t);
+        const vars = { s: this.n(lastAcc.speaker), t: this.n(t) };
+        if (agreeScore > 0.4) options.push({ w: 1.2 + this.persona.follow, run: () => ({ stmt: { kind: 'suspect', speaker: me, target: t, text: this.talk('agree', vars) } }) });
+        else if (agreeScore < -0.6) options.push({ w: 1.4, run: () => ({ stmt: { kind: 'trust', speaker: me, target: t, text: this.talk('disagree', vars) } }) });
+      }
+    }
+
+    // 3) 이유를 들어 의심
+    const t = this.choosePersonaTarget();
+    if (t !== null) {
+      const why = this.isMafia ? this.reasonFor(t) : this.score(t) > 0.3 ? this.reasonFor(t) : null;
+      if (why) options.push({ w: 0.8 + this.persona.aggro, run: () => ({ stmt: { kind: 'suspect', speaker: me, target: t, text: this.talk('accuse', { t: this.n(t), why }) } }) });
+      else if (this.persona.aggro > 0.5 || g.day >= 2) options.push({ w: 0.35 + this.persona.aggro * 0.4, run: () => ({ stmt: { kind: 'suspect', speaker: me, target: t, text: this.talk('accuseVague', { t: this.n(t) }) } }) });
+    }
+
+    // 4) 저택 쪽지 해석
+    const note = [...today].reverse().find((x) => x.kind === 'mnote' && x.speaker !== me) as Extract<Stmt, { kind: 'mnote' }> | undefined;
+    if (note && !today.some((x) => x.speaker === me && x.id > note.id && x.kind === 'chat')) {
+      const c = note.clue;
+      if (this.persona.trust < 0.45 || this.cred(note.speaker) < 0.35) options.push({ w: 0.9, run: () => ({ stmt: { kind: 'chat', speaker: me, text: this.talk('noteDoubt', { s: this.n(note.speaker) }) } }) });
+      else {
+        const vars: Record<string, string> = { t: '', a: '', b: '' };
+        let key: 'noteNotMafia' | 'noteStayed' | 'noteOneOf' | 'noteVisited' | null = null;
+        if (c.kind === 'notMafia') { key = 'noteNotMafia'; vars.t = this.n(c.who); }
+        if (c.kind === 'stayed') { key = 'noteStayed'; vars.t = this.n(c.who); }
+        if (c.kind === 'visited') { key = 'noteVisited'; vars.t = this.n(c.who); }
+        if (c.kind === 'oneOf') { key = 'noteOneOf'; vars.a = this.n(c.a); vars.b = this.n(c.b); }
+        // 이미 여러 명이 쪽지 얘기를 했으면 덜 꺼낸다
+        const talked = today.filter((x) => x.id > note.id && x.kind === 'chat').length;
+        if (key) { const k = key; options.push({ w: 1.1 / (1 + talked), run: () => ({ stmt: { kind: 'chat', speaker: me, text: this.talk(k, vars) } }) }); }
+      }
+    }
+
+    // 5) 조용한 사람 찌르기
+    const quiet = g.alive().filter((p) => p.id !== me && !p.human && (spoken.get(p.id) ?? 0) === 0);
+    const quietHuman = g.alive().find((p) => p.human && (spoken.get(p.id) ?? 0) === 0);
+    const qt = quietHuman && this.r() < 0.5 ? quietHuman.id : quiet.length ? pick(this.r, quiet).id : null;
+    if (qt !== null && today.length > 4) options.push({ w: 0.45, run: () => ({ stmt: { kind: 'chat', speaker: me, text: this.talk('quiet', { t: this.n(qt) }) } }) });
+
+    // 6) 다른 봇에게 질문
+    const askable = g.alive().filter((p) => p.id !== me && !p.human && !mates.includes(p.id));
+    if (askable.length) {
+      const target = [...askable].sort((a, b) => this.score(b.id) - this.score(a.id) + this.gauss() * 0.8)[0].id;
+      const qs = (['role', 'night', 'suspect'] as const).filter((q) => !g.asked.has(`${target}:${q}`) && !(q === 'role' && this.claimOf(target)) && !(q === 'night' && g.day === 1 && g.night === 1 && this.r() < 0.5));
+      const q = qs.length ? pick(this.r, qs) : null;
+      const key = q === 'role' ? 'askRole' : q === 'night' ? 'askNight' : 'askSuspect';
+      if (q) options.push({ w: 0.7 + this.persona.aggro * 0.3, run: () => ({ stmt: { kind: 'chat', speaker: me, text: this.talk(key, { t: this.n(target) }) }, ask: { target, q } }) });
+    }
+
+    // 7) 경찰 호출
+    if (g.day >= 2 && !this.claimsOf('police').length) options.push({ w: 0.35, run: () => ({ stmt: { kind: 'chat', speaker: me, text: this.talk('callPolice') } }) });
+
+    // 8) 첫날 분위기
+    if (g.day === 1 && today.filter((x) => x.speaker >= 0).length < 6) options.push({ w: 1.1, run: () => ({ stmt: { kind: 'chat', speaker: me, text: this.talk('day1') } }) });
+
+    if (!options.length) return null;
+    const total = options.reduce((a, o) => a + o.w, 0);
+    let r = this.r() * total;
+    for (const o of options) {
+      r -= o.w;
+      if (r <= 0) return o.run();
+    }
+    return options[options.length - 1].run();
+  }
+
   // ── 투표 ─────────────────────────────────────────
 
   vote1(targets: number[]): number | null {
@@ -752,9 +907,10 @@ export class Brain {
   }
 
   defense(): string {
-    let s = this.say('defend');
-    if (this.claimed) s += ` 난 ${roleName(this.claimed)}라고!`;
-    return s;
+    const accuser = [...this.game.board].reverse().find((x) => (x.kind === 'suspect' && x.target === this.me.id) || (x.kind === 'contra' && x.blame === this.me.id));
+    const sname = accuser ? this.n(accuser.speaker) : '다른 사람';
+    if (this.claimed && this.r() < 0.7) return this.talk('defenseRole', { r: roleName(this.claimed) });
+    return this.talk('defensePlain', { s: sname });
   }
 
   vote2(a: number, b: number | null): number | null {
