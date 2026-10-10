@@ -22,4 +22,4 @@ npm run build    # dist/ 에 빌드
 주소 뒤에 `?skip` 을 붙이면 첫 스마트폰 화면을 건너뛴다.
 
 ## 배포 (Cloudflare Workers)
-루트 디렉터리 `trickcal-mafia`, 빌드 명령 `npm run build`, 배포 명령 `npx wrangler deploy`.
+기존 Worker `trickcalchibigo` 를 그대로 쓴다. 설정 → 빌드에서 루트 디렉터리 `trickcal-mafia`, 빌드 명령 `npm run build`, 배포 명령 `npx wrangler deploy`.
