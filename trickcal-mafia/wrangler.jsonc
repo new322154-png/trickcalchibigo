@@ -1,0 +1,6 @@
+{
+  // Cloudflare Workers 배포 설정 (정적 사이트). 다인전 서버를 붙일 때 여기에 추가한다.
+  "name": "trickcal-mafia",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }
+}
