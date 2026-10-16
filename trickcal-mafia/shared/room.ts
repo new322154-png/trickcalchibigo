@@ -4,8 +4,9 @@
  * 판정은 모두 서버가 한다.
  */
 import { QUIZ } from './quiz';
+import { MafiaGame } from './mafia';
 import {
-  CHARACTERS, MAX_PLAYERS, SPEED, WORLD_H, WORLD_W, clamp, isChar,
+  AUTO_START, GAME_MIN, CHARACTERS, MAX_PLAYERS, SPEED, WORLD_H, WORLD_W, clamp, isChar,
   type C2S, type Chair, type MiniId, type MiniState, type PlayerInfo, type S2C, MINI_NAMES,
 } from './protocol';
 
@@ -15,6 +16,9 @@ export interface Conn {
 
 interface P extends PlayerInfo {
   conn: Conn;
+  token: string;
+  online: boolean;
+  dropTimer?: ReturnType<typeof setTimeout>;
   lastMoveAt: number;
   moved: boolean;
   chatTimes: number[];
@@ -33,7 +37,10 @@ export class RoomCore {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private flushTimer: ReturnType<typeof setInterval> | null = null;
   /** 인원이 바뀔 때 (로비에 알리기) */
-  onCount: (n: number) => void = () => {};
+  onCount: (n: number, inGame: boolean) => void = () => {};
+  game: MafiaGame | null = null;
+  private autoTimer: ReturnType<typeof setTimeout> | null = null;
+  private autoAt: number | null = null;
 
   constructor(public code: string, public pub: boolean) {}
 
@@ -43,6 +50,22 @@ export class RoomCore {
 
   join(conn: Conn, hello: C2S): number | null {
     if (hello.t !== 'hello') return null;
+    // 재접속 (게임 중 끊겼다가 30초 안에 돌아옴)
+    const back = hello.token ? [...this.players.values()].find((p) => p.token === hello.token && !p.online) : undefined;
+    if (back) {
+      clearTimeout(back.dropTimer);
+      back.conn = conn;
+      back.online = true;
+      conn.send({ t: 'welcome', you: back.id, code: this.code, pub: this.pub, players: this.list() });
+      conn.send({ t: 'token', token: back.token });
+      this.broadcast({ t: 'sys', text: `${back.nick}님이 다시 연결됐어요.` });
+      this.game?.setOnline(back.id, true);
+      return back.id;
+    }
+    if (this.game) {
+      conn.send({ t: 'error', text: '게임이 진행 중인 방이에요. 끝나면 다시 들어와 주세요.' });
+      return null;
+    }
     if (this.players.size >= MAX_PLAYERS) {
       conn.send({ t: 'error', text: '방이 가득 찼어요.' });
       return null;
@@ -55,20 +78,45 @@ export class RoomCore {
       id, nick, char: isChar(hello.char) ? hello.char : pickOne([...CHARACTERS]).id,
       x: rnd(300, 1300), y: rnd(320, 760), host: this.players.size === 0,
       conn, lastMoveAt: now(), moved: false, chatTimes: [], joinedAt: now(),
+      token: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), online: true,
     };
     this.players.set(id, p);
     conn.send({ t: 'welcome', you: id, code: this.code, pub: this.pub, players: this.list() });
+    conn.send({ t: 'token', token: p.token });
+    if (this.autoAt) conn.send({ t: 'starting', at: this.autoAt });
     if (this.mini) conn.send({ t: 'mini', s: this.mini, title: MINI_NAMES[this.mini.game] });
     this.broadcast({ t: 'join', p: this.info(p) }, id);
     this.broadcast({ t: 'sys', text: `${nick}님이 들어왔어요.` });
     if (!this.flushTimer) this.flushTimer = setInterval(() => this.flush(), 100);
-    this.onCount(this.players.size);
+    this.status();
+    this.checkAuto();
     return id;
+  }
+
+  private status() { this.onCount(this.players.size, !!this.game); }
+
+  /** 연결이 끊김: 게임 중이면 30초 기다리고, 아니면 바로 나감 */
+  disconnect(id: number) {
+    const p = this.players.get(id);
+    if (!p) return;
+    if (this.game && this.game.ps.has(id) && !this.game.over) {
+      p.online = false;
+      this.broadcast({ t: 'sys', text: `${p.nick}님의 연결이 끊겼어요. 30초 기다릴게요…` });
+      this.game.setOnline(id, false);
+      p.dropTimer = setTimeout(() => {
+        if (p.online) return;
+        this.game?.drop(id);
+        this.leave(id);
+      }, 30_000);
+      return;
+    }
+    this.leave(id);
   }
 
   leave(id: number) {
     const p = this.players.get(id);
     if (!p) return;
+    clearTimeout(p.dropTimer);
     this.players.delete(id);
     this.broadcast({ t: 'leave', id });
     this.broadcast({ t: 'sys', text: `${p.nick}님이 나갔어요.` });
@@ -84,7 +132,8 @@ export class RoomCore {
       this.flushTimer = null;
       this.endMini(true);
     }
-    this.onCount(this.players.size);
+    this.status();
+    this.checkAuto();
   }
 
   private info(p: P): PlayerInfo {
@@ -93,7 +142,7 @@ export class RoomCore {
   private list() { return [...this.players.values()].map((p) => this.info(p)); }
 
   broadcast(msg: S2C, except?: number) {
-    for (const p of this.players.values()) if (p.id !== except) {
+    for (const p of this.players.values()) if (p.id !== except && p.online) {
       try { p.conn.send(msg); } catch { /* 끊긴 연결 */ }
     }
   }
@@ -109,7 +158,17 @@ export class RoomCore {
   handle(id: number, msg: C2S) {
     const p = this.players.get(id);
     if (!p || !msg || typeof msg !== 'object') return;
+    if (this.game) {
+      if (msg.t === 'ping') p.conn.send({ t: 'pong' });
+      else this.game.handle(id, msg);
+      return;
+    }
     switch (msg.t) {
+      case 'start_game':
+        if (!p.host) return p.conn.send({ t: 'error', text: '방장만 게임을 시작할 수 있어요.' });
+        if (this.players.size < GAME_MIN) return p.conn.send({ t: 'error', text: `${GAME_MIN}명 이상 모여야 시작할 수 있어요.` });
+        this.startGame();
+        break;
       case 'move': {
         const x = Number(msg.x), y = Number(msg.y);
         if (!Number.isFinite(x) || !Number.isFinite(y)) return;
@@ -152,6 +211,53 @@ export class RoomCore {
         p.conn.send({ t: 'pong' });
         break;
     }
+  }
+
+  // ── 마피아 본게임 ────────────────────────────────
+
+  private checkAuto() {
+    if (!this.pub || this.game) return;
+    if (this.players.size >= AUTO_START && !this.autoTimer) {
+      this.autoAt = now() + 10_000;
+      this.broadcast({ t: 'starting', at: this.autoAt });
+      this.broadcast({ t: 'sys', text: `${AUTO_START}명이 모였어요! 10초 뒤 게임이 시작됩니다.` });
+      this.autoTimer = setTimeout(() => { this.autoTimer = null; this.autoAt = null; if (this.players.size >= GAME_MIN) this.startGame(); }, 10_000);
+    } else if (this.players.size < AUTO_START && this.autoTimer) {
+      clearTimeout(this.autoTimer);
+      this.autoTimer = null;
+      this.autoAt = null;
+      this.broadcast({ t: 'starting', at: null });
+    }
+  }
+
+  private startGame() {
+    if (this.game) return;
+    if (this.autoTimer) { clearTimeout(this.autoTimer); this.autoTimer = null; this.autoAt = null; }
+    this.endMini(true);
+    const seats = [...this.players.values()].filter((p) => p.online).sort((a, b) => a.joinedAt - b.joinedAt).slice(0, 12);
+    const letters = 'ABCDEFGHIJKL';
+    const order = this.pub ? [...seats].sort(() => Math.random() - 0.5) : seats;
+    const named = order.map((p, i) => ({ pid: p.id, name: this.pub ? `교주${letters[i]}` : p.nick }));
+    this.game = new MafiaGame({
+      send: (pid, msg) => { const q = this.players.get(pid); if (q?.online) { try { q.conn.send(msg); } catch { /* 끊김 */ } } },
+      later: (ms, fn) => this.later(ms, fn),
+      clearTimers: () => this.clearTimers(),
+      onEnd: () => this.endGame(),
+    }, named);
+    this.broadcast({ t: 'starting', at: null });
+    this.status();
+    this.game.start();
+  }
+
+  private endGame() {
+    this.game = null;
+    this.clearTimers();
+    // 돌아오지 않은 사람 정리
+    for (const p of [...this.players.values()]) if (!p.online) this.leave(p.id);
+    for (const p of this.players.values()) p.conn.send({ t: 'welcome', you: p.id, code: this.code, pub: this.pub, players: this.list() });
+    this.broadcast({ t: 'sys', text: '대기실로 돌아왔어요. 한 판 더?' });
+    this.status();
+    this.checkAuto();
   }
 
   // ── 미니게임 공통 ────────────────────────────────

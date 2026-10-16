@@ -1,6 +1,6 @@
 /** 타이틀 메뉴: 빠른 매칭 · 방 만들기 · 미니게임 (+ 프로필, 규칙) */
 import { CHARACTERS } from '../../shared/protocol';
-import { ROLES, roleName, type RoleId } from '../data/roles';
+import { ROLES, roleName, type RoleId } from '../../shared/roles';
 import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import { api } from '../net';

@@ -17,7 +17,7 @@ export type RoleId =
   | 'bat' | 'jester' | 'survivor';
 
 /** 밤에 대상을 고르는 능력의 종류 */
-export type NightKind = 'kill' | 'contact' | 'seal' | 'disguise' | 'protect' | 'investigate' | 'medium' | 'track' | 'reveal';
+export type NightKind = 'kill' | 'contact' | 'seal' | 'disguise' | 'protect' | 'investigate' | 'track' | 'reveal';
 
 export interface RoleDef {
   id: RoleId;
@@ -34,8 +34,6 @@ export interface RoleDef {
   once?: boolean;
   /** 대상으로 자기 자신을 고를 수 있는지 */
   selfTarget?: boolean;
-  /** 대상으로 죽은 사람을 고르는지 */
-  deadTarget?: boolean;
   /** 주장하면 마피아에게 노려지기 쉬운 핵심 직업 */
   key?: boolean;
   desc: string;
@@ -74,8 +72,8 @@ export const ROLES: Record<RoleId, RoleDef> = {
     desc: '밤에 한 명을 조사해서 마피아인지 아닌지 알아낸다. (마피아 팀원은 시민으로 나온다)',
   },
   medium: {
-    id: 'medium', char: '', job: '영매', team: 'citizen', night: 'medium', deadTarget: true,
-    desc: '밤에 사라진 사람 한 명을 골라 그 사람의 캐릭터를 알아낸다.',
+    id: 'medium', char: '', job: '영매', team: 'citizen',
+    desc: '밤마다 사라진 사람들과 채팅할 수 있다. 죽은 사람은 거짓말을 할 수도 있다.',
   },
   tracker: {
     id: 'tracker', char: '', job: '추적', team: 'citizen', night: 'track',
@@ -83,7 +81,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   },
   revealer: {
     id: 'revealer', char: '', job: '공개', team: 'citizen', night: 'reveal', once: true,
-    desc: '한 번, 밤에 한 명을 골라 다음 날 아침 그 사람의 캐릭터를 모두에게 공개한다.',
+    desc: '한 번, 밤에 한 명을 골라 다음 날 아침 그 사람의 캐릭터를 모두에게 공개한다. 원하는 밤에만 쓰면 된다.',
   },
   overturn: {
     id: 'overturn', char: '', job: '뒤집기', team: 'citizen', once: true,
@@ -148,3 +146,10 @@ export const NO_FIRST_KILL = (n: number) => n <= 5;
 
 /** 박쥐가 진영을 고르는 날 */
 export const BAT_CHOOSE_DAY = 3;
+
+/** 밤 차례: ① 봉인·위장 → ② 니펠·접선 → ③ 의사·경찰·추적·공개 */
+export const NIGHT_STEP: Record<NightKind, 1 | 2 | 3> = {
+  seal: 1, disguise: 1, kill: 2, contact: 2, protect: 3, investigate: 3, track: 3, reveal: 3,
+};
+/** 시간 안에 안 골라도 되는 능력 (안 고르면 안 씀). 나머지는 무작위로 정해진다 */
+export const OPTIONAL_NIGHT: NightKind[] = ['kill', 'protect', 'seal', 'disguise', 'reveal'];

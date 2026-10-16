@@ -3,12 +3,14 @@
  * 위치는 내 화면에서 먼저 움직이고(즉시 반응), 서버에는 0.08초마다 알린다.
  */
 import {
-  MAX_PLAYERS, MINI_DESC, MINI_NAMES, MIN_PLAYERS, SPEED, WORLD_H, WORLD_W, clamp,
+  MAX_PLAYERS, MINI_DESC, MINI_NAMES, SPEED, WORLD_H, WORLD_W, clamp,
   type MiniId, type MiniState, type PlayerInfo, type S2C,
 } from '../../shared/protocol';
 import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import { connect, type RoomLink } from '../net';
+import { GameUI } from './game';
+import { AUTO_START, GAME_MIN } from '../../shared/protocol';
 import { charImg, type Profile } from '../profile';
 import { clear, h, setCompact } from './dom';
 import { MoveInput, isTouch } from './input';
@@ -30,6 +32,10 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   let pub = false;
   let mini: MiniState | null = null;
   let alive = true;
+  let gameUI: GameUI | null = null;
+  let startingAt: number | null = null;
+  const tokKey = `tm.tok.${code}`;
+  const getTok = () => { try { return sessionStorage.getItem(tokKey) ?? undefined; } catch { return undefined; } };
 
   // ── 화면 ──
   const world = h('div.world');
@@ -87,13 +93,32 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   };
 
   // ── 연결 ──
-  const link: RoomLink = connect(code, { t: 'hello', nick: profile.nick, char: profile.char });
-  link.onMessage = onMsg;
-  link.onClose = (reason) => { if (alive) { cleanup(); onExit(reason); } };
+  let link: RoomLink = connect(code, { t: 'hello', nick: profile.nick, char: profile.char, token: getTok() });
+  let retries = 0;
+  const wire = () => {
+    link.onMessage = (m) => { retries = 0; onMsg(m); };
+    link.onClose = (reason) => {
+      if (!alive) return;
+      // 게임 중이면 다시 연결 시도 (30초 안에 돌아오면 이어하기)
+      if (gameUI && retries < 8) {
+        retries++;
+        sys(`연결이 끊겼어요. 다시 연결하는 중… (${retries})`);
+        setTimeout(() => { if (!alive) return; link = connect(code, { t: 'hello', nick: profile.nick, char: profile.char, token: getTok() }); if (gameUI) gameUI.link = link; wire(); }, 2500);
+        return;
+      }
+      cleanup(); onExit(reason);
+    };
+  };
+  wire();
 
-  function leave() { link.close(); cleanup(); onExit(); }
+  function leave() {
+    if (gameUI && !confirm('게임 중에 나가면 30초 뒤 사망 처리돼요. 나갈까요?')) return;
+    link.close(); cleanup(); onExit();
+  }
   function cleanup() {
     alive = false;
+    gameUI?.destroy();
+    gameUI = null;
     cancelAnimationFrame(raf);
     input.destroy();
     ro.disconnect();
@@ -102,9 +127,31 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   }
 
   function onMsg(m: S2C) {
+    if (m.t === 'g' || m.t === 'glog' || m.t === 'gcmove' || m.t === 'gend') {
+      if (!gameUI) {
+        gameUI = new GameUI(root, link, me);
+        input.enabled = false;
+        setMini(null);
+      }
+      gameUI.onMsg(m);
+      return;
+    }
     switch (m.t) {
+      case 'token':
+        try { sessionStorage.setItem(tokKey, m.token); } catch { /* 무시 */ }
+        break;
+      case 'starting':
+        startingAt = m.at;
+        refresh();
+        break;
       case 'welcome':
+        // 게임 중 재접속이면 게임 화면 그대로
+        if (gameUI && gameUI.v?.phase !== 'end') { me = m.you; sys('다시 연결됐어요.'); break; }
+        // 게임이 끝났으면 대기실로
+        if (gameUI) { gameUI.destroy(); gameUI = null; input.enabled = true; }
         me = m.you; pub = m.pub;
+        for (const a of avatars.values()) a.el.remove();
+        avatars.clear();
         for (const p of m.players) addAvatar(p);
         codeEl.replaceChildren(
           h('span', pub ? '빠른 매칭 방' : '방 코드'), h('b', m.code),
@@ -182,15 +229,15 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
       a.el.querySelector('.ch-name')!.textContent = (a.info.host ? '👑 ' : '') + a.info.nick;
     }
     clear(hostBar);
-    const waiting = n < MIN_PLAYERS ? `${MIN_PLAYERS}명 이상 모이면 마피아 게임을 시작할 수 있어요 (${n}/${MIN_PLAYERS})` : '마피아 본게임은 준비 중이에요';
-    hostBar.append(h('div.wait-msg', pub ? `매칭 중… ${waiting}` : waiting));
+    const waiting = startingAt ? `곧 게임이 시작됩니다!` : n < GAME_MIN ? `${GAME_MIN}명 이상 모이면 게임을 시작할 수 있어요 (${n}/${GAME_MIN})` : pub ? `${AUTO_START}명이 모이면 자동으로 시작해요 (${n}/${AUTO_START})` : '방장이 게임을 시작할 수 있어요';
+    hostBar.append(h('div.wait-msg', pub && !startingAt ? `매칭 중… ${waiting}` : waiting));
     if (amHost) {
       hostBar.append(
         h('div.host-label', '👑 방장 메뉴 — 멀티 미니게임'),
         h('div.mini-btns', (Object.keys(MINI_NAMES) as MiniId[]).map((g) =>
           h('button.btn.small', { disabled: !!mini || n < 2, title: MINI_DESC[g], onclick: () => link.send({ t: 'start_mini', game: g }) }, MINI_NAMES[g]))),
         mini ? h('button.btn.small.wide', { onclick: () => link.send({ t: 'stop_mini' }) }, '미니게임 끝내기') : '',
-        h('button.btn.gold.wide', { disabled: true }, '게임 시작 (준비 중)'),
+        h('button.btn.gold.wide', { disabled: n < GAME_MIN || !!mini, onclick: () => link.send({ t: 'start_game' }) }, n < GAME_MIN ? `게임 시작 (${GAME_MIN}명부터)` : `게임 시작 (${n}명)`),
       );
     } else hostBar.append(h('div.dim', '방장이 미니게임이나 게임을 시작할 수 있어요.'));
   }
@@ -263,7 +310,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     if (mini?.game === 'reaction') { link.send({ t: 'press' }); sfx('click'); }
   }
   const onKey = (e: KeyboardEvent) => {
-    if (document.activeElement === chatIn) return;
+    if (document.activeElement === chatIn || gameUI) return;
     if (mini?.game === 'reaction' && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); press(); return; }
     if (e.key === 'Enter') { e.preventDefault(); chatIn.focus(); }
   };

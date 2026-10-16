@@ -43,13 +43,21 @@ export interface PlayerInfo {
 }
 
 export type C2S =
-  | { t: 'hello'; nick: string; char: CharId }
+  | { t: 'hello'; nick: string; char: CharId; token?: string }
   | { t: 'move'; x: number; y: number }
   | { t: 'chat'; text: string }
   | { t: 'start_mini'; game: MiniId }
   | { t: 'stop_mini' }
   | { t: 'press' }
-  | { t: 'ping' };
+  | { t: 'ping' }
+  // ── 마피아 본게임 ──
+  | { t: 'start_game' }
+  | { t: 'act'; target: number | null }
+  | { t: 'vote'; target: number | null }
+  | { t: 'gchat'; text: string; ch: ChatCh }
+  | { t: 'note'; to: number; text: string }
+  | { t: 'choice'; key: ChoiceKey; value: number | string | null }
+  | { t: 'cmove'; x: number; y: number };
 
 export interface Chair { id: number; x: number; y: number; by: number | null }
 
@@ -69,6 +77,55 @@ export type S2C =
   | { t: 'sys'; text: string }
   | { t: 'mini'; s: MiniState | null; title?: string }
   | { t: 'error'; text: string }
-  | { t: 'pong' };
+  | { t: 'pong' }
+  | { t: 'token'; token: string }
+  | { t: 'starting'; at: number | null }
+  // ── 마피아 본게임 ──
+  | { t: 'g'; v: GameView }
+  | { t: 'glog'; ch: LogCh; from: number; text: string }
+  | { t: 'gcmove'; pid: number; x: number; y: number }
+  | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[] };
+
+// ── 마피아 본게임 ─────────────────────────────────
+
+export const GAME_MIN = 4;
+export const AUTO_START = 8;
+export const STEP_SECONDS = 15;
+
+export type ChatCh = 'day' | 'nifel' | 'dead' | 'defense';
+export type LogCh = ChatCh | 'sys' | 'secret' | 'note' | 'event';
+export type ChoiceKey = 'bat' | 'overturn' | 'avenge' | 'agitate';
+export type Winner = 'mafia' | 'citizen' | 'jester' | 'draw';
+export type Phase = 'intro' | 'night' | 'morning' | 'day' | 'vote1' | 'defense' | 'vote2' | 'verdict' | 'end';
+
+export interface GPlayer { pid: number; name: string; alive: boolean; online: boolean }
+
+export interface GameView {
+  phase: Phase;
+  day: number;
+  night: number;
+  step: 0 | 1 | 2 | 3;
+  endsAt: number;
+  /** 서버 시각 (시계 차이 보정용) */
+  now: number;
+  players: GPlayer[];
+  me: {
+    pid: number;
+    role: string;
+    alive: boolean;
+    mates: number[];
+    /** 이번 차례에 쓸 능력 (없으면 null) */
+    act: { kind: string; targets: number[]; optional: boolean; done: boolean; locked: boolean; choice: number | null } | null;
+    /** 니펠 차례에 같이 나온 동료들의 표 */
+    teamVotes?: [number, number | null][];
+    chats: ChatCh[];
+    notesLeft: number;
+    vote: number | null | undefined;
+    canVote: boolean;
+    prompt: { key: ChoiceKey; options: (number | string)[]; text: string } | null;
+  };
+  cands: number[];
+  counts?: [number, number][];
+}
 
 export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));

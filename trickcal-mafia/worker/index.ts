@@ -38,7 +38,7 @@ export default {
 
 /** 방 목록: 공개 방(빠른 매칭)과 비공개 방(방 만들기) */
 export class Lobby {
-  rooms = new Map<string, { pub: boolean; count: number; at: number }>();
+  rooms = new Map<string, { pub: boolean; count: number; at: number; inGame?: boolean }>();
   constructor(private ctx: DurableObjectState, private env: Env) {}
 
   private async create(pub: boolean) {
@@ -55,7 +55,7 @@ export class Lobby {
     // 오래 비어 있는 방 정리
     for (const [c, r] of this.rooms) if (r.count === 0 && Date.now() - r.at > 10 * 60_000) this.rooms.delete(c);
     if (url.pathname === '/match') {
-      const open = [...this.rooms].filter(([, r]) => r.pub && r.count > 0 && r.count < MAX_PLAYERS).sort((a, b) => b[1].count - a[1].count);
+      const open = [...this.rooms].filter(([, r]) => r.pub && !r.inGame && r.count > 0 && r.count < MAX_PLAYERS).sort((a, b) => b[1].count - a[1].count);
       return json({ code: open.length ? open[0][0] : await this.create(true) });
     }
     if (url.pathname === '/create') return json({ code: await this.create(false) });
@@ -65,9 +65,9 @@ export class Lobby {
       return json({ ok: !!r, count: r?.count ?? 0, full: (r?.count ?? 0) >= MAX_PLAYERS });
     }
     if (url.pathname === '/update' && req.method === 'POST') {
-      const { code, count } = (await req.json()) as { code: string; count: number };
+      const { code, count, inGame } = (await req.json()) as { code: string; count: number; inGame: boolean };
       const r = this.rooms.get(code);
-      if (r) { r.count = count; r.at = Date.now(); }
+      if (r) { r.count = count; r.at = Date.now(); r.inGame = inGame; }
       return json({ ok: true });
     }
     return json({ error: 'not found' }, 404);
@@ -84,9 +84,9 @@ export class Room {
     if (url.pathname === '/init') {
       const { code, pub } = (await req.json()) as { code: string; pub: boolean };
       this.core = new RoomCore(code, pub);
-      this.core.onCount = (n) => {
+      this.core.onCount = (n, inGame) => {
         const lobby = this.env.LOBBY.get(this.env.LOBBY.idFromName('main'));
-        void lobby.fetch('https://lobby/update', { method: 'POST', body: JSON.stringify({ code, count: n }) }).catch(() => {});
+        void lobby.fetch('https://lobby/update', { method: 'POST', body: JSON.stringify({ code, count: n, inGame }) }).catch(() => {});
       };
       return json({ ok: true });
     }
@@ -109,7 +109,7 @@ export class Room {
         if (id === null) server.close(4001, 'rejected');
       } else core.handle(id, msg);
     });
-    const bye = () => { if (id !== null) core.leave(id); id = null; };
+    const bye = () => { if (id !== null) core.disconnect(id); id = null; };
     server.addEventListener('close', bye);
     server.addEventListener('error', bye);
     return new Response(null, { status: 101, webSocket: client });
