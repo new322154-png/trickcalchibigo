@@ -21,6 +21,8 @@ interface Avatar {
   el: HTMLElement;
   bubble: HTMLElement;
   x: number; y: number; tx: number; ty: number;
+  /** 보간: 직전 위치에서 목표 위치까지 일정한 속도로 */
+  fx: number; fy: number; at: number;
   bubbleTimer?: number;
   moving: boolean;
 }
@@ -156,7 +158,6 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         codeEl.replaceChildren(
           h('span', pub ? '빠른 매칭 방' : '방 코드'), h('b', m.code),
           pub ? '' : h('button.btn.small', { onclick: copyInvite }, '초대 링크 복사'));
-        history.replaceState(null, '', `?room=${m.code}`);
         sys(pub ? '빠른 매칭 방에 들어왔어요. 사람이 모이는 동안 미니게임을 즐겨 보세요!' : `방 코드 ${m.code} — 친구에게 초대 링크를 보내 주세요.`);
         refresh();
         break;
@@ -166,16 +167,20 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         for (const a of avatars.values()) a.info.host = a.info.id === m.id;
         refresh();
         break;
-      case 'moves':
+      case 'moves': {
+        const t = performance.now();
         for (const [id, x, y] of m.m) {
           const a = avatars.get(id);
-          if (!a) continue;
-          if (id === me) {
-            // 서버가 위치를 고쳐 주면 (의자에 앉음 등) 따른다
-            if (Math.hypot(a.x - x, a.y - y) > 40) { a.x = x; a.y = y; }
-          } else { a.tx = x; a.ty = y; }
+          if (!a || id === me) continue;
+          a.fx = a.x; a.fy = a.y; a.tx = x; a.ty = y; a.at = t;
         }
         break;
+      }
+      case 'pos': {
+        const a = avatars.get(me);
+        if (a) { a.x = m.x; a.y = m.y; }
+        break;
+      }
       case 'chat': {
         const a = avatars.get(m.id);
         const nick = a?.info.nick ?? '?';
@@ -216,7 +221,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
       h('div.ch-shadow'),
       h('div.ch-name', p.nick));
     world.appendChild(el);
-    avatars.set(p.id, { info: p, el, bubble, x: p.x, y: p.y, tx: p.x, ty: p.y, moving: false });
+    avatars.set(p.id, { info: p, el, bubble, x: p.x, y: p.y, tx: p.x, ty: p.y, fx: p.x, fy: p.y, at: performance.now(), moving: false });
   }
 
   function refresh() {
@@ -358,15 +363,19 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     }
     for (const a of avatars.values()) {
       if (a.info.id !== me) {
-        const dx = a.tx - a.x, dy = a.ty - a.y;
-        a.moving = Math.hypot(dx, dy) > 2;
-        if (Math.abs(dx) > 2) a.el.classList.toggle('flip', dx < 0);
-        const k = Math.min(1, dt * 12);
-        a.x += dx * k; a.y += dy * k;
+        // 서버가 80ms마다 보내는 위치 사이를 일정한 속도로 이어 준다
+        const k = Math.min(1, (t - a.at) / 95);
+        const nx = a.fx + (a.tx - a.fx) * k, ny = a.fy + (a.ty - a.fy) * k;
+        const dx = nx - a.x;
+        a.moving = k < 1 && Math.hypot(a.tx - a.fx, a.ty - a.fy) > 2;
+        if (Math.abs(dx) > 0.5) a.el.classList.toggle('flip', dx < 0);
+        a.x = nx; a.y = ny;
       }
-      a.el.style.transform = `translate(${a.x}px, ${a.y}px)`;
-      a.el.style.zIndex = String(Math.round(a.y));
-      a.el.classList.toggle('moving', a.moving);
+      const tf = `translate3d(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px, 0)`;
+      if (a.el.style.transform !== tf) a.el.style.transform = tf;
+      const z = String(Math.round(a.y));
+      if (a.el.style.zIndex !== z) a.el.style.zIndex = z;
+      if (a.el.classList.contains('moving') !== a.moving) a.el.classList.toggle('moving', a.moving);
     }
     place();
   }

@@ -73,6 +73,8 @@ export type S2C =
   | { t: 'leave'; id: number }
   | { t: 'host'; id: number }
   | { t: 'moves'; m: [number, number, number][] }
+  /** 서버가 내 위치를 고쳐 줄 때 (의자에 앉음, 너무 빠른 이동 등) */
+  | { t: 'pos'; x: number; y: number }
   | { t: 'chat'; id: number; text: string }
   | { t: 'sys'; text: string }
   | { t: 'mini'; s: MiniState | null; title?: string }

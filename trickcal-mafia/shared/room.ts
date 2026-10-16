@@ -87,7 +87,7 @@ export class RoomCore {
     if (this.mini) conn.send({ t: 'mini', s: this.mini, title: MINI_NAMES[this.mini.game] });
     this.broadcast({ t: 'join', p: this.info(p) }, id);
     this.broadcast({ t: 'sys', text: `${nick}님이 들어왔어요.` });
-    if (!this.flushTimer) this.flushTimer = setInterval(() => this.flush(), 100);
+    if (!this.flushTimer) this.flushTimer = setInterval(() => this.flush(), 80);
     this.status();
     this.checkAuto();
     return id;
@@ -150,7 +150,13 @@ export class RoomCore {
   private flush() {
     const m: [number, number, number][] = [];
     for (const p of this.players.values()) if (p.moved) { m.push([p.id, Math.round(p.x), Math.round(p.y)]); p.moved = false; }
-    if (m.length) this.broadcast({ t: 'moves', m });
+    if (!m.length) return;
+    // 본인 위치는 본인에게 다시 보내지 않는다 (내 화면이 먼저 움직이므로)
+    for (const p of this.players.values()) {
+      if (!p.online) continue;
+      const mine = m.filter(([id]) => id !== p.id);
+      if (mine.length) { try { p.conn.send({ t: 'moves', m: mine }); } catch { /* 끊김 */ } }
+    }
   }
 
   // ── 메시지 ──────────────────────────────────────
@@ -172,15 +178,19 @@ export class RoomCore {
       case 'move': {
         const x = Number(msg.x), y = Number(msg.y);
         if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-        if (this.frozen(id)) return;
+        if (this.frozen(id)) { p.conn.send({ t: 'pos', x: Math.round(p.x), y: Math.round(p.y) }); return; }
         const t = now();
-        const maxStep = SPEED * ((t - p.lastMoveAt) / 1000) * 1.6 + 12;
+        // 네트워크가 몰려 와도 끊기지 않게 넉넉히 (마지막 이동 뒤 최대 1초 분량까지)
+        const gap = Math.min(1000, t - p.lastMoveAt);
+        const maxStep = SPEED * (gap / 1000) * 1.5 + 40;
         const d = Math.hypot(x - p.x, y - p.y);
         const k = d > maxStep ? maxStep / d : 1;
         p.x = clamp(p.x + (x - p.x) * k, 30, WORLD_W - 30);
         p.y = clamp(p.y + (y - p.y) * k, 60, WORLD_H - 20);
         p.lastMoveAt = t;
         p.moved = true;
+        // 너무 많이 어긋났을 때만 본인에게 위치를 고쳐 준다
+        if (Math.hypot(x - p.x, y - p.y) > 150) p.conn.send({ t: 'pos', x: Math.round(p.x), y: Math.round(p.y) });
         this.miniOnMove(p);
         break;
       }
@@ -347,6 +357,7 @@ export class RoomCore {
       if (c) {
         c.by = p.id;
         p.x = c.x; p.y = c.y; p.moved = true;
+        p.conn.send({ t: 'pos', x: c.x, y: c.y });
         this.push();
         if (m.chairs.every((c) => c.by !== null)) this.chairsJudge();
       }
