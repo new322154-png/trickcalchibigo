@@ -1,93 +1,26 @@
 /** 타이틀 · 봇전 설정 · 규칙 */
-import { COMPOSITION, ROLES, roleName, type RoleId } from '../data/roles';
-import type { Difficulty } from '../engine/types';
+import { ROLES, roleName, type RoleId } from '../data/roles';
 import { asset, clear, h } from './dom';
 import { sfx } from './sfx';
 
 export const GAME_TITLE = '트릭컬 마피아 (가제)';
 
-export interface LobbySettings {
-  count: number;
-  difficulty: Difficulty;
-  forceRole?: RoleId;
-}
-
-const saved = (): LobbySettings => {
-  try {
-    const s = JSON.parse(localStorage.getItem('tm.lobby') ?? '');
-    if (s && s.count >= 4 && s.count <= 12) return { count: s.count, difficulty: s.difficulty ?? 'hard' };
-  } catch { /* 없음 */ }
-  return { count: 8, difficulty: 'hard' };
-};
-
-export function showTitle(root: HTMLElement, onStart: (s: LobbySettings) => void) {
+export function showTitle(root: HTMLElement) {
   clear(root);
   const screen = h('div.title', { style: { backgroundImage: `url(${asset('ui/title_bg.jpg')})` } },
     h('div.title-shade'),
     h('div.title-box',
       h('div.title-kicker', 'TRICKCAL · MAFIA'),
       h('h1.title-name', GAME_TITLE),
-      h('div.title-sub', '거짓말쟁이는 누구인가 — 4~12인 추리 마피아'),
+      h('div.title-sub', '거짓말쟁이는 누구인가 — 4~12인 온라인 마피아'),
       h('div.title-menu',
-        h('button.btn.big.gold', { onclick: () => { sfx('click'); showLobby(root, onStart); } }, '봇전 시작'),
-        h('button.btn.big', { disabled: true, title: '준비 중' }, '다인전 (준비 중)'),
+        h('button.btn.big.gold', { disabled: true, title: '준비 중' }, '다인전 (준비 중)'),
         h('button.btn.big', { onclick: () => { sfx('click'); showRules(root); } }, '규칙 · 직업 보기'),
       ),
     ),
     h('div.fan-notice', '본 게임은 트릭컬 리바이브의 비공식 팬게임입니다.'),
   );
   root.appendChild(screen);
-}
-
-function showLobby(root: HTMLElement, onStart: (s: LobbySettings) => void) {
-  const s = saved();
-  const countLabel = h('div.stepper-value');
-  const compo = h('div.lobby-compo');
-  const renderCount = () => {
-    countLabel.textContent = `${s.count}명`;
-    const [nifel, members, rnd, neutral] = COMPOSITION[s.count];
-    clear(compo).append(
-      h('span.tag.mafia', `니펠 ${nifel}`),
-      members ? h('span.tag.mafia', `마피아 팀원 ${members}`) : '',
-      h('span.tag.citizen', `의사·경찰 + 시민 ${rnd}`),
-      neutral ? h('span.tag.neutral', `중립 ${neutral}`) : '',
-    );
-  };
-  const step = (d: number) => { s.count = Math.max(4, Math.min(12, s.count + d)); sfx('click'); renderCount(); };
-  const diffBtns = (['easy', 'normal', 'hard'] as Difficulty[]).map((d) =>
-    h(`button.seg${s.difficulty === d ? '.on' : ''}`, {
-      onclick: (e: Event) => {
-        s.difficulty = d;
-        sfx('click');
-        for (const b of (e.currentTarget as HTMLElement).parentElement!.children) b.classList.remove('on');
-        (e.currentTarget as HTMLElement).classList.add('on');
-      },
-    }, { easy: '쉬움', normal: '보통', hard: '어려움' }[d]));
-  const roleSel = h('select.role-sel') as HTMLSelectElement;
-  roleSel.append(h('option', { value: '' }, '무작위'));
-  for (const r of Object.values(ROLES)) roleSel.append(h('option', { value: r.id }, `${roleName(r.id)} (${r.job})`));
-  renderCount();
-  const modal = h('div.overlay',
-    h('div.card.lobby',
-      h('h2', '봇전 설정'),
-      h('div.row', h('label', '인원'), h('div.stepper', h('button.btn.sq', { onclick: () => step(-1) }, '−'), countLabel, h('button.btn.sq', { onclick: () => step(1) }, '+'))),
-      compo,
-      h('div.row', h('label', '봇 난이도'), h('div.segs', diffBtns)),
-      h('div.row.small', h('label', '내 직업 (연습용)'), roleSel),
-      h('div.row.end',
-        h('button.btn', { onclick: () => { sfx('close'); modal.remove(); } }, '취소'),
-        h('button.btn.gold', {
-          onclick: () => {
-            sfx('open');
-            try { localStorage.setItem('tm.lobby', JSON.stringify({ count: s.count, difficulty: s.difficulty })); } catch { /* 무시 */ }
-            modal.remove();
-            onStart({ ...s, forceRole: (roleSel.value || undefined) as RoleId | undefined });
-          },
-        }, '시작'),
-      ),
-    ),
-  );
-  root.appendChild(modal);
 }
 
 export function showRules(root: HTMLElement) {
