@@ -9,15 +9,15 @@ import { GAME_TITLE } from './title';
 interface BootApp { name: string; icon: string; kind: 'closed' | 'bigwood' | 'game' }
 
 const APPS: BootApp[] = [
-  { name: '페인트 히어로즈', icon: 'icon_paint_heroes.jpg', kind: 'closed' },
-  { name: '로그(LOG) - 항해의 시작', icon: 'icon_log.jpg', kind: 'closed' },
-  { name: '롤 더 체스', icon: 'icon_roll_the_chess.jpg', kind: 'closed' },
-  { name: '블랙 시타델', icon: 'icon_black_citadel.jpg', kind: 'closed' },
-  { name: '팅팅 스페이스', icon: 'icon_tingting_space.jpg', kind: 'closed' },
-  { name: '리프팅 너트', icon: 'icon_lifting_nut.jpg', kind: 'closed' },
-  { name: '날아라! 냥붕', icon: 'icon_nyangbung.jpg', kind: 'closed' },
-  { name: '트릭컬 파티마', icon: 'icon_trickcal_fatima.jpg', kind: 'bigwood' },
-  { name: '', icon: 'icon_game.jpg', kind: 'game' },
+  { name: '페인트 히어로즈', icon: 'icon_paint_heroes.webp', kind: 'closed' },
+  { name: '로그(LOG) - 항해의 시작', icon: 'icon_log.webp', kind: 'closed' },
+  { name: '롤 더 체스', icon: 'icon_roll_the_chess.webp', kind: 'closed' },
+  { name: '블랙 시타델', icon: 'icon_black_citadel.webp', kind: 'closed' },
+  { name: '팅팅 스페이스', icon: 'icon_tingting_space.webp', kind: 'closed' },
+  { name: '리프팅 너트', icon: 'icon_lifting_nut.webp', kind: 'closed' },
+  { name: '날아라! 냥붕', icon: 'icon_nyangbung.webp', kind: 'closed' },
+  { name: '트릭컬 파티마', icon: 'icon_trickcal_fatima.webp', kind: 'bigwood' },
+  { name: '', icon: 'icon_game.webp', kind: 'game' },
 ];
 
 function centerIn(root: HTMLElement, el: Element) {
@@ -72,12 +72,12 @@ export function showBoot(root: HTMLElement, onDone: () => void) {
     }, h('span.ph-icon', h('img', { src: asset(`ui/boot/${app.icon}`), alt: '' })), h('span.ph-label', app.name || GAME_TITLE));
     grid.appendChild(btn);
   }
-  const screen = h('div.ph-screen', { style: { backgroundImage: `url(${asset('ui/boot/wallpaper.jpg')})` } },
+  const screen = h('div.ph-screen', { style: { backgroundImage: `url(${asset('ui/boot/wallpaper.webp')})` } },
     h('div.ph-status', statusTime, h('span.ph-sys', h('i.sig'), h('i.wifi'), h('i.bat'))),
     h('div.ph-widget', clockBig, clockDate), grid, h('div.ph-dots', h('i.on'), h('i'), h('i')), toastBox);
-  const phone = h('div.ph', screen, h('img.ph-frame', { src: asset('ui/boot/phone_frame.png'), alt: '' }));
+  const phone = h('div.ph', screen, h('img.ph-frame', { src: asset('ui/boot/phone_frame.webp'), alt: '' }));
   const wrap = h('div.boot', phone, h('div.boot-hint', '앱을 눌러 게임을 시작하세요'));
-  wrap.style.setProperty('--boot-bg', `url("${new URL(asset('ui/title_bg.jpg'), location.href).href}")`);
+  wrap.style.setProperty('--boot-bg', `url("${new URL(asset('ui/title_bg.webp'), location.href).href}")`);
   root.appendChild(wrap);
 
   const onKey = (e: KeyboardEvent) => {
@@ -99,7 +99,7 @@ export function showBoot(root: HTMLElement, onDone: () => void) {
     busy = true;
     sfx('open');
     const back = h('button.btn.bw-back', '스마트폰으로 돌아가기');
-    const panel = h('div.boot-panel.bigwood', h('img.bw-img', { src: asset('ui/boot/bigwood.jpg'), alt: '' }), back);
+    const panel = h('div.boot-panel.bigwood', h('img.bw-img', { src: asset('ui/boot/bigwood.webp'), alt: '' }), back);
     await zoomFrom(btn, panel).finished;
     busy = false;
     back.onclick = async () => {
@@ -116,7 +116,7 @@ export function showBoot(root: HTMLElement, onDone: () => void) {
     busy = true;
     if (matchMedia('(pointer: coarse)').matches) void document.documentElement.requestFullscreen?.().catch(() => {});
     sfx('open');
-    const logo = h('img.splash-logo', { src: asset('ui/boot/fanmade.png'), alt: '' });
+    const logo = h('img.splash-logo', { src: asset('ui/boot/fanmade.webp'), alt: '' });
     const panel = h('div.boot-panel.splash', logo);
     await zoomFrom(btn, panel).finished;
     await sleep(250);

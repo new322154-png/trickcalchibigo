@@ -52,10 +52,15 @@ export function showTitle(root: HTMLElement, act: TitleActions) {
     h('div.fan-notice', '본 게임은 트릭컬 리바이브의 비공식 팬게임입니다.'),
   );
   // 마우스가 있는 쪽이 조금 더 넓어진다
+  let pend = -1;
   screen.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return; // 터치에선 안 움직임
     const r = screen.getBoundingClientRect();
     const t = (e.clientX - r.left) / r.width;
-    screen.style.setProperty('--split', String(50 + (0.5 - t) * 14));
+    const v = Math.round((50 + (0.5 - t) * 14) * 2) / 2; // 0.5 단위로만 바뀌게
+    if (v === pend) return;
+    pend = v;
+    requestAnimationFrame(() => screen.style.setProperty('--split', String(pend)));
   });
   // 가면 무도회: 케이크를 건드리면 가면 아래 정체가 잠깐 보인다
   const spots: [number, number, number][] = [[9, 96, 1], [21, 90, .86], [31, 99, 1.05], [69, 99, 1.05], [79, 90, .86], [91, 96, 1]];
@@ -64,7 +69,7 @@ export function showTitle(root: HTMLElement, act: TitleActions) {
     const role = pool[Math.floor(Math.random() * pool.length)];
     const ch = CHARACTERS.find((c) => c.name === role.char);
     const reveal = h('img.tt-reveal', { src: ch ? charImg(ch.id) : '', alt: '' });
-    const cake = h('img.tt-cake', { src: asset(`ui/mask${(i % 4) + 1}.png`), alt: '' });
+    const cake = h('img.tt-cake', { src: asset(`ui/mask${(i % 4) + 1}.webp`), alt: '' });
     const tag = h('div.tt-tag', roleName(role.id));
     const el = h(`div.tt-guest${x > 50 ? '.right' : ''}${role.team === 'mafia' ? '.evil' : ''}`, { style: `left:${x}%; top:${y}%; --k:${k}; --d:${i * .37}s` }, reveal, cake, tag);
     let timer = 0;

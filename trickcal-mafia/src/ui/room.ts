@@ -79,20 +79,25 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   clear(root).appendChild(screen);
 
   // 월드 크기 맞추기 (작은 화면에서는 확대해서 내 캐릭터를 따라간다)
-  let baseK = 1;
+  let baseK = 1, vw = 1, vh = 1, lastTf = '';
   const follow = () => root.classList.contains('compact');
-  const fit = () => { baseK = Math.min(worldWrap.clientWidth / WORLD_W, worldWrap.clientHeight / WORLD_H); };
+  // 크기는 바뀔 때만 잰다 (매 프레임 clientWidth 를 읽으면 레이아웃을 강제로 다시 계산함)
+  const fit = () => { vw = worldWrap.clientWidth; vh = worldWrap.clientHeight; baseK = Math.min(vw / WORLD_W, vh / WORLD_H); };
   const ro = new ResizeObserver(fit);
   ro.observe(worldWrap);
   fit();
   const place = () => {
     const mine = avatars.get(me);
-    if (!follow() || !mine) { world.style.transform = `translate(-50%, -50%) scale(${baseK})`; return; }
-    const k = baseK * 1.6;
-    const lim = (size: number, view: number) => Math.max(0, (size * k - view) / 2);
-    const ox = clamp((WORLD_W / 2 - mine.x) * k, -lim(WORLD_W, worldWrap.clientWidth), lim(WORLD_W, worldWrap.clientWidth));
-    const oy = clamp((WORLD_H / 2 - mine.y + 40) * k, -lim(WORLD_H, worldWrap.clientHeight), lim(WORLD_H, worldWrap.clientHeight));
-    world.style.transform = `translate(calc(-50% + ${ox}px), calc(-50% + ${oy}px)) scale(${k})`;
+    let tf: string;
+    if (!follow() || !mine) tf = `translate(-50%, -50%) scale(${baseK})`;
+    else {
+      const k = baseK * 1.6;
+      const lim = (size: number, view: number) => Math.max(0, (size * k - view) / 2);
+      const ox = clamp((WORLD_W / 2 - mine.x) * k, -lim(WORLD_W, vw), lim(WORLD_W, vw));
+      const oy = clamp((WORLD_H / 2 - mine.y + 40) * k, -lim(WORLD_H, vh), lim(WORLD_H, vh));
+      tf = `translate(calc(-50% + ${ox.toFixed(1)}px), calc(-50% + ${oy.toFixed(1)}px)) scale(${k})`;
+    }
+    if (tf !== lastTf) { world.style.transform = tf; lastTf = tf; }
   };
 
   // ── 연결 ──

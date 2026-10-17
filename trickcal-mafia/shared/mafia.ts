@@ -140,7 +140,7 @@ export class MafiaGame {
     for (const q of this.all()) {
       if (!this.inFarm(q)) continue;
       let pos = this.farmPos.get(q.pid);
-      if (!pos) { pos = [300 + Math.random() * (FARM_W - 600), 400 + Math.random() * (FARM_H - 550)]; this.farmPos.set(q.pid, pos); }
+      if (!pos) { pos = [300 + Math.random() * (FARM_W - 600), 480 + Math.random() * (FARM_H - 600)]; this.farmPos.set(q.pid, pos); }
       out.push([q.pid, Math.round(pos[0]), Math.round(pos[1]), this.isIde(q) ? 1 : 0]);
     }
     return out;
@@ -182,6 +182,9 @@ export class MafiaGame {
   private log(to: number, ch: LogCh, text: string, from = -1) { this.host.send(to, { t: 'glog', ch, from, text }); }
   private logAll(ch: LogCh, text: string, from = -1) { for (const p of this.all()) this.log(p.pid, ch, text, from); }
   private secret(pid: number, text: string) { this.log(pid, 'secret', text); }
+  /** 나만 보는 컷씬 */
+  private pcut(pid: number, kind: CutKind, text: string) { this.host.send(pid, { t: 'cut', kind, text }); }
+  private killCut = new Set<number>();
   private cutAll(kind: CutKind, text: string, pid?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text }); }
 
   view(pid: number): GameView {
@@ -269,6 +272,7 @@ export class MafiaGame {
   private contact(p: GP, how: string) {
     if (p.contacted) return;
     p.contacted = true;
+    this.pcut(p.pid, 'p_contact', '접선 성공!');
     this.secret(p.pid, `🤝 접선 성공! ${how} 이제 니펠 채팅에 들어간다. 동료: ${this.matesOf(p).map(this.name).join(', ') || '없음'}`);
     for (const q of this.all()) if (q.pid !== p.pid && this.isKiller(q)) this.secret(q.pid, `🤝 ${p.name}가 접선해 왔다. 마피아 팀원(${roleName(p.role)})이다.`);
   }
@@ -277,7 +281,7 @@ export class MafiaGame {
     if (this.over) return;
     this.night++;
     this.phase = 'night';
-    this.sealed.clear(); this.killVotes.clear(); this.visits.clear(); this.farmPos.clear();
+    this.sealed.clear(); this.killVotes.clear(); this.visits.clear(); this.farmPos.clear(); this.killCut.clear();
     this.morning = this.emptyMorning();
     for (const p of this.all()) { p.copyRole = undefined; if (p.role === 'elena') p.droneTries = DRONE_TRIES; }
     this.logAll('event', `🌙 ${this.night}번째 밤이 찾아왔다. 모두 자기 방으로…`);
@@ -291,6 +295,7 @@ export class MafiaGame {
       this.secret(u.pid, '되살아났다! 이제 니펠로서 습격에 함께한다.');
       this.contact(u, '니펠의 손에 죽었다가 돌아왔다.');
     }
+    for (const p of this.alive()) if (p.role === 'medium') this.pcut(p.pid, 'p_farm', '주말농장으로');
     this.runStep(1);
   }
 
@@ -318,6 +323,7 @@ export class MafiaGame {
     if (!a || a.locked || this.phase !== 'night') return;
     if (target !== null && !a.targets.includes(target)) return;
     if (a.kind === 'kill') {
+      if (target !== null && p.role === 'nifel' && !this.killCut.has(p.pid)) { this.killCut.add(p.pid); this.pcut(p.pid, 'p_kill', `${this.name(target)} 습격!`); }
       this.killVotes.set(p.pid, target);
       a.choice = target;
       for (const [k] of this.killVotes) this.push(k);
@@ -329,6 +335,13 @@ export class MafiaGame {
     if (target === null) { this.push(p.pid); return; }
     const t = this.ps.get(target)!;
     const copying = p.role === 'spiky' && this.step === 3;
+    // 내 직업 컷씬 (스피키가 빌려 쓴 능력은 제외)
+    const PC: Partial<Record<string, [CutKind, string]>> = {
+      seal: ['p_seal', '해킹!'], identify: ['p_identify', '직업 탐지'], protect: ['p_protect', '보호!'],
+      investigate: ['p_investigate', '조사!'], track: ['p_track', '추적!'], disguise: ['p_disguise', '변장!'],
+    };
+    const pc = PC[a.kind];
+    if (pc && !copying) this.pcut(p.pid, pc[0], `${t.name} ${pc[1]}`);
     // 즉발형
     switch (a.kind) {
       case 'investigate':
@@ -539,6 +552,7 @@ export class MafiaGame {
       this.ask(bat.pid, 'bat', ['mafia', 'citizen'], '네르가 분노하며 변신한다! 어느 편에 설까? (안 고르면 무작위)', (v) => {
         const side = v === 'mafia' || v === 'citizen' ? v : rand(['mafia', 'citizen'] as const);
         bat.batSide = side;
+        this.pcut(bat.pid, 'p_bat', side === 'mafia' ? '마피아 편으로!' : '시민 편으로!');
         this.secret(bat.pid, `네르는 ${side === 'mafia' ? '마피아' : '시민'} 팀을 골랐다!`);
         if (side === 'mafia') {
           for (const q of this.all()) if (q.pid !== bat.pid && this.inNifelChat(q)) this.secret(q.pid, `🦇 ${bat.name}(네르)가 마피아 팀에 합류했다! 이제 습격에 함께한다.`);
@@ -601,6 +615,7 @@ export class MafiaGame {
         const t = this.ps.get(v)!;
         if (!this.isCitizenTeam(t)) { this.secret(joan.pid, `🗣 선동이 통하지 않았다. ${t.name}는 시민 팀이 아니다.`); return; }
         this.proxy = { joan: joan.pid, target: v };
+        this.pcut(joan.pid, 'p_agitate', `${t.name} 선동!`);
         this.secret(joan.pid, `🗣 이제 ${t.name} 대신 말한다. 채팅은 ${t.name}의 이름으로 나간다.`);
         this.secret(v, '🤐 입이 막혔다… 누군가 당신의 목소리를 훔쳤다! 변론 시간 동안 말할 수 없다.');
         this.push();
@@ -808,7 +823,7 @@ export class MafiaGame {
       }
       case 'fmove': {
         if (!this.inFarm(p)) return;
-        const x = Math.max(40, Math.min(FARM_W - 40, Number(msg.x))), y = Math.max(200, Math.min(FARM_H - 40, Number(msg.y)));
+        const x = Math.max(40, Math.min(FARM_W - 40, Number(msg.x))), y = Math.max(440, Math.min(FARM_H - 40, Number(msg.y)));
         if (!Number.isFinite(x) || !Number.isFinite(y)) return;
         this.farmPos.set(pid, [x, y]);
         for (const q of this.all()) if (q.pid !== pid && this.inFarm(q) && q.online) this.host.send(q.pid, { t: 'fmove', pid, x, y });

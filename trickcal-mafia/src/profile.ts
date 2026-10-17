@@ -15,5 +15,5 @@ export function saveProfile(p: Profile) {
   try { localStorage.setItem('tm.profile', JSON.stringify(p)); } catch { /* 저장 못 해도 진행 */ }
 }
 
-export const charImg = (c: CharId) => `./assets/chars/${c}.png`;
+export const charImg = (c: CharId) => `./assets/chars/${c}.webp`;
 export const charName = (c: CharId) => CHARACTERS.find((x) => x.id === c)?.name ?? c;

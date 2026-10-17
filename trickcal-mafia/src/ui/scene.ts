@@ -4,11 +4,11 @@
  *  결선·판결: 재판장 — 무대 위에 후보(나중엔 처형될 한 명), 나머지는 무대 앞에 관객처럼 옹기종기 (못 움직임)
  * 정체 보호: 나는 내 직업 캐릭터, 다른 사람은 모두 공용 모습.
  */
-import { PLAZA, plazaPhase, type CutKind, type GameView } from '../../shared/protocol';
+import { PLAZA, plazaPhase, type GameView } from '../../shared/protocol';
 import { bgUrl, h } from './dom';
-import { MoveInput, isTouch } from './input';
+import { MoveInput } from './input';
 
-interface Av { el: HTMLElement; bubble: HTMLElement; timer: number; x: number; y: number; tx: number; ty: number }
+interface Av { el: HTMLElement; bubble: HTMLElement; timer: number; x: number; y: number; tx: number; ty: number; /** 마지막으로 그린 값 (같으면 DOM을 안 건드림) */ dk: string }
 
 /** 광장 걷는 속도 (배경 폭 % / 초) */
 const WALK = 16;
@@ -23,15 +23,28 @@ export class Scene {
   private raf = 0;
   private last = performance.now();
   private lastSent = 0;
+  /** 배경 상자 크기 (px) — 크기가 바뀔 때만 다시 잼 */
+  private bw = 0;
+  private bh = 0;
+  private paused = false;
+  /** 모바일 방향패드 (화면 맨 위층에 GameUI 가 붙인다) */
+  joy: HTMLElement;
+  walkingNow = false;
+  private ro?: ResizeObserver;
 
   constructor(private myPid: number, private myImg: () => string, private anon: (pid: number) => string, private name: (p: number) => string,
     private onMove: (x: number, y: number) => void) {
     this.el = h('div.g-scene', this.box);
-    if (isTouch()) { this.input.el.classList.add('sc-joy'); this.el.appendChild(this.input.el); }
+    this.joy = this.input.el;
+    this.joy.classList.add('sc-joy');
+    const measure = () => { this.bw = this.box.clientWidth; this.bh = this.box.clientHeight; for (const a of this.avs.values()) a.dk = ''; };
+    if ('ResizeObserver' in window) { this.ro = new ResizeObserver(measure); this.ro.observe(this.box); }
+    else (window as Window).addEventListener('resize', measure);
+    requestAnimationFrame(measure);
     this.loop();
   }
 
-  destroy() { cancelAnimationFrame(this.raf); this.input.destroy(); }
+  destroy() { cancelAnimationFrame(this.raf); this.input.destroy(); this.ro?.disconnect(); }
 
   update(v: GameView) {
     const trial = v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict';
@@ -41,9 +54,11 @@ export class Scene {
       this.box.style.setProperty('--sc-bg', bgUrl(trial ? 'trial.webp' : 'day.webp'));
       this.box.classList.toggle('trial', trial);
     }
+    // 밤에는 밤 화면이 다 덮으므로 장면 계산을 쉰다
+    this.paused = v.phase === 'night';
     const me = v.players.find((p) => p.pid === this.myPid);
     this.walking = plazaPhase(v.phase) && !!v.plaza;
-    this.el.classList.toggle('walking', this.walking && !!me?.alive);
+    this.walkingNow = this.walking && !!me?.alive;
     const alive = v.players.filter((p) => p.alive);
     const stage = trial ? (v.stage ?? []) : [];
     // 자리 (x%, 발 y%)
@@ -74,7 +89,7 @@ export class Scene {
           h('img', { src: pid === this.myPid ? this.myImg() : this.anon(pid), alt: '' }),
           h('div.sc-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
         this.box.appendChild(el);
-        av = { el, bubble, timer: 0, x, y, tx: x, ty: y };
+        av = { el, bubble, timer: 0, x, y, tx: x, ty: y, dk: '' };
         this.avs.set(pid, av);
       }
       // 광장에서 내 위치는 내가 정한다 (처음 한 번만 서버 값을 받음)
@@ -105,6 +120,7 @@ export class Scene {
     const t = performance.now();
     const dt = Math.min(0.05, (t - this.last) / 1000);
     this.last = t;
+    if (this.paused || !this.bw) return;
     const me = this.avs.get(this.myPid);
     if (this.walking && me) {
       const typing = (document.activeElement as HTMLElement | null)?.tagName === 'INPUT';
@@ -129,34 +145,16 @@ export class Scene {
           a.el.classList.toggle('moving', Math.hypot(dx, dy) > 0.15);
         } else { a.x = a.tx; a.y = a.ty; a.el.classList.remove('moving'); }
       }
-      // 원근: 아래(앞)로 올수록 조금 크게
+      // 원근: 아래(앞)로 올수록 조금 크게. 위치는 transform 으로만 (레이아웃 재계산 없음)
       const size = 12 + (a.y - 50) * 0.18 + (a.el.classList.contains('onstage') ? 3 : 0);
-      a.el.style.left = a.x + '%';
-      a.el.style.top = a.y + '%';
-      a.el.style.height = size + '%';
+      const px = (a.x / 100) * this.bw, py = (a.y / 100) * this.bh, ph = (size / 100) * this.bh;
+      const dk = `${px.toFixed(1)},${py.toFixed(1)},${ph.toFixed(1)}`;
+      if (dk === a.dk) continue;
+      a.dk = dk;
+      a.el.style.transform = `translate3d(${px}px, ${py}px, 0) translate(-50%, -100%)`;
+      a.el.style.height = ph.toFixed(1) + 'px';
       a.el.style.zIndex = String(Math.round(a.y * 10));
     }
   };
 }
 
-/** 모두가 보는 컷씬 (전용 그림은 assets/cut/<kind>.png 가 생기면 그걸 쓴다). 여러 개면 차례대로 */
-const cutQueue: (() => void)[] = [];
-let cutPlaying = false;
-function nextCut() {
-  const f = cutQueue.shift();
-  cutPlaying = !!f;
-  f?.();
-}
-export function playCut(host: HTMLElement, kind: CutKind, text: string, fallbackImg: string) {
-  cutQueue.push(() => {
-    const img = h('img.cut-img', { src: `./assets/cut/${kind}.png`, alt: '' }) as HTMLImageElement;
-    img.onerror = () => { img.onerror = null; img.src = fallbackImg; img.classList.add('fallback'); };
-    const el = h(`div.cut.cut-${kind}`, h('div.cut-light'), img, h('div.cut-text', text), h('div.cut-skip', '눌러서 넘기기'));
-    let done = false;
-    const close = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => { el.remove(); nextCut(); }, 400); };
-    el.onclick = close;
-    host.appendChild(el);
-    setTimeout(close, 2600);
-  });
-  if (!cutPlaying) nextCut();
-}

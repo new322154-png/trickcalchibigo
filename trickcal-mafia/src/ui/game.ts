@@ -10,10 +10,12 @@ import { playMatch } from '../mini/match';
 import type { RoomLink } from '../net';
 import { bgUrl, clear, h } from './dom';
 import { MoveInput, isTouch } from './input';
-import { Scene, playCut } from './scene';
+import { Scene } from './scene';
+import { playCut, preloadCuts } from './cut';
 import { sfx } from './sfx';
 
-const CW = 1600, CH = 900;
+/** 밤 복도 (배경 2172×724 → 높이 900 기준) */
+const CW = 2700, CH = 900, WALL = 500, FLOOR0 = 540, FLOOR1 = 800;
 const STEP_NAMES = ['', '① 뮤트 · 스피키', '② 니펠', '③ 그 밖의 능력'];
 const ACT_LABEL: Record<string, string> = {
   kill: '습격', seal: '해킹', disguise: '변장', protect: '지키기', investigate: '조사', track: '지켜보기', reveal: '직업 공개', identify: '직업 알아내기', revive: '소원 빌기',
@@ -21,18 +23,18 @@ const ACT_LABEL: Record<string, string> = {
 const CH_LABEL: Record<ChatCh, string> = { day: '전체', nifel: '니펠', dead: '죽은 사람', defense: '변론' };
 const MEMO = ['', '의심', '마피아?', '시민?', '확정 시민', '확정 마피아'];
 
-/** 직업 캐릭터 (assets/chars/<id>.png) */
+/** 직업 캐릭터 (assets/chars/<id>.webp) */
 function roleChar(role: string) {
   const name = ROLES[role as RoleId]?.char;
   return CHARACTERS.find((x) => x.name === name)?.id ?? null;
 }
 /** 게임 중 다른 사람(과 나)의 모습: 정체를 숨기는 공용 그림 */
-const ANON = './assets/ui/anon.png';
+const ANON = './assets/ui/anon.webp';
 /** 다른 사람 모습: 가면 쓴 케이크 4종 (자리 번호로 고정, 정체와는 무관) */
-const maskImg = (pid: number) => `./assets/ui/mask${(pid % 4) + 1}.png`;
+const maskImg = (pid: number) => `./assets/ui/mask${(pid % 4) + 1}.webp`;
 function roleImg(role: string): string | null {
   const c = roleChar(role);
-  return c ? `./assets/chars/${c}.png` : null;
+  return c ? `./assets/chars/${c}.webp` : null;
 }
 
 export class GameUI {
@@ -67,6 +69,7 @@ export class GameUI {
         h('div.g-center', h('div.g-dialog', h('div.g-dialog-head', h('span', 'LOG'), h('b', '대화 기록')), this.log, this.chatRow)),
         this.panel),
       this.nightEl);
+    if (isTouch()) this.el.appendChild(this.scene.joy);
     this.el.style.setProperty('--anon', `url("${new URL(ANON, location.href).href}")`);
     root.appendChild(this.el);
     this.tick = window.setInterval(() => this.renderTimer(), 250);
@@ -92,7 +95,12 @@ export class GameUI {
     else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
     else if (m.t === 'pmove') this.scene.move(m.pid, m.x, m.y);
     else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
-    else if (m.t === 'cut') { sfx(m.kind === 'execute' ? 'death' : 'gavel'); playCut(this.el, m.kind, m.text, m.pid !== undefined ? maskImg(m.pid) : ANON); }
+    else if (m.t === 'cut') {
+      const mine = m.kind.startsWith('p_');
+      sfx(m.kind === 'execute' || m.kind === 'vanish' || m.kind === 'blast' ? 'death' : mine ? 'secret' : 'gavel');
+      const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? maskImg(m.pid) : ANON;
+      playCut(this.el, m.kind, m.text, fb);
+    }
   }
 
   private update(v: GameView) {
@@ -100,13 +108,14 @@ export class GameUI {
     const prevPhase = this.v?.phase, prevStep = this.v?.step;
     this.skew = v.now - Date.now();
     this.v = v;
-    if (first) this.showRoleCard();
+    if (first) { this.showRoleCard(); preloadCuts(v.me.role); }
     if (prevPhase !== v.phase || prevStep !== v.step) {
       if (v.phase === 'night' && prevPhase !== 'night') sfx('night');
       if (v.phase === 'morning') sfx('morning');
       if (v.phase === 'vote1' || v.phase === 'vote2') sfx('gavel');
     }
     this.scene.update(v);
+    this.el.classList.toggle('walking', this.scene.walkingNow);
     const theme = v.phase === 'night' ? 't-night' : v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict' ? 't-trial' : 't-day';
     if (!this.el.classList.contains(theme)) { this.el.classList.remove('t-day', 't-trial', 't-night'); this.el.classList.add(theme); }
     if (prevPhase !== v.phase || prevStep !== v.step) this.phaseTotal = Math.max(1, this.left());
@@ -411,8 +420,8 @@ export class GameUI {
     const T: Record<string, [string, string, string]> = {
       mafia: ['마피아 팀 승리', 'MAFIA WINS', 'hall_night.webp'],
       citizen: ['시민 팀 승리', 'CITIZENS WIN', 'hall_day.webp'],
-      jester: ['코미 승리', 'JESTER WINS', 'trial.webp'],
-      elena: ['엘레나 승리', 'DRONE QUEEN', 'day.webp'],
+      jester: ['코미 승리', 'JESTER WINS', 'end_comi.webp'],
+      elena: ['엘레나 승리', 'DRONE QUEEN', 'end_elena.webp'],
       draw: ['무승부', 'DRAW', 'hall_day.webp'],
     };
     const [title, en, bg] = T[winner] ?? T.draw;
@@ -471,31 +480,36 @@ class Corridor {
   private toastEl = h('div.c-toast');
   private mates = new Map<number, HTMLElement>();
   private lastSent = 0;
+  private view!: HTMLElement;
+  private vw = 0;
+  private vh = 0;
+  private lastFit = 0;
   private onKey = (e: KeyboardEvent) => {
     if ((e.key === 'e' || e.key === 'E' || e.key === ' ' || e.key === 'Enter') && this.near !== null && (e.target as HTMLElement)?.tagName !== 'INPUT') { e.preventDefault(); this.use(); }
   };
 
   constructor(host: HTMLElement, private v: GameView, private myPid: number, img: string | null, private name: (p: number) => string,
     private onAct: (target: number | null) => void, private onMove: (x: number, y: number) => void, private onExit: () => void) {
-    // 복도 배치: 위·아래 벽에 문
+    // 복도 배치: 긴 벽을 따라 문이 한 줄로, 바닥을 걸어 다닌다 (화면은 나를 따라 옆으로 움직임)
+    this.world.style.setProperty('--cw-bg', bgUrl('corridor.webp'));
     const ids = v.players.map((p) => p.pid);
-    const half = Math.ceil(ids.length / 2);
+    const n = ids.length;
     ids.forEach((pid, i) => {
-      const top = i < half;
-      const k = top ? i : i - half;
-      const n = top ? half : ids.length - half;
-      const x = 160 + ((CW - 320) * (k + 0.5)) / n;
-      const y = top ? 250 : 700;
+      const x = 200 + ((CW - 400) * (i + 0.5)) / n;
       const p = v.players.find((q) => q.pid === pid)!;
-      const el = h(`div.c-door${top ? '.top' : '.bottom'}${p.alive ? '' : '.dead'}${pid === myPid ? '.mine' : ''}`, { style: { left: x + 'px', top: y + 'px' } },
+      const el = h(`div.c-door${p.alive ? '' : '.dead'}${pid === myPid ? '.mine' : ''}`, { style: { left: x + 'px', top: WALL + 'px' } },
         h('div.c-plate', pid === myPid ? '내 방' : p.name), h('div.c-leaf'));
       this.world.appendChild(el);
-      this.doors.push({ pid, x, y: top ? y + 70 : y - 70, el });
+      this.doors.push({ pid, x, y: FLOOR0 + 30, el });
     });
+    const mine = this.doors.find((d) => d.pid === myPid);
+    if (mine) this.x = mine.x;
+    this.y = FLOOR0 + 60;
     this.me = h('div.ch.me', h('div.ch-body', img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?')), h('div.ch-shadow'), h('div.ch-name', '나'));
     this.world.appendChild(this.me);
+    this.view = h('div.cw-wrap', this.world);
     this.wrap = h('div.corridor',
-      h('div.cw-wrap', this.world),
+      this.view,
       h('div.c-hud', this.info, this.timerEl),
       this.toastEl,
       this.actBtn,
@@ -553,11 +567,11 @@ class Corridor {
     this.last = t;
     const d = this.input.dir();
     this.x = Math.max(60, Math.min(CW - 60, this.x + d.x * 420 * dt));
-    this.y = Math.max(330, Math.min(640, this.y + d.y * 420 * dt));
+    this.y = Math.max(FLOOR0, Math.min(FLOOR1, this.y + d.y * 420 * dt));
     if (d.x) this.me.classList.toggle('flip', d.x > 0);
     this.me.classList.toggle('moving', d.x !== 0 || d.y !== 0);
     this.me.style.transform = `translate(${this.x}px, ${this.y}px)`;
-    if (t - this.lastSent > 120 && this.v.me.act?.kind === 'kill') { this.onMove(Math.round(this.x), Math.round(this.y)); this.lastSent = t; }
+    if ((d.x || d.y) && t - this.lastSent > 120 && this.v.me.act?.kind === 'kill') { this.onMove(Math.round(this.x), Math.round(this.y)); this.lastSent = t; }
     // 가까운 문
     const act = this.v.me.act;
     let best: number | null = null, bd = 110;
@@ -571,10 +585,12 @@ class Corridor {
       this.actBtn.classList.toggle('hidden', best === null);
       if (best !== null && act) this.actBtn.textContent = `${ACT_LABEL[act.kind]} → ${best === this.myPid ? '나' : this.name(best)}`;
     }
-    // 화면 맞추기
-    const w = this.wrap.querySelector('.cw-wrap') as HTMLElement;
-    const k = Math.min(w.clientWidth / CW, w.clientHeight / CH);
-    this.world.style.transform = `translate(-50%, -50%) scale(${k})`;
+    // 화면 맞추기: 높이에 맞추고 가로는 나를 따라 스크롤
+    if (!this.vw || t - this.lastFit > 500) { this.vw = this.view.clientWidth; this.vh = this.view.clientHeight; this.lastFit = t; }
+    const k = this.vh / CH;
+    const viewW = this.vw / k;
+    const camX = Math.max(0, Math.min(CW - viewW, this.x - viewW / 2));
+    this.world.style.transform = `scale(${k}) translateX(${-camX}px)`;
   };
 
   destroy() {
@@ -593,11 +609,12 @@ class Farm {
   private avs = new Map<number, { el: HTMLElement; bubble: HTMLElement; x: number; y: number; tx: number; ty: number; timer: number }>();
   private raf = 0;
   private last = performance.now();
+  private lastFit = -1e9;
   private lastSent = 0;
 
   constructor(host: HTMLElement, v: GameView, private myPid: number, private name: (p: number) => string,
     private img: (pid: number, ide: boolean) => string, private onMove: (x: number, y: number) => void) {
-    this.world.style.setProperty('--farm-bg', bgUrl('farm.png'));
+    this.world.style.setProperty('--farm-bg', bgUrl('farm.webp'));
     this.wrap = h('div.farm-wrap', this.world);
     host.appendChild(this.wrap);
     if (isTouch()) host.appendChild(this.input.el);
@@ -644,7 +661,7 @@ class Farm {
     if (me) {
       const d = typing ? { x: 0, y: 0 } : this.input.dir();
       me.x = Math.max(40, Math.min(FARM_W - 40, me.x + d.x * 360 * dt));
-      me.y = Math.max(200, Math.min(FARM_H - 40, me.y + d.y * 360 * dt));
+      me.y = Math.max(440, Math.min(FARM_H - 40, me.y + d.y * 360 * dt));
       if (d.x) me.el.classList.toggle('flip', d.x > 0);
       me.el.classList.toggle('moving', d.x !== 0 || d.y !== 0);
       if ((d.x || d.y) && t - this.lastSent > 90) { this.onMove(Math.round(me.x), Math.round(me.y)); this.lastSent = t; }
@@ -657,11 +674,15 @@ class Farm {
         if (Math.abs(dx) > 0.5) a.el.classList.toggle('flip', dx > 0);
         a.el.classList.toggle('moving', Math.hypot(dx, dy) > 2);
       }
-      a.el.style.transform = `translate(${a.x}px, ${a.y}px)`;
-      a.el.style.zIndex = String(Math.round(a.y));
+      const tf = `translate3d(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px, 0)`;
+      if (a.el.style.transform !== tf) { a.el.style.transform = tf; a.el.style.zIndex = String(Math.round(a.y)); }
     }
-    const k = Math.min(this.wrap.clientWidth / FARM_W, this.wrap.clientHeight / FARM_H);
-    this.world.style.transform = `translate(-50%, -50%) scale(${k})`;
+    if (t - this.lastFit > 500) {
+      this.lastFit = t;
+      const k = Math.min(this.wrap.clientWidth / FARM_W, this.wrap.clientHeight / FARM_H);
+      const tf = `translate(-50%, -50%) scale(${k.toFixed(4)})`;
+      if (this.world.style.transform !== tf) this.world.style.transform = tf;
+    }
   };
 
   destroy() {
