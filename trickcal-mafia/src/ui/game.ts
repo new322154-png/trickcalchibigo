@@ -536,7 +536,6 @@ class Corridor {
     this.y = FLOOR0 + 50;
     this.me = h('div.ch.me', h('div.ch-body', img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?')), h('div.ch-shadow'), h('div.ch-name', '나'));
     this.world.appendChild(this.me);
-    this.world.append(h('div.cw-dust'));
     this.view = h('div.cw-wrap', this.world, h('div.cw-vignette'));
     this.wrap = h('div.corridor',
       this.view,

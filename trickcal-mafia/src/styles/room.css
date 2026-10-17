@@ -206,15 +206,14 @@
 .c-door.near .c-leaf { background: linear-gradient(90deg, #3c2618, #7a5034 40%, #8a5c3c 60%, #4a3020); }
 .c-door.chosen .c-plate { background: linear-gradient(#ff8a9c, #d9304a); color: #fff; box-shadow: 0 0 0 2px #7a1020, 0 0 16px #ff3355; }
 .cw-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, transparent 45%, rgba(4,6,20,.7) 100%), linear-gradient(rgba(10,14,40,.35), transparent 35%); }
-.cw-dust { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,.5), transparent), radial-gradient(2px 2px at 30% 60%, rgba(255,255,255,.35), transparent), radial-gradient(1.5px 1.5px at 55% 35%, rgba(255,255,255,.45), transparent), radial-gradient(2px 2px at 75% 70%, rgba(255,255,255,.35), transparent), radial-gradient(1.5px 1.5px at 90% 25%, rgba(255,255,255,.4), transparent); background-size: 900px 900px; animation: dust 18s linear infinite; opacity: .7; }
-@keyframes dust { to { background-position: 300px -900px; } }
 .c-hud { position: absolute; left: 20px; top: 16px; z-index: 5; background: linear-gradient(135deg, rgba(20,24,58,.82), rgba(8,10,28,.72)); border: 1px solid rgba(160,180,255,.35); border-left: 4px solid var(--gold); border-radius: 4px 16px 16px 4px; padding: 10px 18px; font-size: 18px; max-width: 60%; box-shadow: 0 8px 26px rgba(0,0,0,.45); color: #e8ecff; }
 .c-hud b { font-size: 21px; }
 .c-votes { color: #ff9aa9; margin-top: 4px; }
 .c-timer { position: absolute; right: 18px; top: 10px; font-size: 26px; font-weight: 900; color: var(--gold); }
 .c-hud .c-timer { position: static; display: inline-block; margin-top: 4px; }
-.c-act { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 6; box-shadow: 0 0 0 3px rgba(255,230,160,.35), 0 0 30px rgba(255,210,120,.55); animation: actPulse 1.4s ease-in-out infinite; }
-@keyframes actPulse { 50% { box-shadow: 0 0 0 6px rgba(255,230,160,.15), 0 0 44px rgba(255,210,120,.8); } }
+.c-act { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 6; box-shadow: 0 0 0 3px rgba(255,230,160,.35), 0 0 30px rgba(255,210,120,.55); }
+.c-act::after { content: ''; position: absolute; inset: -8px; border-radius: inherit; box-shadow: 0 0 40px rgba(255,210,120,.9); opacity: 0; pointer-events: none; will-change: opacity; animation: actPulse 1.4s ease-in-out infinite; }
+@keyframes actPulse { 50% { opacity: 1; } }
 .c-back { position: absolute; right: 20px; top: 16px; z-index: 6; }
 .c-toast { position: absolute; right: 20px; top: 70px; z-index: 6; width: 420px; display: flex; flex-direction: column; gap: 6px; font-size: 17px; }
 .c-toast div { background: linear-gradient(135deg, rgba(20,24,58,.85), rgba(8,10,28,.8)); border: 1px solid var(--gold2); border-radius: 10px; padding: 6px 10px; color: #f3dfb4; }
