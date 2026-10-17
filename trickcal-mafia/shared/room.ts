@@ -5,6 +5,7 @@
  */
 import { QUIZ } from './quiz';
 import { MafiaGame } from './mafia';
+import { BotBrain } from './bot';
 import {
   AUTO_START, GAME_MIN, CHARACTERS, MAX_PLAYERS, SPEED, WALK_TOP, WORLD_H, WORLD_W, clamp, isChar,
   type C2S, type Chair, type MiniId, type MiniState, type PlayerInfo, type S2C, MINI_NAMES,
@@ -23,6 +24,7 @@ interface P extends PlayerInfo {
   moved: boolean;
   chatTimes: number[];
   joinedAt: number;
+  brain?: BotBrain;
 }
 
 const now = () => Date.now();
@@ -48,7 +50,7 @@ export class RoomCore {
 
   // ── 입장 · 퇴장 ──────────────────────────────────
 
-  join(conn: Conn, hello: C2S): number | null {
+  join(conn: Conn, hello: C2S, bot = false): number | null {
     if (hello.t !== 'hello') return null;
     // 재접속 (게임 중 끊겼다가 30초 안에 돌아옴)
     const back = hello.token ? [...this.players.values()].find((p) => p.token === hello.token && !p.online) : undefined;
@@ -79,6 +81,7 @@ export class RoomCore {
       x: rnd(300, 1300), y: rnd(WALK_TOP + 60, WORLD_H - 80), host: this.players.size === 0,
       conn, lastMoveAt: now(), moved: false, chatTimes: [], joinedAt: now(),
       token: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), online: true,
+      ...(bot ? { bot: true } : {}),
     };
     this.players.set(id, p);
     conn.send({ t: 'welcome', you: id, code: this.code, pub: this.pub, players: this.list() });
@@ -120,8 +123,14 @@ export class RoomCore {
     this.players.delete(id);
     this.broadcast({ t: 'leave', id });
     this.broadcast({ t: 'sys', text: `${p.nick}님이 나갔어요.` });
+    p.brain?.destroy();
+    // 사람이 아무도 없으면 봇도 모두 나간다
+    if (!p.bot && [...this.players.values()].every((q) => q.bot)) {
+      for (const b of [...this.players.values()]) { b.brain?.destroy(); this.players.delete(b.id); }
+      if (this.game) { this.game = null; this.clearTimers(); }
+    }
     if (p.host && this.players.size) {
-      const next = [...this.players.values()].sort((a, b) => a.joinedAt - b.joinedAt)[0];
+      const next = [...this.players.values()].filter((q) => !q.bot).sort((a, b) => a.joinedAt - b.joinedAt)[0] ?? [...this.players.values()][0];
       next.host = true;
       this.broadcast({ t: 'host', id: next.id });
       this.broadcast({ t: 'sys', text: `${next.nick}님이 방장이 되었어요.` });
@@ -136,8 +145,35 @@ export class RoomCore {
     this.checkAuto();
   }
 
+  // ── 테스트용 봇 ────────────────────────────────
+
+  /** 방장이 빈자리를 봇으로 채운다 (비공개 방만) */
+  private addBot() {
+    if (this.game || this.players.size >= MAX_PLAYERS) return;
+    const used = new Set([...this.players.values()].map((p) => p.nick));
+    let n = 1;
+    while (used.has(`봇${n}`)) n++;
+    let id = -1;
+    const brain = new BotBrain((m) => { if (this.players.has(id)) this.handle(id, m); });
+    const conn: Conn = { send: (m) => brain.onMsg(m) };
+    const got = this.join(conn, { t: 'hello', nick: `봇${n}`, char: pickOne([...CHARACTERS]).id }, true);
+    if (got === null) { brain.destroy(); return; }
+    id = got;
+    this.players.get(id)!.brain = brain;
+  }
+
+  private removeBot() {
+    const bots = [...this.players.values()].filter((p) => p.bot).sort((a, b) => b.joinedAt - a.joinedAt);
+    if (bots[0]) this.dropBot(bots[0]);
+  }
+
+  private dropBot(p: P) {
+    p.brain?.destroy();
+    this.leave(p.id);
+  }
+
   private info(p: P): PlayerInfo {
-    return { id: p.id, nick: p.nick, char: p.char, x: Math.round(p.x), y: Math.round(p.y), host: p.host };
+    return { id: p.id, nick: p.nick, char: p.char, x: Math.round(p.x), y: Math.round(p.y), host: p.host, ...(p.bot ? { bot: true } : {}) };
   }
   private list() { return [...this.players.values()].map((p) => this.info(p)); }
 
@@ -204,6 +240,15 @@ export class RoomCore {
         this.broadcast({ t: 'chat', id, text });
         break;
       }
+      case 'add_bot':
+        if (!p.host) return p.conn.send({ t: 'error', text: '방장만 봇을 넣을 수 있어요.' });
+        if (this.pub) return p.conn.send({ t: 'error', text: '봇은 비공개 방에서만 쓸 수 있어요.' });
+        if (this.players.size >= MAX_PLAYERS) return p.conn.send({ t: 'error', text: '방이 가득 찼어요.' });
+        this.addBot();
+        break;
+      case 'remove_bot':
+        if (p.host) this.removeBot();
+        break;
       case 'start_mini':
         if (!p.host) return p.conn.send({ t: 'error', text: '방장만 미니게임을 시작할 수 있어요.' });
         if (this.mini) return;

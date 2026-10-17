@@ -50,6 +50,8 @@ export interface PlayerInfo {
   x: number;
   y: number;
   host: boolean;
+  /** 테스트용 봇 */
+  bot?: boolean;
 }
 
 export type C2S =
@@ -62,6 +64,8 @@ export type C2S =
   | { t: 'ping' }
   // ── 마피아 본게임 ──
   | { t: 'start_game' }
+  | { t: 'add_bot' }
+  | { t: 'remove_bot' }
   | { t: 'act'; target: number | null }
   | { t: 'vote'; target: number | null }
   | { t: 'gchat'; text: string; ch: ChatCh }

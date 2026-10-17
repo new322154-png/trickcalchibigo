@@ -238,8 +238,8 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     const amHost = avatars.get(me)?.info.host;
     clear(plist);
     for (const a of avatars.values()) {
-      plist.appendChild(h(`div.rp${a.info.id === me ? '.self' : ''}`, h('img', { src: charImg(a.info.char), alt: '' }), h('span', a.info.nick), a.info.host ? h('span.tag.me', '방장') : ''));
-      a.el.querySelector('.ch-name')!.textContent = (a.info.host ? '👑 ' : '') + a.info.nick;
+      plist.appendChild(h(`div.rp${a.info.id === me ? '.self' : ''}`, h('img', { src: charImg(a.info.char), alt: '' }), h('span', a.info.nick), a.info.host ? h('span.tag.me', '방장') : '', a.info.bot ? h('span.tag.bot', '🤖 봇') : ''));
+      a.el.querySelector('.ch-name')!.textContent = (a.info.host ? '👑 ' : a.info.bot ? '🤖 ' : '') + a.info.nick;
     }
     clear(hostBar);
     const waiting = startingAt ? `곧 게임이 시작됩니다!` : n < GAME_MIN ? `${GAME_MIN}명 이상 모이면 게임을 시작할 수 있어요 (${n}/${GAME_MIN})` : pub ? `${AUTO_START}명이 모이면 자동으로 시작해요 (${n}/${AUTO_START})` : '방장이 게임을 시작할 수 있어요';
@@ -250,6 +250,9 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         h('div.mini-btns', (Object.keys(MINI_NAMES) as MiniId[]).map((g) =>
           h('button.btn.small', { disabled: !!mini || n < 2, title: MINI_DESC[g], onclick: () => link.send({ t: 'start_mini', game: g }) }, MINI_NAMES[g]))),
         mini ? h('button.btn.small.wide', { onclick: () => link.send({ t: 'stop_mini' }) }, '미니게임 끝내기') : '',
+        pub ? '' : h('div.bot-btns',
+          h('button.btn.small', { disabled: n >= MAX_PLAYERS, title: '빈자리를 봇으로 채워 혼자서도 시험해 볼 수 있어요', onclick: () => link.send({ t: 'add_bot' }) }, '🤖 봇 추가'),
+          h('button.btn.small', { disabled: ![...avatars.values()].some((a) => a.info.bot), onclick: () => link.send({ t: 'remove_bot' }) }, '봇 빼기')),
         h('button.btn.gold.wide', { disabled: n < GAME_MIN || !!mini, onclick: () => link.send({ t: 'start_game' }) }, n < GAME_MIN ? `게임 시작 (${GAME_MIN}명부터)` : `게임 시작 (${n}명)`),
       );
     } else hostBar.append(h('div.dim', '방장이 미니게임이나 게임을 시작할 수 있어요.'));

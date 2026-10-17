@@ -287,3 +287,5 @@
 @keyframes cutText { from { transform: translateY(30px); opacity: 0; } }
 @keyframes cutLight { 0% { opacity: 0; } 30% { opacity: 1; } }
 @keyframes cutFall { to { transform: translateY(40%) rotate(-12deg); opacity: 0; filter: grayscale(1); } }
+.bot-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
+.tag.bot { background: #4a5a8a; color: #fff; }
