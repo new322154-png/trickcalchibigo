@@ -20,11 +20,14 @@ const ACT_LABEL: Record<string, string> = {
 const CH_LABEL: Record<ChatCh, string> = { day: '전체', nifel: '니펠', dead: '죽은 사람', defense: '변론' };
 const MEMO = ['', '의심', '마피아?', '시민?', '확정 시민', '확정 마피아'];
 
-/** 직업 캐릭터 그림 (데포르메 그림이 생기면 assets/chars/<id>.png) */
-function roleImg(role: string): string | null {
+/** 직업 캐릭터 (assets/chars/<id>.png) */
+function roleChar(role: string) {
   const name = ROLES[role as RoleId]?.char;
-  const c = CHARACTERS.find((x) => x.name === name);
-  return c ? `./assets/chars/${c.id}.png` : null;
+  return CHARACTERS.find((x) => x.name === name)?.id ?? null;
+}
+function roleImg(role: string): string | null {
+  const c = roleChar(role);
+  return c ? `./assets/chars/${c}.png` : null;
 }
 
 export class GameUI {
@@ -295,7 +298,7 @@ export class GameUI {
         this.nightLogEl,
         v.me.chats.length ? h('div.n-chat', h('span', CH_LABEL[v.me.chats[0]]), this.nightChatInput()) : '',
         h('div.n-mini', h('span', '기다리는 동안:'),
-          h('button.btn.small', { onclick: () => playCatch(this.root, 'erpin', () => {}) }, '🍞 빵 받기'),
+          h('button.btn.small', { onclick: () => playCatch(this.root, roleChar(v.me.role) ?? 'nifel', () => {}) }, '🍞 빵 받기'),
           h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기'))),
     );
   }

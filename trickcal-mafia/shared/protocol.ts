@@ -10,16 +10,24 @@ export const MIN_PLAYERS = 4;
 export const SPEED = 330; // 초당 이동 거리
 
 export const CHARACTERS = [
-  { id: 'erpin', name: '에르핀' },
-  { id: 'ner', name: '네르' },
-  { id: 'tig', name: '티그' },
+  { id: 'nifel', name: '니펠' },
+  { id: 'mute', name: '뮤트' },
   { id: 'uros', name: '우로스' },
-  { id: 'sila', name: '실라' },
-  { id: 'elena', name: '엘레나' },
-  { id: 'daya', name: '다야' },
   { id: 'joan', name: '죠안' },
-  { id: 'amelia', name: '아멜리아' },
-  { id: 'shady', name: '셰이디' },
+  { id: 'bella', name: '벨라' },
+  { id: 'hilde', name: '힐데' },
+  { id: 'polan', name: '폴랑' },
+  { id: 'cash', name: '캐시' },
+  { id: 'butter', name: '버터' },
+  { id: 'heidi', name: '하이디' },
+  { id: 'rion', name: '리온' },
+  { id: 'diana', name: '디아나(왕년)' },
+  { id: 'mari', name: '마리' },
+  { id: 'spiky', name: '스피키' },
+  { id: 'ui', name: '우이' },
+  { id: 'ner', name: '네르' },
+  { id: 'comi', name: '코미' },
+  { id: 'elena', name: '엘레나' },
 ] as const;
 export type CharId = (typeof CHARACTERS)[number]['id'];
 export const isChar = (c: unknown): c is CharId => CHARACTERS.some((x) => x.id === c);
