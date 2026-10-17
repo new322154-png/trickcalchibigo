@@ -60,8 +60,8 @@ export const ROLES: Record<RoleId, RoleDef> = {
 
   // ── 시민 ──
   doctor: {
-    id: 'doctor', char: '힐데', job: '보호', team: 'citizen', night: 'protect', selfTarget: true,
-    desc: '밤에 한 명을 지킨다. 자기 자신도, 같은 사람을 연속으로도 지킬 수 있다.',
+    id: 'doctor', char: '힐데', job: '치유', team: 'citizen', night: 'protect', selfTarget: true,
+    desc: '밤에 한 명을 치유한다. 그 사람이 습격당해도 살려낸다. 자기 자신도, 같은 사람을 연속으로도 치유할 수 있다.',
   },
   police: {
     id: 'police', char: '폴랑', job: '조사', team: 'citizen', night: 'investigate',

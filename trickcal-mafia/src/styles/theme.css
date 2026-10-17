@@ -431,7 +431,7 @@
 .fa-walker img { animation: faHop .3s 1.9s 5 ease-in-out; transform: scaleX(-1); }
 @keyframes faWalk { to { left: 36%; } }
 @keyframes faHop { 50% { transform: scaleX(-1) translateY(-8%); } }
-.fa-cake { left: 58%; height: 30%; }
+.fa-cake { left: 54%; height: 46%; }
 .fa-bang { position: absolute; left: 50%; top: -14%; font-style: normal; font-size: 64px; transform: translateX(-50%) scale(0); animation: bang .35s 3.45s cubic-bezier(.2,1.8,.4,1) forwards; filter: drop-shadow(0 3px 0 #fff) drop-shadow(0 0 4px #fff); }
 .fa-bang.late { animation-delay: 3.6s; }
 @keyframes bang { to { transform: translateX(-50%) scale(1); } }

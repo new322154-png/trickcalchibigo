@@ -2,7 +2,7 @@
  * 마피아 본게임 (서버에서만 돈다. 화면에는 각자 알아도 되는 정보만 보낸다)
  *
  * 밤: ① 뮤트·스피키 → ② 니펠 → ③ 나머지 능력 (차례마다 15초, 없는 직업 차례도 항상 기다림)
- *     조사·직업 탐지·변장은 쓰자마자 결과, 추적은 ③차례 끝, 습격·보호·공개·소원은 아침에 한꺼번에.
+ *     조사·직업 탐지·변장은 쓰자마자 결과, 추적은 ③차례 끝, 습격·치유·공개·소원은 아침에 한꺼번에.
  * 낮: 토론(살아 있는 사람 × 20초, 최소 90초) → 1차 투표 20초 → 결선 변론 45초 → 결선 투표 15초 → 판결
  *
  * 접선 (마피아 팀원이 니펠과 서로 알아보고 니펠 채팅에 들어가는 것)
@@ -93,7 +93,7 @@ export class MafiaGame {
 
   private emptyMorning() {
     return {
-      deaths: [] as number[], blasts: [] as [number, number][], saved: 0, revives: [] as number[], drone: false,
+      deaths: [] as number[], blasts: [] as [number, number][], saved: [] as number[], revives: [] as number[], drone: false,
       reveals: [] as { who: number; role: RoleId; why: 'reveal' }[],
       counters: [] as [number, number][],
     };
@@ -337,7 +337,7 @@ export class MafiaGame {
     const copying = p.role === 'spiky' && this.step === 3;
     // 내 직업 컷씬 (스피키가 빌려 쓴 능력은 제외)
     const PC: Partial<Record<string, [CutKind, string]>> = {
-      seal: ['p_seal', '해킹!'], identify: ['p_identify', '직업 탐지'], protect: ['p_protect', '보호!'],
+      seal: ['p_seal', '해킹!'], identify: ['p_identify', '직업 탐지'], protect: ['p_protect', '치유!'],
       investigate: ['p_investigate', '조사!'], track: ['p_track', '추적!'], disguise: ['p_disguise', '변장!'],
     };
     const pc = PC[a.kind];
@@ -450,7 +450,7 @@ export class MafiaGame {
     const k = this.pendingKill;
     if (k) {
       const t = this.ps.get(k.target)!;
-      if (protectedSet.has(t.pid)) m.saved++;
+      if (protectedSet.has(t.pid)) m.saved.push(t.pid);
       else if (t.role === 'trap' && !t.shieldUsed) {
         t.shieldUsed = true;
         m.counters.push([t.pid, k.executor]);
@@ -524,7 +524,7 @@ export class MafiaGame {
       this.cutAll('blast', '폭사!', mari);
       this.logAll('event', `💥 ${this.name(mari)}가 쓰러지며 폭발했다! 습격한 ${this.name(nifel)}도 함께 사라졌다.`);
     }
-    for (let i = 0; i < m.saved; i++) { this.cutAll('saved', '습격을 막아냈다'); this.logAll('event', '누군가 습격당했지만 무사히 아침을 맞았다.'); }
+    for (const s of m.saved) { this.cutAll('saved', `힐데가 니펠로부터 ${this.name(s)}을(를) 살려내었다!`, s); this.logAll('event', `💚 힐데가 니펠로부터 ${this.name(s)}을(를) 살려내었다!`); }
     for (const [d, ex] of m.counters) {
       const e = this.ps.get(ex)!;
       this.unmask(d, 'trap');
@@ -532,7 +532,7 @@ export class MafiaGame {
       this.cutAll('counter', '반격!', d);
       this.logAll('event', `🛡 ${this.name(d)}가 습격을 반격해 막아냈다! 습격한 자는 ${e.name}, 정체는 ${label(e.role)}!`);
     }
-    if (!m.deaths.length && !m.saved && !m.counters.length) this.logAll('event', '조용한 밤이었다.');
+    if (!m.deaths.length && !m.saved.length && !m.counters.length) this.logAll('event', '조용한 밤이었다.');
     for (const r of m.revives) {
       const p = this.ps.get(r);
       if (!p || p.alive) continue;

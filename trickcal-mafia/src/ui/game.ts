@@ -20,7 +20,7 @@ const CW = 2700, CH = 900, WALL = 374, FLOOR0 = 398, FLOOR1 = 676;
 const PILLARS = [99, 621, 1144, 1678, 2195, 2672];
 const STEP_NAMES = ['', '① 뮤트 · 스피키', '② 니펠', '③ 그 밖의 능력'];
 const ACT_LABEL: Record<string, string> = {
-  kill: '습격', seal: '해킹', disguise: '변장', protect: '지키기', investigate: '조사', track: '지켜보기', reveal: '직업 공개', identify: '직업 알아내기', revive: '소원 빌기',
+  kill: '습격', seal: '해킹', disguise: '변장', protect: '치유하기', investigate: '조사', track: '지켜보기', reveal: '직업 공개', identify: '직업 알아내기', revive: '소원 빌기',
 };
 const CH_LABEL: Record<ChatCh, string> = { day: '전체', nifel: '니펠', dead: '죽은 사람', defense: '변론' };
 const MEMO = ['', '의심', '마피아?', '시민?', '확정 시민', '확정 마피아'];

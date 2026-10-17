@@ -185,6 +185,8 @@
 .cw-wrap { position: absolute; inset: 0; overflow: hidden; }
 .cw { position: absolute; left: 0; top: 0; width: 2700px; height: 900px; transform-origin: 0 0; background: var(--cw-bg) 0 0 / 100% 100% no-repeat, #1a2340; will-change: transform; }
 .c-door { position: absolute; width: 150px; height: 262px; margin: -262px 0 0 -75px; z-index: 1; }
+/* 복도 사람은 언제나 벽에 붙은 문보다 앞 */
+.cw .ch { z-index: 3; }
 /* 돌 아치 문틀 + 나무 양문 */
 .c-frame { position: absolute; inset: 0; border-radius: 75px 75px 0 0; background: linear-gradient(90deg, #8a93b8, #b8c0dc 30%, #c7cee6 50%, #9aa3c6 75%, #737ca3); box-shadow: inset 0 0 0 3px rgba(40,46,80,.55), 0 10px 24px rgba(0,0,0,.45); padding: 16px 14px 0; display: flex; gap: 3px; }
 .c-frame::before { content: ''; position: absolute; left: 50%; top: 4px; width: 26px; height: 22px; margin-left: -13px; background: linear-gradient(#e7ecff, #9aa3c6); clip-path: polygon(50% 0, 100% 30%, 85% 100%, 15% 100%, 0 30%); }
