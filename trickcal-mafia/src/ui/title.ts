@@ -179,11 +179,14 @@ function logo() {
     return h(`div.lg-ch.${cls}`, { style: `left:${x}px; width:${w}px; --i:${i}; --m: url("${new URL(src, location.href).href}")` },
       h('img', { src, alt: '' }), h('div.lg-tint'), h('div.lg-shine'));
   };
+  // 반짝이 (위치 %, 크기, 지연)
+  const sparks: [number, number, number, number][] = [[22, 14, 34, .2], [81, 4, 28, 1.1], [80, 66, 38, .6], [19, 74, 26, 1.6], [52, -6, 22, 2.1], [35, 100, 28, .9], [67, 98, 24, 1.9], [15, 40, 22, 2.6], [61, 30, 18, 3.1], [44, 56, 16, 0.4]];
   return h('div.tt-logo',
-    h('div.tt-kicker', 'TRICKCAL · MASQUERADE'),
+    h('div.lg-aura'),
+    h('div.lg-burst'),
+    ...sparks.map(([x, y, s, d]) => h('i.lg-spark', { style: `left:${x}%; top:${y}%; --s:${s}px; --d:${d}s` })),
     h('h1.lg', { 'aria-label': '트릭컬 불피아' },
       h('div.lg-row.top', ...top.map(([f, x, w], i) => piece(f, x, w, i, 'warm'))),
       h('div.lg-row.bottom', ...bottom.map(([f, x, w], i) => piece(f, x, w, i + 3, i === 0 ? 'cool' : 'hot'))),
-      h('img.lg-mask', { src: asset('ui/logo/mask.webp'), alt: '' })),
-    h('div.tt-sub', '가면 속 거짓말쟁이를 찾아라 — 4~12인 온라인 마피아'));
+      h('img.lg-mask', { src: asset('ui/logo/mask.webp'), alt: '' })));
 }

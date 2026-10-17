@@ -238,7 +238,7 @@
   clip-path: polygon(calc((var(--split) + 9) * 1% - 3px) 0, calc((var(--split) + 9) * 1% + 3px) 0, calc((var(--split) - 9) * 1% + 3px) 100%, calc((var(--split) - 9) * 1% - 3px) 100%);
   filter: drop-shadow(0 0 12px #ffcf80); }
 
-.tt-logo { position: absolute; left: 50%; top: 9%; transform: translateX(-50%); text-align: center; z-index: 3; pointer-events: none; }
+.tt-logo { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); text-align: center; z-index: 3; pointer-events: none; }
 .tt-name { animation: logoPop .8s cubic-bezier(.3,1.5,.5,1); }
 .tt-kicker { font-size: 20px; font-weight: 900; letter-spacing: 12px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
 .tt-name { margin: 6px 0 0; font-family: var(--title-font); font-weight: 400; font-size: 150px; line-height: 1; color: #fff;
@@ -508,7 +508,7 @@
 @keyframes smoke { from { transform: scale(.2); opacity: .9; } to { transform: scale(1.6) translateY(-80px); opacity: 0; } }
 
 /* ── 타이틀 로고: 한 글자씩 ── */
-.tt-logo { top: 5%; }
+.tt-logo { top: 9%; }
 .lg { position: relative; margin: 6px auto 0; width: 1045px; height: 600px; transform: scale(.62); transform-origin: 50% 0; margin-bottom: -228px; }
 .lg-row { position: absolute; left: 0; }
 .lg-row.top { top: 0; height: 220px; left: 30px; }
@@ -540,8 +540,20 @@
   animation: lgMask .9s 1.05s cubic-bezier(.2,1.4,.4,1) forwards, lgMaskIdle 4s 2.2s ease-in-out infinite; }
 @keyframes lgMask { 0% { opacity: 0; transform: translate(420px, -260px) rotate(200deg) scale(.4); } 100% { opacity: 1; transform: rotate(-12deg); } }
 @keyframes lgMaskIdle { 0%, 100% { translate: 0 0; rotate: 0deg; } 50% { translate: 0 -10px; rotate: 4deg; } }
-.tt-logo .tt-sub { margin-top: 0; position: relative; z-index: 2; animation: stIn .5s 1.6s both; }
-.tt-logo .tt-kicker { animation: stIn .5s .1s both; }
+/* 로고 둘레 효과: 은은한 빛무리 · 착지할 때 퍼지는 고리 · 반짝이 (모두 transform/opacity 만) */
+.lg-aura { position: absolute; left: 50%; top: 48%; width: 760px; height: 420px; margin: -210px 0 0 -380px; border-radius: 50%; pointer-events: none; z-index: -1;
+  background: radial-gradient(closest-side at 38% 50%, rgba(200,225,255,.75), transparent 70%), radial-gradient(closest-side at 64% 52%, rgba(255,190,130,.7), transparent 72%), radial-gradient(closest-side, rgba(255,245,220,.5), transparent); opacity: 0; will-change: opacity, transform;
+  animation: auraIn 1.2s .9s ease-out forwards, auraPulse 4.5s 2.1s ease-in-out infinite; }
+@keyframes auraIn { from { opacity: 0; transform: scale(.6); } to { opacity: .9; transform: none; } }
+@keyframes auraPulse { 0%, 100% { opacity: .9; transform: scale(1); } 50% { opacity: .6; transform: scale(1.06); } }
+.lg-burst { position: absolute; left: 50%; top: 50%; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 50%; pointer-events: none;
+  border: 6px solid rgba(255,240,200,.9); opacity: 0; animation: lgBurst .9s 1.05s ease-out; }
+@keyframes lgBurst { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(2.4); border-width: 1px; } }
+.lg-spark { position: absolute; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); pointer-events: none; opacity: 0;
+  background: radial-gradient(circle, #fff 0 18%, transparent 20%), conic-gradient(from 45deg, transparent 0 20%, #fff8df 22% 28%, transparent 30% 45%, #fff8df 47% 53%, transparent 55% 70%, #fff8df 72% 78%, transparent 80%);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  filter: drop-shadow(0 0 6px rgba(255,230,160,1)) drop-shadow(0 0 2px #fff); animation: twinkle 2.8s calc(1.8s + var(--d)) ease-in-out infinite; }
+@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0deg); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } 60% { opacity: .8; transform: scale(.85) rotate(60deg); } }
 @media (pointer: coarse), (max-width: 900px) {
   .lg-ch.warm, .lg-ch.cool, .lg-ch.hot, .lg-mask { filter: drop-shadow(0 6px 0 #2b1d2e); }
   .lg-shine { display: none; }
