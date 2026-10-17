@@ -68,8 +68,8 @@ export const ROLES: Record<RoleId, RoleDef> = {
     desc: '밤에 한 명을 조사해서 니펠인지 아닌지 알아낸다. (니펠이 아닌 마피아 팀원은 시민으로 나온다)',
   },
   medium: {
-    id: 'medium', char: '캐시', job: '영매', team: 'citizen',
-    desc: '밤마다 사라진 사람들과 채팅할 수 있다. 죽은 사람은 거짓말을 할 수도 있다.',
+    id: 'medium', char: '이드', job: '영매', team: 'citizen',
+    desc: '밤마다 주말농장으로 가서 사라진 사람들과 만나 이야기한다. 이드는 니펠의 대화를 못 듣지만, 엿들은 죽은 사람들이 전해 줄 수 있다. 죽은 사람은 거짓말을 할 수도 있다. 해킹당한 밤에는 농장에 못 간다.',
   },
   tracker: {
     id: 'tracker', char: '버터', job: '추적', team: 'citizen', night: 'track',

@@ -4,11 +4,11 @@
  *  밤: 내 방(혼자 미니게임) → 내 차례에 문을 열고 복도로 → 대상의 방 문 앞에서 능력 사용
  */
 import { ROLES, roleName, type RoleId } from '../../shared/roles';
-import { CHARACTERS, type ChatCh, type GameView, type LogCh, type S2C } from '../../shared/protocol';
+import { CHARACTERS, FARM_H, FARM_W, type ChatCh, type GameView, type LogCh, type S2C } from '../../shared/protocol';
 import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import type { RoomLink } from '../net';
-import { clear, h } from './dom';
+import { asset, clear, h } from './dom';
 import { MoveInput, isTouch } from './input';
 import { sfx } from './sfx';
 
@@ -46,6 +46,7 @@ export class GameUI {
   private memo = new Map<number, number>();
   private tick = 0;
   private corridor: Corridor | null = null;
+  private farm: Farm | null = null;
   private lastKey = '';
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
@@ -64,6 +65,7 @@ export class GameUI {
   destroy() {
     clearInterval(this.tick);
     this.corridor?.destroy();
+    this.farm?.destroy();
     this.el.remove();
   }
 
@@ -76,6 +78,7 @@ export class GameUI {
     if (m.t === 'g') this.update(m.v);
     else if (m.t === 'glog') this.addLog(m.ch, m.from, m.text);
     else if (m.t === 'gcmove') this.corridor?.mate(m.pid, m.x, m.y);
+    else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
     else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
   }
 
@@ -108,6 +111,7 @@ export class GameUI {
     this.log.appendChild(el);
     this.log.scrollTop = this.log.scrollHeight;
     this.corridor?.toast(ch, who, text);
+    if (ch === 'dead' && from >= 0) this.farm?.say(from, text);
     this.nightLog(ch, who, text);
   }
 
@@ -200,7 +204,7 @@ export class GameUI {
       if (pr.key === 'agitate' || pr.key === 'avenge') this.panel.append(h('button.btn.wide', { onclick: () => this.link.send({ t: 'choice', key: pr.key, value: null }) }, '쓰지 않는다'));
       return;
     }
-    if (!me.alive) { head('👻 관전 중', '죽은 사람끼리 채팅할 수 있고, 밤에는 니펠의 대화를 엿볼 수 있어요. 캐시는 밤에 죽은 사람과 대화해요.'); return; }
+    if (!me.alive) { head('👻 관전 중', '죽은 사람끼리 채팅할 수 있어요. 밤에는 주말농장에서 다른 죽은 사람들, 그리고 이드를 만나요. 니펠의 밤 대화도 엿들을 수 있어요.'); return; }
     switch (v.phase) {
       case 'intro': head('게임 시작!', '직업을 확인하세요. 곧 첫 밤이 찾아옵니다.'); break;
       case 'night': head('🌙 밤', '자기 방에 있어요.'); break;
@@ -269,9 +273,12 @@ export class GameUI {
 
   private renderNight() {
     const v = this.v!;
-    const night = v.phase === 'night' && v.me.alive;
+    const farm = !!v.me.farm;
+    const night = v.phase === 'night' && (v.me.alive || farm);
     this.nightEl.classList.toggle('hidden', !night);
-    if (!night) { this.corridor?.destroy(); this.corridor = null; clear(this.nightEl); this.nightLogEl = h('div.n-log'); return; }
+    if (!night) { this.corridor?.destroy(); this.corridor = null; this.farm?.destroy(); this.farm = null; clear(this.nightEl); this.nightLogEl = h('div.n-log'); return; }
+    if (farm) { this.renderFarm(v); return; }
+    if (this.farm) { this.farm.destroy(); this.farm = null; clear(this.nightEl); }
     const act = v.me.act;
     // 복도에 나가 있는데 차례가 끝났거나 능력을 썼으면 방으로
     if (this.corridor && (!act || (act.done && act.kind !== 'kill'))) { this.corridor.destroy(); this.corridor = null; }
@@ -301,6 +308,31 @@ export class GameUI {
           h('button.btn.small', { onclick: () => playCatch(this.root, roleChar(v.me.role) ?? 'nifel', () => {}) }, '🍞 빵 받기'),
           h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기'))),
     );
+  }
+
+  /** 밤의 주말농장 (이드 + 죽은 사람) */
+  private renderFarm(v: GameView) {
+    if (this.farm) { this.farm.sync(v); return; }
+    this.corridor?.destroy(); this.corridor = null;
+    const img = (pid: number) => {
+      const p = v.players.find((q) => q.pid === pid);
+      if (p?.alive) return roleImg('medium') ?? '';
+      return `./assets/chars/${p?.char ?? 'nifel'}.png`;
+    };
+    const area = h('div.farm-area');
+    const me = v.players.find((p) => p.pid === this.myPid);
+    clear(this.nightEl).append(area,
+      h('div.n-side',
+        h('div.n-title', `🌾 주말농장 · ${v.night}번째 밤`, h('span.n-timer', `${this.left()}초`)),
+        h('div.n-status', me?.alive
+          ? '이드는 밤마다 주말농장에서 사라진 사람들을 만나요. 니펠의 대화는 들을 수 없지만, 죽은 사람들이 전해 줄 수 있어요.'
+          : '죽은 사람들이 모이는 주말농장이에요. 니펠의 밤 대화를 엿들을 수 있어요. 이드가 오면 전해 줄 수도, 속일 수도 있어요.'),
+        this.nightLogEl,
+        v.me.chats.length ? h('div.n-chat', h('span', '농장'), this.nightChatInput()) : '',
+        h('div.n-mini', h('span', '심심하면:'),
+          h('button.btn.small', { onclick: () => playCatch(this.root, (me?.char ?? 'nifel') as never, () => {}) }, '🍞 빵 받기'),
+          h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기'))));
+    this.farm = new Farm(area, v, this.myPid, this.name, img, (x, y) => this.link.send({ t: 'fmove', x, y }));
   }
 
   private nightChatInput() {
@@ -490,6 +522,93 @@ class Corridor {
     cancelAnimationFrame(this.raf);
     this.input.destroy();
     window.removeEventListener('keydown', this.onKey);
+    this.wrap.remove();
+  }
+}
+
+/** 밤의 주말농장: 대기실처럼 걸어 다니며 말풍선으로 대화 */
+class Farm {
+  private world = h('div.farm-world');
+  private wrap: HTMLElement;
+  private input = new MoveInput();
+  private avs = new Map<number, { el: HTMLElement; bubble: HTMLElement; x: number; y: number; tx: number; ty: number; timer: number }>();
+  private raf = 0;
+  private last = performance.now();
+  private lastSent = 0;
+
+  constructor(host: HTMLElement, v: GameView, private myPid: number, private name: (p: number) => string,
+    private img: (pid: number) => string, private onMove: (x: number, y: number) => void) {
+    this.world.style.setProperty('--farm-bg', `url("${new URL(asset('bg/farm.png'), location.href).href}")`);
+    this.wrap = h('div.farm-wrap', this.world);
+    host.appendChild(this.wrap);
+    if (isTouch()) host.appendChild(this.input.el);
+    this.sync(v);
+    this.loop();
+  }
+
+  sync(v: GameView) {
+    const list = v.me.farm ?? [];
+    const ids = new Set(list.map(([p]) => p));
+    for (const [pid, a] of this.avs) if (!ids.has(pid)) { a.el.remove(); this.avs.delete(pid); }
+    for (const [pid, x, y] of list) {
+      if (this.avs.has(pid)) continue;
+      const alive = v.players.find((p) => p.pid === pid)?.alive;
+      const bubble = h('div.ch-bubble');
+      const el = h(`div.ch${pid === this.myPid ? '.me' : ''}${alive ? '.ide' : '.ghost'}`,
+        h('div.ch-body', h('img', { src: this.img(pid), alt: '' })), h('div.ch-shadow'), h('div.ch-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
+      this.world.appendChild(el);
+      this.avs.set(pid, { el, bubble, x, y, tx: x, ty: y, timer: 0 });
+    }
+  }
+
+  move(pid: number, x: number, y: number) {
+    const a = this.avs.get(pid);
+    if (a && pid !== this.myPid) { a.tx = x; a.ty = y; }
+  }
+
+  say(pid: number, text: string) {
+    const a = this.avs.get(pid);
+    if (!a) return;
+    a.bubble.textContent = text;
+    a.bubble.classList.add('show');
+    clearTimeout(a.timer);
+    a.timer = window.setTimeout(() => a.bubble.classList.remove('show'), 4000);
+  }
+
+  private loop = () => {
+    this.raf = requestAnimationFrame(this.loop);
+    const t = performance.now();
+    const dt = Math.min(0.05, (t - this.last) / 1000);
+    this.last = t;
+    const me = this.avs.get(this.myPid);
+    const typing = (document.activeElement as HTMLElement | null)?.tagName === 'INPUT';
+    if (me) {
+      const d = typing ? { x: 0, y: 0 } : this.input.dir();
+      me.x = Math.max(40, Math.min(FARM_W - 40, me.x + d.x * 360 * dt));
+      me.y = Math.max(200, Math.min(FARM_H - 40, me.y + d.y * 360 * dt));
+      if (d.x) me.el.classList.toggle('flip', d.x > 0);
+      me.el.classList.toggle('moving', d.x !== 0 || d.y !== 0);
+      if ((d.x || d.y) && t - this.lastSent > 90) { this.onMove(Math.round(me.x), Math.round(me.y)); this.lastSent = t; }
+    }
+    for (const [pid, a] of this.avs) {
+      if (pid !== this.myPid) {
+        const dx = a.tx - a.x, dy = a.ty - a.y;
+        const k = Math.min(1, dt * 12);
+        a.x += dx * k; a.y += dy * k;
+        if (Math.abs(dx) > 0.5) a.el.classList.toggle('flip', dx > 0);
+        a.el.classList.toggle('moving', Math.hypot(dx, dy) > 2);
+      }
+      a.el.style.transform = `translate(${a.x}px, ${a.y}px)`;
+      a.el.style.zIndex = String(Math.round(a.y));
+    }
+    const k = Math.min(this.wrap.clientWidth / FARM_W, this.wrap.clientHeight / FARM_H);
+    this.world.style.transform = `translate(-50%, -50%) scale(${k})`;
+  };
+
+  destroy() {
+    cancelAnimationFrame(this.raf);
+    this.input.destroy();
+    for (const a of this.avs.values()) clearTimeout(a.timer);
     this.wrap.remove();
   }
 }

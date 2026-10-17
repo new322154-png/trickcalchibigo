@@ -14,7 +14,7 @@ import {
   roleName, type NightKind, type RoleId,
 } from './roles';
 import {
-  STEP_SECONDS, type C2S, type ChatCh, type ChoiceKey, type GameView, type LogCh, type Phase, type S2C, type Winner,
+  FARM_H, FARM_W, STEP_SECONDS, type C2S, type ChatCh, type ChoiceKey, type GameView, type LogCh, type Phase, type S2C, type Winner,
 } from './protocol';
 
 export interface GameHost {
@@ -27,6 +27,8 @@ export interface GameHost {
 interface GP {
   pid: number;
   name: string;
+  /** 대기실 캐릭터 (주말농장 모습) */
+  char: string;
   role: RoleId;
   alive: boolean;
   online: boolean;
@@ -83,6 +85,8 @@ export class MafiaGame {
   private quietDays = 0;
   private pendingKill: { target: number; executor: number; voters: number[] } | null = null;
   private overturned = false;
+  /** 주말농장 위치 */
+  private farmPos = new Map<number, [number, number]>();
 
   private emptyMorning() {
     return {
@@ -91,10 +95,11 @@ export class MafiaGame {
     };
   }
 
-  constructor(private host: GameHost, seats: { pid: number; name: string }[]) {
+  constructor(private host: GameHost, seats: { pid: number; name: string; char?: string }[]) {
     const n = seats.length;
     const [nifel, members, rnd, neutrals] = COMPOSITION[n];
-    const roles = shuffle<RoleId>([
+    const forced = (globalThis as { __MAFIA_ROLES?: RoleId[] }).__MAFIA_ROLES; // 테스트용 직업 고정
+    const roles = forced?.length === n ? forced : shuffle<RoleId>([
       ...Array<RoleId>(nifel).fill('nifel'),
       ...shuffle(MEMBER_POOL).slice(0, members),
       'doctor', 'police',
@@ -102,7 +107,7 @@ export class MafiaGame {
       ...shuffle(NEUTRAL_POOL).slice(0, neutrals),
     ]);
     seats.forEach((s, i) => this.ps.set(s.pid, {
-      pid: s.pid, name: s.name, role: roles[i], alive: true, online: true,
+      pid: s.pid, name: s.name, char: s.char ?? 'nifel', role: roles[i], alive: true, online: true,
       contacted: false, usedOnce: false, shieldUsed: false, revealed: false, notesLeft: 1,
       urosAwake: false, drones: 0, droneTries: 0, droneTotal: 0,
     }));
@@ -118,6 +123,22 @@ export class MafiaGame {
   private isCitizenTeam(p: GP) { return ROLES[p.role].team === 'citizen' || (p.role === 'bat' && p.batSide === 'citizen'); }
   private inNifelChat(p: GP) { return this.isKiller(p) || (!!ROLES[p.role].member && p.contacted); }
   private matesOf(p: GP) { return this.inNifelChat(p) ? this.all().filter((q) => q.pid !== p.pid && this.inNifelChat(q)).map((q) => q.pid) : []; }
+  /** 밤의 주말농장: 죽은 사람 + 해킹당하지 않은 이드 */
+  private inFarm(p: GP) {
+    if (this.phase !== 'night' || this.over) return false;
+    if (!p.alive) return p.diedHow !== 'leave';
+    return p.role === 'medium' && !this.sealed.has(p.pid);
+  }
+  private farmView(): [number, number, number][] {
+    const out: [number, number, number][] = [];
+    for (const q of this.all()) {
+      if (!this.inFarm(q)) continue;
+      let pos = this.farmPos.get(q.pid);
+      if (!pos) { pos = [300 + Math.random() * (FARM_W - 600), 400 + Math.random() * (FARM_H - 550)]; this.farmPos.set(q.pid, pos); }
+      out.push([q.pid, Math.round(pos[0]), Math.round(pos[1])]);
+    }
+    return out;
+  }
   private weight(pid: number) { const p = this.ps.get(pid); return p && p.role === 'elena' ? 1 + p.drones : 1; }
 
   /** 이 차례에 쓸 능력 */
@@ -156,7 +177,7 @@ export class MafiaGame {
     const killer = this.isKiller(p);
     return {
       phase: this.phase, day: this.day, night: this.night, step: this.step, endsAt: this.endsAt, now: Date.now(),
-      players: this.all().map((q) => ({ pid: q.pid, name: q.name, alive: q.alive, online: q.online })),
+      players: this.all().map((q) => ({ pid: q.pid, name: q.name, alive: q.alive, online: q.online, char: q.char })),
       me: {
         pid, role: p.role, alive: p.alive, mates: this.matesOf(p),
         act: act ? { kind: act.kind, targets: act.targets, optional: act.optional, done: act.done, locked: act.locked, choice: act.choice } : null,
@@ -168,6 +189,7 @@ export class MafiaGame {
         prompt: prompt ? { key: prompt.key, options: prompt.options, text: prompt.text } : null,
         drone: p.role === 'elena' ? { count: p.drones, tries: this.phase === 'night' && p.alive ? p.droneTries : 0 } : undefined,
         proxyFor: this.proxy && this.proxy.joan === pid && this.phase === 'defense' ? this.proxy.target : undefined,
+        farm: this.inFarm(p) ? this.farmView() : undefined,
         silenced: !!this.proxy && this.proxy.target === pid && this.phase === 'defense',
       },
       cands: this.cands,
@@ -192,7 +214,7 @@ export class MafiaGame {
     if (this.phase === 'night') {
       const out: ChatCh[] = [];
       if (this.inNifelChat(p)) out.push('nifel');
-      if (p.role === 'medium') out.push('dead');
+      if (p.role === 'medium' && this.inFarm(p)) out.push('dead');
       return out;
     }
     return [];
@@ -203,7 +225,7 @@ export class MafiaGame {
     switch (ch) {
       case 'day': case 'defense': return this.all();
       case 'nifel': return this.all().filter((q) => this.inNifelChat(q) || !q.alive);
-      case 'dead': return this.all().filter((q) => !q.alive || (q.role === 'medium' && q.alive && this.phase === 'night'));
+      case 'dead': return this.all().filter((q) => !q.alive || (q.role === 'medium' && this.inFarm(q)));
     }
   }
 
@@ -239,7 +261,7 @@ export class MafiaGame {
     if (this.over) return;
     this.night++;
     this.phase = 'night';
-    this.sealed.clear(); this.killVotes.clear(); this.visits.clear();
+    this.sealed.clear(); this.killVotes.clear(); this.visits.clear(); this.farmPos.clear();
     this.morning = this.emptyMorning();
     for (const p of this.all()) { p.copyRole = undefined; if (p.role === 'elena') p.droneTries = DRONE_TRIES; }
     this.logAll('event', `🌙 ${this.night}번째 밤이 찾아왔다. 모두 자기 방으로…`);
@@ -341,6 +363,7 @@ export class MafiaGame {
         const t = this.ps.get(a.choice)!;
         if (this.ps.get(pid)!.role === 'mute' && this.isKiller(t)) continue;
         this.sealed.add(a.choice);
+        if (t.role === 'medium') this.secret(t.pid, '🔒 방 문이 잠겼다… 오늘 밤은 주말농장에 갈 수 없다.');
       }
       return this.runStep(2);
     }
@@ -436,7 +459,7 @@ export class MafiaGame {
     if (!p || !p.alive) return;
     p.alive = false;
     p.diedHow = how;
-    this.secret(pid, '당신은 저택에서 사라졌습니다… 이제 죽은 사람끼리 채팅하고, 니펠의 밤 대화를 엿볼 수 있어요.');
+    this.secret(pid, '당신은 저택에서 사라졌습니다… 이제 죽은 사람끼리 채팅하고, 니펠의 밤 대화를 엿볼 수 있어요. 밤에는 주말농장에서 다른 죽은 사람들(과 이드)을 만나요.');
   }
 
   private startMorning() {
@@ -729,6 +752,14 @@ export class MafiaGame {
       case 'drone':
         if (this.phase === 'night' && p.alive && p.role === 'elena' && p.droneTries > 0) { this.tryDrone(p); this.push(pid); }
         break;
+      case 'fmove': {
+        if (!this.inFarm(p)) return;
+        const x = Math.max(40, Math.min(FARM_W - 40, Number(msg.x))), y = Math.max(200, Math.min(FARM_H - 40, Number(msg.y)));
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        this.farmPos.set(pid, [x, y]);
+        for (const q of this.all()) if (q.pid !== pid && this.inFarm(q) && q.online) this.host.send(q.pid, { t: 'fmove', pid, x, y });
+        break;
+      }
       case 'cmove': {
         // 니펠 차례: 같이 나온 동료에게 내 위치를 알려 준다
         if (this.phase !== 'night' || this.step !== 2 || !this.isKiller(p)) return;

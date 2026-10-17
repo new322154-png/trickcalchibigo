@@ -224,3 +224,18 @@
 #stage.compact .g-cols { grid-template-columns: 220px 1fr 330px; }
 #stage.compact .g-night { grid-template-columns: 1fr 360px; }
 #stage.compact .g-log { font-size: 18px; }
+
+/* 밤: 주말농장 (이드 + 죽은 사람) — 배경 그림은 public/assets/bg/farm.png (없으면 아래 그라데이션) */
+.farm-area { position: relative; overflow: hidden; min-width: 0; }
+.farm-wrap { position: absolute; inset: 0; overflow: hidden; background: #0b1410; }
+.farm-world { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; transform-origin: center;
+  background: var(--farm-bg, none) center / cover no-repeat,
+    radial-gradient(ellipse at 50% 20%, rgba(190,220,255,.12), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 6px, transparent 6px 120px),
+    linear-gradient(#162236 0 22%, #1d3a24 22% 26%, #24452a 26% 100%);
+  border-radius: 24px; box-shadow: inset 0 0 120px rgba(0,0,0,.7); }
+.farm-world::after { content: '주말농장'; position: absolute; left: 50%; top: 40px; transform: translateX(-50%); font-family: 'Noto Serif KR', serif; font-size: 34px; color: rgba(220,240,210,.45); letter-spacing: 12px; }
+.ch.ghost .ch-body img { opacity: .7; filter: grayscale(.4) brightness(1.2) drop-shadow(0 0 6px rgba(170,200,255,.8)); }
+.ch.ghost.me .ch-body img { opacity: .85; filter: grayscale(.2) brightness(1.2) drop-shadow(0 0 4px var(--gold)); }
+.ch.ide .ch-body img { filter: drop-shadow(0 0 6px rgba(255,240,180,.9)); }
+.ch.ghost .ch-shadow { opacity: .3; }

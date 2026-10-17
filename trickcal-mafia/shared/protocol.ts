@@ -17,7 +17,7 @@ export const CHARACTERS = [
   { id: 'bella', name: '벨라' },
   { id: 'hilde', name: '힐데' },
   { id: 'polan', name: '폴랑' },
-  { id: 'cash', name: '캐시' },
+  { id: 'ide', name: '이드' },
   { id: 'butter', name: '버터' },
   { id: 'heidi', name: '하이디' },
   { id: 'rion', name: '리온' },
@@ -66,7 +66,8 @@ export type C2S =
   | { t: 'note'; to: number; text: string }
   | { t: 'choice'; key: ChoiceKey; value: number | string | null }
   | { t: 'cmove'; x: number; y: number }
-  | { t: 'drone' };
+  | { t: 'drone' }
+  | { t: 'fmove'; x: number; y: number };
 
 export interface Chair { id: number; x: number; y: number; by: number | null }
 
@@ -95,6 +96,8 @@ export type S2C =
   | { t: 'g'; v: GameView }
   | { t: 'glog'; ch: LogCh; from: number; text: string }
   | { t: 'gcmove'; pid: number; x: number; y: number }
+  /** 주말농장(이드 + 죽은 사람) 위치 */
+  | { t: 'fmove'; pid: number; x: number; y: number }
   | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[] };
 
 // ── 마피아 본게임 ─────────────────────────────────
@@ -109,7 +112,11 @@ export type ChoiceKey = 'bat' | 'overturn' | 'avenge' | 'agitate';
 export type Winner = 'mafia' | 'citizen' | 'jester' | 'elena' | 'draw';
 export type Phase = 'intro' | 'night' | 'morning' | 'day' | 'vote1' | 'defense' | 'vote2' | 'verdict' | 'end';
 
-export interface GPlayer { pid: number; name: string; alive: boolean; online: boolean }
+export interface GPlayer { pid: number; name: string; alive: boolean; online: boolean; char: string }
+
+/** 주말농장 크기 */
+export const FARM_W = 1600;
+export const FARM_H = 900;
 
 export interface GameView {
   phase: Phase;
@@ -138,6 +145,8 @@ export interface GameView {
     drone?: { count: number; tries: number };
     /** 죠안: 지금 대신 말하고 있는 사람 */
     proxyFor?: number;
+    /** 밤의 주말농장에 있으면: 함께 있는 사람과 위치 [pid, x, y] */
+    farm?: [number, number, number][];
     /** 죠안에게 입을 빼앗긴 상태 */
     silenced?: boolean;
   };

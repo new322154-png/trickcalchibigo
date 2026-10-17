@@ -247,7 +247,7 @@ export class RoomCore {
     const seats = [...this.players.values()].filter((p) => p.online).sort((a, b) => a.joinedAt - b.joinedAt).slice(0, 12);
     const letters = 'ABCDEFGHIJKL';
     const order = this.pub ? [...seats].sort(() => Math.random() - 0.5) : seats;
-    const named = order.map((p, i) => ({ pid: p.id, name: this.pub ? `교주${letters[i]}` : p.nick }));
+    const named = order.map((p, i) => ({ pid: p.id, name: this.pub ? `교주${letters[i]}` : p.nick, char: p.char }));
     this.game = new MafiaGame({
       send: (pid, msg) => { const q = this.players.get(pid); if (q?.online) { try { q.conn.send(msg); } catch { /* 끊김 */ } } },
       later: (ms, fn) => this.later(ms, fn),
