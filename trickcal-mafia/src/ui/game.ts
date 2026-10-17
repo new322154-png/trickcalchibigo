@@ -265,8 +265,10 @@ export class GameUI {
     const people = (ids: number[], on: (pid: number) => void, selected?: number | null) =>
       h('div.pbtns', ids.map((id) => h(`button.pbtn${selected === id ? '.sel' : ''}`, { onclick: () => on(id) }, this.name(id))));
 
+    this.panel.classList.remove('urgent');
     if (me.prompt) {
       const pr = me.prompt;
+      this.panel.classList.add('urgent');
       head('⚡ 선택', pr.text);
       const label = (o: number | string) => typeof o === 'number' ? this.name(o) : ({ mafia: '마피아 팀', citizen: '시민 팀', yes: '뒤집는다', no: '그대로 둔다' } as Record<string, string>)[o] ?? o;
       this.panel.append(h('div.pbtns', pr.options.map((o) => h('button.pbtn', { onclick: () => { sfx('click'); this.link.send({ t: 'choice', key: pr.key, value: o }); } }, label(o)))));

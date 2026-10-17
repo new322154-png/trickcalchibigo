@@ -546,3 +546,5 @@
   .lg-ch.warm, .lg-ch.cool, .lg-ch.hot, .lg-mask { filter: drop-shadow(0 6px 0 #2b1d2e); }
   .lg-shine { display: none; }
 }
+.game-screen .g-panel.urgent { box-shadow: 0 0 0 3px #ffb648, 0 0 30px rgba(255,182,72,.7); animation: urgentIn .4s cubic-bezier(.2,1.6,.4,1); }
+@keyframes urgentIn { from { transform: scale(.94); } }

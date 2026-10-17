@@ -734,8 +734,15 @@ export class MafiaGame {
     }
     if (p.role === 'avenger') {
       const opts = this.alive().map((q) => q.pid);
-      this.ask(pid, 'avenge', opts, '마리: 한 명을 골라 함께 데려갈 수 있다. (10초)', (v) => {
-        if (typeof v === 'number' && opts.includes(v)) { this.logAll('event', `☠ ${p.name}가 마지막 힘으로 ${this.name(v)}를 끌고 갔다!`); this.kill(v, 'avenge'); }
+      this.ask(pid, 'avenge', opts, '💥 마리: 길동무로 함께 폭사할 사람을 고르세요! (10초)', (v) => {
+        if (typeof v === 'number' && opts.includes(v) && this.ps.get(v)!.alive) {
+          // 길동무: 폭사 컷씬 + 마리 정체 공개 (따로 발표 없이 목록이 바뀜)
+          this.unmask(pid, 'avenger');
+          this.cutAll('blast', `${p.name}가 ${this.name(v)}를 끌고 폭사했다!`, pid);
+          this.logAll('event', `💥 ${p.name}가 마지막 힘으로 ${this.name(v)}를 끌고 함께 폭사했다!`);
+          this.kill(v, 'avenge');
+          this.push();
+        }
       });
       this.timer(10, () => { this.resolvePrompts(); if (!this.checkWin()) this.startNight(); });
       this.push();

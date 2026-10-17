@@ -93,7 +93,7 @@ export class BotBrain {
         const p = this.v?.me.prompt;
         if (!p) return;
         const opts = p.options.filter((o) => typeof o !== 'number' || !this.v!.me.mates.includes(o));
-        this.send({ t: 'choice', key: p.key, value: Math.random() < 0.75 && opts.length ? pick(opts) : null });
+        this.send({ t: 'choice', key: p.key, value: (p.key === 'avenge' || Math.random() < 0.75) && opts.length ? pick(opts) : null });
       });
     }
     // 투표
