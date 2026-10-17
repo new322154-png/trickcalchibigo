@@ -5,7 +5,7 @@ import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import { api } from '../net';
 import { charImg, charName, loadProfile, saveProfile, type Profile } from '../profile';
-import { asset, clear, h } from './dom';
+import { asset, bgUrl, clear, h } from './dom';
 import { sfx } from './sfx';
 
 export const GAME_TITLE = '트릭컬 마피아 (가제)';
@@ -31,23 +31,53 @@ export function showTitle(root: HTMLElement, act: TitleActions) {
     catch { busy('서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.'); }
   };
 
-  const screen = h('div.title', { style: { backgroundImage: `url(${asset('ui/title_bg.jpg')})` } },
-    h('div.title-shade'),
+  // 낮(밝은 홀) / 밤(불타는 홀)이 비스듬히 갈라진 화면 + 가면 쓴 케이크들의 무도회
+  const day = h('div.tt-half.tt-day', { style: `--bg: ${bgUrl('hall_day.webp')}` });
+  const night = h('div.tt-half.tt-night', { style: `--bg: ${bgUrl('hall_night.webp')}` });
+  const seam = h('div.tt-seam');
+  const floor = h('div.tt-floor');
+  const screen = h('div.title.tt',
+    day, night, seam, floor,
     chip,
-    h('div.title-box',
-      h('div.title-kicker', 'TRICKCAL · MAFIA'),
-      h('h1.title-name', GAME_TITLE),
-      h('div.title-sub', '거짓말쟁이는 누구인가 — 4~12인 온라인 마피아'),
-      h('div.title-menu',
-        h('button.btn.big.gold', { onclick: quick }, '⚡ 빠른 매칭'),
-        h('button.btn.big', { onclick: () => { sfx('click'); roomMenu(root, () => profile, act, busy); } }, '🏠 방 만들기 · 코드로 입장'),
-        h('button.btn.big', { onclick: () => { sfx('click'); miniMenu(root, () => profile); } }, '🎮 미니게임'),
-        h('button.btn', { onclick: () => { sfx('click'); showRules(root); } }, '규칙 · 직업 보기'),
-      ),
-      status,
-    ),
+    h('div.tt-logo',
+      h('div.tt-kicker', 'TRICKCAL · MASQUERADE'),
+      h('h1.tt-name', '트릭컬 마피아'),
+      h('div.tt-sub', '가면 속 거짓말쟁이를 찾아라 — 4~12인 온라인 마피아')),
+    h('div.tt-menu',
+      h('button.tt-btn.main', { onclick: quick }, h('small', 'QUICK MATCH'), h('b', '빠른 매칭')),
+      h('button.tt-btn', { onclick: () => { sfx('click'); roomMenu(root, () => profile, act, busy); } }, h('small', 'PRIVATE ROOM'), h('b', '방 만들기 · 코드 입장')),
+      h('button.tt-btn', { onclick: () => { sfx('click'); miniMenu(root, () => profile); } }, h('small', 'MINI GAME'), h('b', '미니게임')),
+      h('button.tt-rule', { onclick: () => { sfx('click'); showRules(root); } }, '규칙 · 직업 보기'),
+      status),
     h('div.fan-notice', '본 게임은 트릭컬 리바이브의 비공식 팬게임입니다.'),
   );
+  // 마우스가 있는 쪽이 조금 더 넓어진다
+  screen.addEventListener('pointermove', (e) => {
+    const r = screen.getBoundingClientRect();
+    const t = (e.clientX - r.left) / r.width;
+    screen.style.setProperty('--split', String(50 + (0.5 - t) * 14));
+  });
+  // 가면 무도회: 케이크를 건드리면 가면 아래 정체가 잠깐 보인다
+  const spots: [number, number, number][] = [[9, 96, 1], [21, 90, .86], [31, 99, 1.05], [69, 99, 1.05], [79, 90, .86], [91, 96, 1]];
+  const pool = Object.values(ROLES);
+  spots.forEach(([x, y, k], i) => {
+    const role = pool[Math.floor(Math.random() * pool.length)];
+    const ch = CHARACTERS.find((c) => c.name === role.char);
+    const reveal = h('img.tt-reveal', { src: ch ? charImg(ch.id) : '', alt: '' });
+    const cake = h('img.tt-cake', { src: asset(`ui/mask${(i % 4) + 1}.png`), alt: '' });
+    const tag = h('div.tt-tag', roleName(role.id));
+    const el = h(`div.tt-guest${x > 50 ? '.right' : ''}${role.team === 'mafia' ? '.evil' : ''}`, { style: `left:${x}%; top:${y}%; --k:${k}; --d:${i * .37}s` }, reveal, cake, tag);
+    let timer = 0;
+    const peek = () => {
+      clearTimeout(timer);
+      el.classList.add('peek');
+      sfx('click');
+      timer = window.setTimeout(() => el.classList.remove('peek'), 1400);
+    };
+    el.addEventListener('pointerenter', peek);
+    el.addEventListener('click', peek);
+    floor.appendChild(el);
+  });
   root.appendChild(screen);
 }
 

@@ -28,6 +28,8 @@ function roleChar(role: string) {
 }
 /** 게임 중 다른 사람(과 나)의 모습: 정체를 숨기는 공용 그림 */
 const ANON = './assets/ui/anon.png';
+/** 다른 사람 모습: 가면 쓴 케이크 4종 (자리 번호로 고정, 정체와는 무관) */
+const maskImg = (pid: number) => `./assets/ui/mask${(pid % 4) + 1}.png`;
 function roleImg(role: string): string | null {
   const c = roleChar(role);
   return c ? `./assets/chars/${c}.png` : null;
@@ -56,7 +58,7 @@ export class GameUI {
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
     this.chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); } });
-    this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, ANON, this.name, (x, y) => this.link.send({ t: 'pmove', x, y }));
+    this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, maskImg, this.name, (x, y) => this.link.send({ t: 'pmove', x, y }));
     this.el = h('div.game-screen',
       this.scene.el,
       this.top,
@@ -90,7 +92,7 @@ export class GameUI {
     else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
     else if (m.t === 'pmove') this.scene.move(m.pid, m.x, m.y);
     else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
-    else if (m.t === 'cut') { sfx(m.kind === 'execute' ? 'death' : 'gavel'); playCut(this.el, m.kind, m.text, ANON); }
+    else if (m.t === 'cut') { sfx(m.kind === 'execute' ? 'death' : 'gavel'); playCut(this.el, m.kind, m.text, m.pid !== undefined ? maskImg(m.pid) : ANON); }
   }
 
   private update(v: GameView) {
@@ -187,7 +189,7 @@ export class GameUI {
       if (v.cands.includes(p.pid) && (v.phase === 'defense' || v.phase === 'vote2')) tags.push(h('span.tag.mafia', '결선'));
       this.plist.appendChild(h(`button.g-p${p.alive ? '' : '.dead'}${p.pid === this.myPid ? '.self' : ''}`,
         { onclick: () => { if (p.pid === this.myPid) return; this.memo.set(p.pid, (m + 1) % MEMO.length); this.renderPlayers(); } },
-        h('img.g-anon', { src: p.pid === this.myPid ? roleImg(v.me.role) ?? ANON : ANON, alt: '' }),
+        h('img.g-anon', { src: p.pid === this.myPid ? roleImg(v.me.role) ?? ANON : maskImg(p.pid), alt: '' }),
         h('div.g-pinfo', h('div.g-pname', p.name, p.alive ? '' : h('span.dead-mark', ' 사망')), h('div.ptags', tags))));
     }
   }
@@ -345,7 +347,7 @@ export class GameUI {
     // 남의 직업은 서버가 아예 보내지 않으므로 화면 오류로 드러날 일은 없다.
     const myImg = roleImg(v.me.role) ?? ANON;
     const ideImg = roleImg('medium') ?? ANON;
-    const img = (pid: number, ide: boolean) => (pid === this.myPid ? myImg : ide ? ideImg : ANON);
+    const img = (pid: number, ide: boolean) => (pid === this.myPid ? myImg : ide ? ideImg : maskImg(pid));
     const area = h('div.farm-area');
     const me = v.players.find((p) => p.pid === this.myPid);
     clear(this.nightEl).append(area,
@@ -405,20 +407,49 @@ export class GameUI {
   private showEnd(winner: string, roles: { pid: number; role: string; alive: boolean }[], winners: number[]) {
     const won = winners.includes(this.myPid);
     sfx(won ? 'win' : 'lose');
-    const title = ({ mafia: '마피아 팀 승리', citizen: '시민 팀 승리', jester: '코미 승리', elena: '엘레나 승리', draw: '무승부' } as Record<string, string>)[winner];
-    const ov = h('div.overlay',
-      h('div.card.result',
-        h(`div.res-big.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…'),
-        h('div.res-title', title),
-        h('table.res-table', roles.map((r) => h(`tr.${ROLES[r.role as RoleId]?.team ?? ''}${r.pid === this.myPid ? '.self' : ''}`,
-          h('td', this.name(r.pid)),
-          h('td', h('b', roleName(r.role as RoleId)), h('small', ` ${ROLES[r.role as RoleId]?.job ?? ''}`)),
-          h('td', r.alive ? '생존' : '사망'),
-          h('td', winners.includes(r.pid) ? '🏆' : '')))),
-        h('p.hint', '15초 뒤 대기실로 돌아갑니다.'),
-        h('button.btn.wide', { onclick: () => ov.remove() }, '닫기')));
+    const T: Record<string, [string, string, string]> = {
+      mafia: ['마피아 팀 승리', 'MAFIA WINS', 'hall_night.webp'],
+      citizen: ['시민 팀 승리', 'CITIZENS WIN', 'hall_day.webp'],
+      jester: ['코미 승리', 'JESTER WINS', 'trial.webp'],
+      elena: ['엘레나 승리', 'DRONE QUEEN', 'day.webp'],
+      draw: ['무승부', 'DRAW', 'hall_day.webp'],
+    };
+    const [title, en, bg] = T[winner] ?? T.draw;
+    const champs = roles.filter((r) => winners.includes(r.pid));
+    const others = roles.filter((r) => !winners.includes(r.pid));
+    // 단체 사진: 가운데가 앞·크게, 바깥으로 갈수록 뒤로
+    const photo = h('div.end-photo');
+    champs.forEach((r, i) => {
+      const n = champs.length;
+      const off = i - (n - 1) / 2;
+      const img = roleImg(r.role);
+      photo.appendChild(h(`div.end-champ${r.pid === this.myPid ? '.me' : ''}`, { style: `--x:${off}; --ax:${Math.abs(off)}; --i:${i}; z-index:${20 - Math.round(Math.abs(off) * 2)}` },
+        img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?'),
+        h('div.end-label', h('b', roleName(r.role as RoleId)), h('small', this.name(r.pid)))));
+    });
+    // 진 사람들은 구석에서 시무룩
+    const losers = h('div.end-losers', others.map((r, i) => {
+      const img = roleImg(r.role);
+      return h('div.end-loser', { style: `--i:${i}` }, img ? h('img', { src: img, alt: '' }) : '', h('small', roleName(r.role as RoleId)));
+    }));
+    // 정체 공개표: 케이크 가면이 하나씩 벗겨진다
+    const list = h('div.end-list', h('div.end-list-head', h('span', 'UNMASKED'), h('b', '모두의 정체')),
+      ...roles.map((r, i) => {
+        const img = roleImg(r.role);
+        const team = ROLES[r.role as RoleId]?.team ?? '';
+        return h(`div.end-row.${team}${r.pid === this.myPid ? '.self' : ''}${winners.includes(r.pid) ? '.won' : ''}`, { style: `--i:${i}` },
+          h('div.end-face', h('img.mask', { src: maskImg(r.pid), alt: '' }), img ? h('img.real', { src: img, alt: '' }) : ''),
+          h('div.end-who', h('b', this.name(r.pid)), h('small', `${roleName(r.role as RoleId)} · ${ROLES[r.role as RoleId]?.job ?? ''}`)),
+          h('div.end-state', r.alive ? '생존' : '사망', winners.includes(r.pid) ? h('i', 'WIN') : ''));
+      }));
+    const ov = h(`div.end-screen.w-${winner}`, { style: `--bg: ${bgUrl(bg)}` },
+      h('div.end-bg'),
+      h('div.end-title', h('small', en), h('b', title), h(`div.end-me.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…')),
+      photo, losers, list,
+      h('div.end-foot', h('span', '15초 뒤 대기실로 돌아갑니다'), h('button.btn.small', { onclick: () => ov.remove() }, '닫기')));
     this.el.appendChild(ov);
   }
+
 }
 
 /** 밤의 복도: 문 앞으로 걸어가서 능력 사용 */

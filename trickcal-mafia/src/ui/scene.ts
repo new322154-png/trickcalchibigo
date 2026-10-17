@@ -24,7 +24,7 @@ export class Scene {
   private last = performance.now();
   private lastSent = 0;
 
-  constructor(private myPid: number, private myImg: () => string, private anon: string, private name: (p: number) => string,
+  constructor(private myPid: number, private myImg: () => string, private anon: (pid: number) => string, private name: (p: number) => string,
     private onMove: (x: number, y: number) => void) {
     this.el = h('div.g-scene', this.box);
     if (isTouch()) { this.input.el.classList.add('sc-joy'); this.el.appendChild(this.input.el); }
@@ -71,7 +71,7 @@ export class Scene {
       if (!av) {
         const bubble = h('div.sc-bubble');
         const el = h(`div.sc-av${pid === this.myPid ? '.me' : ''}`,
-          h('img', { src: pid === this.myPid ? this.myImg() : this.anon, alt: '' }),
+          h('img', { src: pid === this.myPid ? this.myImg() : this.anon(pid), alt: '' }),
           h('div.sc-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
         this.box.appendChild(el);
         av = { el, bubble, timer: 0, x, y, tx: x, ty: y };
