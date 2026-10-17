@@ -110,7 +110,8 @@ export class GameUI {
   /** 다른 사람 얼굴: 정체가 드러났으면 그 직업 캐릭터, 아니면 가면 케이크. 나는 늘 내 캐릭터 */
   private face(pid: number) {
     if (pid === this.myPid) return roleImg(this.v?.me.role ?? '') ?? ANON;
-    const shown = this.v?.players.find((p) => p.pid === pid)?.shown;
+    const shown = this.v?.players.find((p) => p.pid === pid)?.shown
+      ?? this.v?.me.mateRoles?.find(([m]) => m === pid)?.[1];
     return (shown && roleImg(shown)) || maskImg(pid);
   }
 
@@ -218,7 +219,8 @@ export class GameUI {
       const tags: (HTMLElement | string)[] = [];
       if (p.pid === this.myPid) tags.push(h('span.tag.me', '나'));
       if (p.shown) tags.push(h(`span.tag.reveal.${ROLES[p.shown as RoleId]?.team ?? ''}`, `정체: ${roleName(p.shown as RoleId)}`));
-      if (v.me.mates.includes(p.pid)) tags.push(h('span.tag.mafia', '동료'));
+      const mr = v.me.mateRoles?.find(([q]) => q === p.pid)?.[1];
+      if (v.me.mates.includes(p.pid)) tags.push(h('span.tag.mafia', mr && !p.shown ? `동료 · ${roleName(mr as RoleId)}` : '동료'));
       if (m) tags.push(h(`span.tag.memo.m${m}`, MEMO[m]));
       if (!p.online && p.alive) tags.push(h('span.tag', '연결 끊김'));
       const cnt = v.counts?.find(([pid]) => pid === p.pid)?.[1];
@@ -226,7 +228,7 @@ export class GameUI {
       if (v.cands.includes(p.pid) && (v.phase === 'defense' || v.phase === 'vote2')) tags.push(h('span.tag.mafia', '결선'));
       this.plist.appendChild(h(`button.g-p${p.alive ? '' : '.dead'}${p.pid === this.myPid ? '.self' : ''}`,
         { onclick: () => { if (p.pid === this.myPid) return; this.memo.set(p.pid, (m + 1) % MEMO.length); this.renderPlayers(); } },
-        h(`img.g-anon${p.shown && p.pid !== this.myPid ? '.shown' : ''}`, { src: this.face(p.pid), alt: '' }),
+        h(`img.g-anon${(p.shown || mr) && p.pid !== this.myPid ? '.shown' : ''}`, { src: this.face(p.pid), alt: '' }),
         h('div.g-pinfo', h('div.g-pname', p.name, p.alive ? '' : h('span.dead-mark', ' 사망')), h('div.ptags', tags))));
     }
   }

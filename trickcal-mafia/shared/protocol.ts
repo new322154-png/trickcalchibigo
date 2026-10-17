@@ -149,6 +149,8 @@ export interface GameView {
     role: string;
     alive: boolean;
     mates: number[];
+    /** 동료의 직업 (동료끼리는 서로 정체를 안다) */
+    mateRoles?: [number, string][];
     /** 이번 차례에 쓸 능력 (없으면 null) */
     act: { kind: string; targets: number[]; optional: boolean; done: boolean; locked: boolean; choice: number | null } | null;
     /** 니펠 차례에 같이 나온 동료들의 표 */

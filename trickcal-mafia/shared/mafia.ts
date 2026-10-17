@@ -225,6 +225,7 @@ export class MafiaGame {
       players: this.all().map((q) => ({ pid: q.pid, name: q.name, alive: q.alive, online: q.online, shown: q.revealedAs })),
       me: {
         pid, role: p.role, alive: p.alive, mates: this.matesOf(p),
+        mateRoles: this.matesOf(p).map((m) => [m, this.ps.get(m)!.role] as [number, string]),
         act: act ? { kind: act.kind, targets: act.targets, optional: act.optional, done: act.done, locked: act.locked, choice: act.choice } : null,
         teamVotes: killer && this.step === 2 ? [...this.killVotes] : undefined,
         chats: this.chatsOf(p),
