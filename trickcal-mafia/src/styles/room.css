@@ -15,7 +15,7 @@
 .mc-icon { font-size: 64px; }
 .char-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 .char-pick { background: var(--panel2); border: 2px solid var(--line); border-radius: 16px; padding: 10px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 18px; }
-.char-pick img { width: 84px; height: 96px; object-fit: contain; }
+.char-pick img { height: 96px; width: auto; max-width: 112px; object-fit: contain; }
 .char-pick.on { border-color: var(--gold); background: rgba(232,194,122,.12); }
 .dim { color: var(--dim); font-size: 18px; }
 .profile .txt-in { flex: 1; }
@@ -54,7 +54,7 @@
 
 .ch { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; }
 .ch-body { position: absolute; left: -50px; top: -128px; width: 100px; height: 124px; transform-origin: 50% 100%; }
-.ch-body img { width: 100%; height: 100%; display: block; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 0 2px rgba(255,255,255,.5)); }
+.ch-body img { display: block; position: absolute; left: 50%; bottom: 0; height: 100%; width: auto; max-width: none; transform: translateX(-50%); filter: drop-shadow(0 0 2px rgba(255,255,255,.5)); }
 .ch.me .ch-body img { filter: drop-shadow(0 0 3px var(--gold)) drop-shadow(0 0 2px var(--gold)); }
 .ch.flip .ch-body { transform: scaleX(-1); }
 .ch.moving .ch-body { animation: hop .32s infinite; }
@@ -158,11 +158,11 @@
 .pbtn.sel, .btn.sel { border-color: var(--gold) !important; background: rgba(232,194,122,.15) !important; }
 .notecard { width: 700px; }
 .notecard .txt-in { width: 100%; margin-top: 12px; }
-.rc-img { width: 180px; height: 220px; margin-top: 10px; object-fit: contain; }
+.rc-img { height: 220px; width: auto; max-width: 300px; margin-top: 10px; object-fit: contain; }
 
 /* 밤: 내 방 */
 .g-night { position: absolute; inset: 66px 0 0 0; z-index: 45; display: grid; grid-template-columns: 1fr 440px; background: #07060f; }
-.n-me img { width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; filter: brightness(.75); }
+.n-me img { position: absolute; left: 50%; bottom: 0; height: 100%; width: auto; max-width: none; transform: translateX(-50%); filter: brightness(.75); }
 @keyframes breathe { 50% { transform: translateY(-6px); } }
 .n-sil { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #4a3d66, #1b1528); color: rgba(232,194,122,.7); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 900; box-shadow: 0 0 0 3px rgba(255,255,255,.2); }
 .n-door .btn { white-space: nowrap; animation: gameGlow 2.2s ease-in-out infinite; }
@@ -247,7 +247,7 @@
 .g-scene .sc-box.trial { filter: saturate(1.1); }
 .g-scene:has(.sc-box.trial) { background: #1b2050; }
 .sc-av { position: absolute; aspect-ratio: 200 / 360; transform: translate(-50%, -100%); transition: left .7s ease, top .7s ease, height .7s ease; }
-.sc-av img { width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
+.sc-av img { position: absolute; left: 50%; bottom: 0; height: 100%; width: auto; max-width: none; transform: translateX(-50%); filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
 .sc-av.me img { filter: drop-shadow(0 0 3px var(--gold)) drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
 .sc-av.onstage img { filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 22px rgba(170,190,255,.9)); }
 .sc-av.dead { opacity: .45; filter: grayscale(1); }

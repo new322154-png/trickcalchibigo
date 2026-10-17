@@ -113,7 +113,11 @@ export function playCatch(host: HTMLElement, char: CharId, onClose: () => void) 
     // 캐릭터
     ctx.save();
     ctx.beginPath(); ctx.ellipse(px, H - 42, 46, 10, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fill();
-    if (img.complete) ctx.drawImage(img, px - 50, H - 150, 100, 100);
+    if (img.complete && img.naturalHeight) {
+      // 원래 비율 그대로 (높이 기준)
+      const ch = 120, cw = Math.min(170, (ch * img.naturalWidth) / img.naturalHeight);
+      ctx.drawImage(img, px - cw / 2, H - 52 - ch, cw, ch);
+    }
     ctx.fillStyle = '#c98b4b'; ctx.fillRect(px - 52, H - 62, 104, 14); // 바구니
     ctx.restore();
     scoreEl.textContent = `점수 ${score} · ${'❤'.repeat(Math.max(0, lives))} · 최고 ${Math.max(best, Number(safeGet('tm.best.catch') ?? 0))}`;
