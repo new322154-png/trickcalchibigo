@@ -1,5 +1,5 @@
 /** 간단한 효과음 (코드로 만든 소리 + 파일이 있으면 파일) */
-import { soundMode } from './bgm';
+import { onUnlock, soundMode } from './bgm';
 import { asset } from './dom';
 
 let ctx: AudioContext | null = null;
@@ -12,6 +12,19 @@ function ac() {
   if (ctx.state === 'suspended') void ctx.resume();
   return ctx;
 }
+
+// 휴대폰(특히 아이폰)은 입력 안에서 오디오를 한 번 깨워야 이후 효과음이 난다
+onUnlock(() => {
+  try {
+    const c = ac();
+    if (c.state !== 'running') {
+      void c.resume();
+      const b = c.createBuffer(1, 1, 22050);
+      const s = c.createBufferSource();
+      s.buffer = b; s.connect(c.destination); s.start(0);
+    }
+  } catch { /* 소리 장치 없음 */ }
+});
 
 function tone(freq: number, dur: number, type: OscillatorType = 'sine', vol = 0.12, slide = 0, delay = 0) {
   const c = ac();

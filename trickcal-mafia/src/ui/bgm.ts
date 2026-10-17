@@ -8,7 +8,7 @@ import { asset } from './dom';
 export type BgmName = 'title' | 'daily' | 'mansion' | 'before_trial' | 'after_trial' | 'night' | 'rain' | 'airship';
 
 /** 곡마다 듣기 좋은 크기 */
-const VOL: Partial<Record<BgmName, number>> = { night: 0.5, rain: 0.5 };
+const VOL: Partial<Record<BgmName, number>> = { night: 0.85, rain: 0.85 };
 /** 다음에 나올 법한 곡 */
 const NEXT: Record<BgmName, BgmName[]> = {
   title: ['daily'], daily: ['mansion', 'night'], mansion: ['before_trial', 'night'], before_trial: ['after_trial', 'night'],
@@ -20,7 +20,7 @@ type Mode = 'all' | 'sfx' | 'off';
 let mode: Mode = 'all';
 try { const s = localStorage.getItem(KEY); if (s === 'all' || s === 'sfx' || s === 'off') mode = s; } catch { /* 저장소 없음 */ }
 
-const master = 0.55;
+const master = 0.8;
 let cur: { name: BgmName; a: HTMLAudioElement } | null = null;
 let want: BgmName | null = null;
 const pool = new Map<BgmName, HTMLAudioElement>();
@@ -61,7 +61,8 @@ export function bgm(name: BgmName | null) {
   if (old?.name !== name) a.currentTime = 0;
   a.volume = 0;
   cur = { name, a };
-  a.play().then(() => fade(a, master * (VOL[name] ?? 0.7), 900)).catch(() => { /* 첫 터치 뒤에 다시 */ });
+  blocked = false;
+  a.play().then(() => fade(a, master * (VOL[name] ?? 1), 900)).catch(() => { blocked = true; /* 첫 터치 뒤에 다시 */ });
   // 다음 곡 조금 미리 (휴대폰 데이터 아끼려고 바로 다음 것만)
   setTimeout(() => { for (const n of NEXT[name]) { const b = el(n); if (b.preload === 'none') b.preload = 'metadata'; } }, 4000);
 }
@@ -81,15 +82,21 @@ export function setSoundMode(m: Mode) {
   else if (want) bgm(want);
 }
 
-// 첫 입력 때 막혔던 음악 재생
+let blocked = false;
+// 브라우저는 '진짜 입력'(클릭·터치 뗌·키) 안에서만 소리를 허락한다. pointerdown 은 휴대폰에서 인정되지 않으므로
+// click / touchend / keydown 마다, 막혀 있으면 다시 튼다.
 const unlock = () => {
+  unlockSfx?.();
   if (want && mode === 'all' && (!cur || cur.a.paused)) { cur = null; bgm(want); }
 };
-window.addEventListener('pointerdown', unlock, { passive: true });
-window.addEventListener('keydown', unlock);
+let unlockSfx: (() => void) | null = null;
+export const onUnlock = (f: () => void) => { unlockSfx = f; };
+for (const ev of ['click', 'touchend', 'keydown', 'pointerup']) window.addEventListener(ev, unlock, { passive: true, capture: true });
 // 탭을 숨기면 음악도 멈춤 (배터리)
 document.addEventListener('visibilitychange', () => {
   if (!cur) return;
   if (document.hidden) cur.a.pause();
   else if (mode === 'all') void cur.a.play().catch(() => {});
 });
+
+export const bgmBlocked = () => blocked;
