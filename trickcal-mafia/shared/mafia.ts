@@ -83,6 +83,7 @@ export class MafiaGame {
   private quietDays = 0;
   private pendingKill: { target: number; executor: number; voters: number[] } | null = null;
   private overturned = false;
+  private stage: number[] = [];
   /** 주말농장 위치 */
   private farmPos = new Map<number, [number, number]>();
 
@@ -169,6 +170,7 @@ export class MafiaGame {
   private log(to: number, ch: LogCh, text: string, from = -1) { this.host.send(to, { t: 'glog', ch, from, text }); }
   private logAll(ch: LogCh, text: string, from = -1) { for (const p of this.all()) this.log(p.pid, ch, text, from); }
   private secret(pid: number, text: string) { this.log(pid, 'secret', text); }
+  private cutAll(kind: 'execute' | 'overturn', text: string, pid?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text }); }
 
   view(pid: number): GameView {
     const p = this.ps.get(pid)!;
@@ -194,6 +196,7 @@ export class MafiaGame {
       },
       cands: this.cands,
       counts: this.counts,
+      stage: this.phase === 'defense' || this.phase === 'vote2' || this.phase === 'verdict' ? this.stage : undefined,
     };
   }
 
@@ -550,6 +553,7 @@ export class MafiaGame {
       this.cands = rest.length ? [firsts[0], rand(rest.filter(([, c]) => c === rest[0][1]).map(([t]) => t))] : [firsts[0]];
     }
     this.phase = 'defense';
+    this.stage = [...this.cands];
     this.proxy = null;
     this.logAll('event', this.cands.length === 2 ? `⚖ 결선 대결: ${this.name(this.cands[0])} vs ${this.name(this.cands[1])} — 45초 동안 변론하세요!` : `⚖ ${this.name(this.cands[0])}의 최후 변론 (45초)`);
     // 죠안의 선동
@@ -597,6 +601,7 @@ export class MafiaGame {
     if (ca > cb) executed = a;
     else if (b !== undefined && cb > ca) executed = b;
     this.phase = 'verdict';
+    this.stage = executed === null ? [] : [executed];
     if (executed === null) {
       this.logAll('event', ca === cb ? '동표! 처형 없이 밤이 된다.' : '처형이 부결되었다.');
       this.timer(4, () => this.startNight());
@@ -616,6 +621,8 @@ export class MafiaGame {
       this.resolvePrompts();
       if (this.overturned) {
         this.logAll('event', `↺ 판결이 뒤집혔다! 누군가의 힘으로 ${this.name(ex)}의 처형이 무효가 되었다.`);
+        this.cutAll('overturn', `판결이 뒤집혔다!`, ex);
+        this.stage = [];
         this.timer(4, () => this.startNight());
         this.push();
         return;
@@ -627,6 +634,7 @@ export class MafiaGame {
 
   private execute(pid: number) {
     const p = this.ps.get(pid)!;
+    this.cutAll('execute', `${p.name} 처형`, pid);
     this.logAll('event', `⚖ ${p.name}가 처형되었다.`);
     this.kill(pid, 'vote');
     if (p.role === 'jester' && this.night >= JESTER_NIGHT) {

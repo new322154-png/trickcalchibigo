@@ -8,8 +8,9 @@ import { CHARACTERS, FARM_H, FARM_W, type ChatCh, type GameView, type LogCh, typ
 import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import type { RoomLink } from '../net';
-import { asset, clear, h } from './dom';
+import { bgUrl, clear, h } from './dom';
 import { MoveInput, isTouch } from './input';
+import { Scene, playCut } from './scene';
 import { sfx } from './sfx';
 
 const CW = 1600, CH = 900;
@@ -49,15 +50,17 @@ export class GameUI {
   private tick = 0;
   private corridor: Corridor | null = null;
   private farm: Farm | null = null;
+  private scene: Scene;
   private lastKey = '';
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
     this.chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); } });
+    this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, ANON, this.name);
     this.el = h('div.game-screen',
       this.top,
       h('div.g-cols',
         this.plist,
-        h('div.g-center', this.log, this.chatRow),
+        h('div.g-center', this.scene.el, this.log, this.chatRow),
         this.panel),
       this.nightEl);
     root.appendChild(this.el);
@@ -82,6 +85,7 @@ export class GameUI {
     else if (m.t === 'gcmove') this.corridor?.mate(m.pid, m.x, m.y);
     else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
     else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
+    else if (m.t === 'cut') { sfx(m.kind === 'execute' ? 'death' : 'gavel'); playCut(this.el, m.kind, m.text, ANON); }
   }
 
   private update(v: GameView) {
@@ -95,6 +99,7 @@ export class GameUI {
       if (v.phase === 'morning') sfx('morning');
       if (v.phase === 'vote1' || v.phase === 'vote2') sfx('gavel');
     }
+    this.scene.update(v);
     this.renderTop();
     this.renderPlayers();
     this.renderChat();
@@ -114,6 +119,7 @@ export class GameUI {
     this.log.scrollTop = this.log.scrollHeight;
     this.corridor?.toast(ch, who, text);
     if (ch === 'dead' && from >= 0) this.farm?.say(from, text);
+    if ((ch === 'day' || ch === 'defense') && from >= 0) this.scene.say(from, text);
     this.nightLog(ch, who, text);
   }
 
@@ -294,10 +300,9 @@ export class GameUI {
           : `지금은 당신의 차례! 문을 열고 나가 ${ACT_LABEL[act.kind]}할 사람의 방으로 가세요.${act.optional ? ' (안 써도 돼요)' : ' (시간이 지나면 무작위)'}`
       : `${STEP_NAMES[v.step]} 차례 — 누군가 움직이고 있다…`;
     clear(this.nightEl).append(
-      h('div.n-room',
-        h('div.n-window'), h('div.n-bed'),
+      h('div.n-room', { style: `--room-bg: ${bgUrl('night_room.webp')}` },
         h('div.n-me', img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?')),
-        h('div.n-door', myTurn ? h('button.btn.gold.big', { onclick: () => this.goCorridor() }, '🚪 문 열고 나가기') : h('div.n-door-shut', act?.locked ? '🔒' : ''))),
+        h('div.n-door', myTurn ? h('button.btn.gold.big', { onclick: () => this.goCorridor() }, '🚪 문 열고 나가기') : act?.locked ? h('div.n-door-shut', '🔒 문이 잠겼다') : '')),
       h('div.n-side',
         h('div.n-title', `🌙 ${v.night}번째 밤`, h('span.n-timer', `${this.left()}초`)),
         h('div.n-step', STEP_NAMES.slice(1).map((s, i) => h(`span${v.step === i + 1 ? '.on' : ''}`, s))),
@@ -541,7 +546,7 @@ class Farm {
 
   constructor(host: HTMLElement, v: GameView, private myPid: number, private name: (p: number) => string,
     private img: (pid: number, ide: boolean) => string, private onMove: (x: number, y: number) => void) {
-    this.world.style.setProperty('--farm-bg', `url("${new URL(asset('bg/farm.png'), location.href).href}")`);
+    this.world.style.setProperty('--farm-bg', bgUrl('farm.png'));
     this.wrap = h('div.farm-wrap', this.world);
     host.appendChild(this.wrap);
     if (isTouch()) host.appendChild(this.input.el);

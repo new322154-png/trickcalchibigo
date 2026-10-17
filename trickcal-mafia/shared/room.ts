@@ -6,7 +6,7 @@
 import { QUIZ } from './quiz';
 import { MafiaGame } from './mafia';
 import {
-  AUTO_START, GAME_MIN, CHARACTERS, MAX_PLAYERS, SPEED, WORLD_H, WORLD_W, clamp, isChar,
+  AUTO_START, GAME_MIN, CHARACTERS, MAX_PLAYERS, SPEED, WALK_TOP, WORLD_H, WORLD_W, clamp, isChar,
   type C2S, type Chair, type MiniId, type MiniState, type PlayerInfo, type S2C, MINI_NAMES,
 } from './protocol';
 
@@ -76,7 +76,7 @@ export class RoomCore {
     const id = ++this.seq;
     const p: P = {
       id, nick, char: isChar(hello.char) ? hello.char : pickOne([...CHARACTERS]).id,
-      x: rnd(300, 1300), y: rnd(320, 760), host: this.players.size === 0,
+      x: rnd(300, 1300), y: rnd(WALK_TOP + 60, WORLD_H - 80), host: this.players.size === 0,
       conn, lastMoveAt: now(), moved: false, chatTimes: [], joinedAt: now(),
       token: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), online: true,
     };
@@ -186,7 +186,7 @@ export class RoomCore {
         const d = Math.hypot(x - p.x, y - p.y);
         const k = d > maxStep ? maxStep / d : 1;
         p.x = clamp(p.x + (x - p.x) * k, 30, WORLD_W - 30);
-        p.y = clamp(p.y + (y - p.y) * k, 60, WORLD_H - 20);
+        p.y = clamp(p.y + (y - p.y) * k, WALK_TOP, WORLD_H - 20);
         p.lastMoveAt = t;
         p.moved = true;
         // 너무 많이 어긋났을 때만 본인에게 위치를 고쳐 준다
@@ -463,7 +463,7 @@ export class RoomCore {
     for (let i = 0; i < n; i++) {
       let x = 0, y = 0;
       for (let tries = 0; tries < 30; tries++) {
-        x = rnd(160, WORLD_W - 160); y = rnd(200, WORLD_H - 120);
+        x = rnd(160, WORLD_W - 160); y = rnd(WALK_TOP + 70, WORLD_H - 70);
         if (chairs.every((c) => dist(c, { x, y }) > 150)) break;
       }
       chairs.push({ id: i, x: Math.round(x), y: Math.round(y), by: null });

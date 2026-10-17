@@ -44,6 +44,8 @@ export const clear = <T extends HTMLElement>(el: T): T => {
 };
 
 export const asset = (p: string) => `./assets/${p}`;
+/** CSS 변수에 넣을 배경 그림 (public/assets/bg/<name>) */
+export const bgUrl = (name: string) => `url("${new URL(asset('bg/' + name), location.href).href}")`;
 
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 

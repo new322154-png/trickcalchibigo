@@ -3,7 +3,7 @@
  * 위치는 내 화면에서 먼저 움직이고(즉시 반응), 서버에는 0.08초마다 알린다.
  */
 import {
-  MAX_PLAYERS, MINI_DESC, MINI_NAMES, SPEED, WORLD_H, WORLD_W, clamp,
+  MAX_PLAYERS, MINI_DESC, MINI_NAMES, SPEED, WALK_TOP, WORLD_H, WORLD_W, clamp,
   type MiniId, type MiniState, type PlayerInfo, type S2C,
 } from '../../shared/protocol';
 import { playCatch } from '../mini/catch';
@@ -12,7 +12,7 @@ import { connect, type RoomLink } from '../net';
 import { GameUI } from './game';
 import { AUTO_START, GAME_MIN } from '../../shared/protocol';
 import { charImg, type Profile } from '../profile';
-import { clear, h, setCompact } from './dom';
+import { bgUrl, clear, h, setCompact } from './dom';
 import { MoveInput, isTouch } from './input';
 import { sfx } from './sfx';
 
@@ -41,6 +41,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
 
   // ── 화면 ──
   const world = h('div.world');
+  world.style.setProperty('--lobby-bg', bgUrl('lobby.webp'));
   const miniLayer = h('div.mini-layer');
   world.appendChild(miniLayer);
   const worldWrap = h('div.world-wrap', world);
@@ -129,7 +130,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   }
 
   function onMsg(m: S2C) {
-    if (m.t === 'g' || m.t === 'glog' || m.t === 'gcmove' || m.t === 'gend') {
+    if (m.t === 'g' || m.t === 'glog' || m.t === 'gcmove' || m.t === 'fmove' || m.t === 'cut' || m.t === 'gend') {
       if (!gameUI) {
         gameUI = new GameUI(root, link, me);
         input.enabled = false;
@@ -353,7 +354,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     if (mine) {
       const d = document.activeElement === chatIn || frozen() ? { x: 0, y: 0 } : input.dir();
       mine.x = clamp(mine.x + d.x * SPEED * dt, 30, WORLD_W - 30);
-      mine.y = clamp(mine.y + d.y * SPEED * dt, 60, WORLD_H - 20);
+      mine.y = clamp(mine.y + d.y * SPEED * dt, WALK_TOP, WORLD_H - 20);
       mine.moving = d.x !== 0 || d.y !== 0;
       if (d.x) mine.el.classList.toggle('flip', d.x > 0);
       if (t - lastSent > 80 && (Math.abs(mine.x - sentX) > 0.5 || Math.abs(mine.y - sentY) > 0.5)) {

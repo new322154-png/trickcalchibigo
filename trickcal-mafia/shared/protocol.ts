@@ -8,6 +8,8 @@ export const WORLD_H = 900;
 export const MAX_PLAYERS = 12;
 export const MIN_PLAYERS = 4;
 export const SPEED = 330; // 초당 이동 거리
+/** 대기실에서 걸을 수 있는 가장 위쪽 (배경의 책상 매트 윗변) */
+export const WALK_TOP = 380;
 
 export const CHARACTERS = [
   { id: 'nifel', name: '니펠' },
@@ -98,6 +100,8 @@ export type S2C =
   | { t: 'gcmove'; pid: number; x: number; y: number }
   /** 주말농장(이드 + 죽은 사람) 위치 */
   | { t: 'fmove'; pid: number; x: number; y: number }
+  /** 모두가 보는 컷씬 (처형 등) */
+  | { t: 'cut'; kind: CutKind; pid?: number; text: string }
   | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[] };
 
 // ── 마피아 본게임 ─────────────────────────────────
@@ -106,6 +110,7 @@ export const GAME_MIN = 4;
 export const AUTO_START = 8;
 export const STEP_SECONDS = 15;
 
+export type CutKind = 'execute' | 'overturn';
 export type ChatCh = 'day' | 'nifel' | 'dead' | 'defense';
 export type LogCh = ChatCh | 'sys' | 'secret' | 'note' | 'event';
 export type ChoiceKey = 'bat' | 'overturn' | 'avenge' | 'agitate';
@@ -152,6 +157,8 @@ export interface GameView {
   };
   cands: number[];
   counts?: [number, number][];
+  /** 재판장 무대 위에 선 사람 (결선 후보 → 판결 뒤엔 처형될 사람만) */
+  stage?: number[];
 }
 
 export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
