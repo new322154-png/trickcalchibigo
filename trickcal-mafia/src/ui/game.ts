@@ -12,6 +12,7 @@ import { bgUrl, clear, h } from './dom';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
 import { playCut, preloadCuts } from './cut';
+import { bgm, type BgmName } from './bgm';
 import { sfx } from './sfx';
 
 /** 밤 복도 (배경 2172×724 → 높이 900 기준) */
@@ -99,7 +100,8 @@ export class GameUI {
     else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
     else if (m.t === 'cut') {
       const mine = m.kind.startsWith('p_');
-      sfx(m.kind === 'execute' || m.kind === 'vanish' || m.kind === 'blast' ? 'death' : mine ? 'secret' : 'gavel');
+      if (m.kind === 'vanish') { this.sadMorning = true; if (this.v?.phase === 'morning') bgm('rain'); }
+      if (m.kind === 'execute') bgm('after_trial');
       const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? maskImg(m.pid) : ANON;
       playCut(this.el, m.kind, m.text, fb, { n: m.n });
     }
@@ -111,6 +113,7 @@ export class GameUI {
     this.skew = v.now - Date.now();
     this.v = v;
     if (first) { this.showRoleCard(); preloadCuts(v.me.role); }
+    if (prevPhase !== v.phase) this.music(v.phase);
     if (prevPhase !== v.phase || prevStep !== v.step) {
       if (v.phase === 'night' && prevPhase !== 'night') sfx('night');
       if (v.phase === 'morning') sfx('morning');
@@ -170,6 +173,19 @@ export class GameUI {
     this.renderTimer();
   }
 
+  /** 장면별 배경음악. 누가 사라진 아침은 비 오는 곡 */
+  private sadMorning = false;
+  private music(phase: string) {
+    let name: BgmName;
+    if (phase === 'night') { name = 'night'; this.sadMorning = false; }
+    else if (phase === 'morning') name = this.sadMorning ? 'rain' : 'mansion';
+    else if (phase === 'defense' || phase === 'vote2' || phase === 'verdict') name = 'before_trial';
+    else if (phase === 'end') return;
+    else name = 'mansion';
+    bgm(name);
+  }
+
+  private lastTick = -1;
   private renderTimer() {
     if (!this.v) return;
     this.el.classList.toggle('in-corridor', !!this.corridor);
@@ -177,6 +193,8 @@ export class GameUI {
     this.timerEl.replaceChildren(h('span', this.v.phase === 'end' ? '' : `${l}s`), h('i'));
     this.timerEl.classList.toggle('empty', this.v.phase === 'end');
     this.timerEl.classList.toggle('urgent', l <= 5);
+    if (l <= 5 && l > 0 && l !== this.lastTick && this.v.phase !== 'end') sfx('tick');
+    this.lastTick = l;
     this.timerEl.style.setProperty('--p', String(Math.max(0, Math.min(1, l / this.phaseTotal))));
     const nt = this.nightEl.querySelector('.n-timer');
     if (nt) nt.textContent = `${l}초`;
@@ -387,11 +405,11 @@ export class GameUI {
   }
 
   private goCorridor() {
-    sfx('open');
+    sfx('door');
     const v = this.v!;
     this.corridor = new Corridor(this.nightEl, v, this.myPid, roleImg(v.me.role), this.name, (target) => {
       this.link.send({ t: 'act', target });
-      sfx('click');
+      sfx('door');
     }, (x, y) => this.link.send({ t: 'cmove', x, y }), () => { this.corridor?.destroy(); this.corridor = null; this.renderNight(); });
   }
 
@@ -419,6 +437,7 @@ export class GameUI {
   private showEnd(winner: string, roles: { pid: number; role: string; alive: boolean }[], winners: number[]) {
     const won = winners.includes(this.myPid);
     sfx(won ? 'win' : 'lose');
+    bgm(won ? 'title' : 'rain');
     const T: Record<string, [string, string, string]> = {
       mafia: ['마피아 팀 승리', 'MAFIA WINS', 'hall_night.webp'],
       citizen: ['시민 팀 승리', 'CITIZENS WIN', 'hall_day.webp'],

@@ -14,6 +14,7 @@ import { AUTO_START, GAME_MIN } from '../../shared/protocol';
 import { charImg, type Profile } from '../profile';
 import { bgUrl, clear, h, setCompact } from './dom';
 import { MoveInput, isTouch } from './input';
+import { bgm, bgmPush } from './bgm';
 import { sfx } from './sfx';
 
 interface Avatar {
@@ -29,6 +30,7 @@ interface Avatar {
 
 export function enterRoom(root: HTMLElement, code: string, profile: Profile, onExit: (msg?: string) => void) {
   setCompact(true);
+  bgm('daily');
   const avatars = new Map<number, Avatar>();
   let me = -1;
   let pub = false;
@@ -156,7 +158,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         // 게임 중 재접속이면 게임 화면 그대로
         if (gameUI && gameUI.v?.phase !== 'end') { me = m.you; sys('다시 연결됐어요.'); break; }
         // 게임이 끝났으면 대기실로
-        if (gameUI) { gameUI.destroy(); gameUI = null; input.enabled = true; }
+        if (gameUI) { gameUI.destroy(); gameUI = null; input.enabled = true; bgm('daily'); }
         me = m.you; pub = m.pub;
         for (const a of avatars.values()) a.el.remove();
         avatars.clear();
@@ -330,14 +332,15 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   function playSolo() {
     input.enabled = false;
     (document.activeElement as HTMLElement | null)?.blur();
-    const back = () => { input.enabled = true; };
+    let restore = () => {};
+    const back = () => { input.enabled = true; restore(); restore = () => {}; };
     const modal = h('div.overlay', { onclick: (e: Event) => e.target === modal && (modal.remove(), back()) },
       h('div.card.minimenu',
         h('h2', '🎮 혼자 놀기'),
         h('p.hint', '방에서 나가지 않고 할 수 있어요. 누가 들어오면 채팅창에 표시돼요.'),
         h('div.mini-cards',
-          h('button.mini-card', { onclick: () => { modal.remove(); playCatch(root, profile.char, back); } }, h('div.mc-icon', '🍞'), h('b', '빵 받기')),
-          h('button.mini-card', { onclick: () => { modal.remove(); playMatch(root, back); } }, h('div.mc-icon', '🃏'), h('b', '짝 맞추기'))),
+          h('button.mini-card', { onclick: () => { modal.remove(); restore = bgmPush('airship'); playCatch(root, profile.char, back); } }, h('div.mc-icon', '🍞'), h('b', '빵 받기')),
+          h('button.mini-card', { onclick: () => { modal.remove(); restore = bgmPush('airship'); playMatch(root, back); } }, h('div.mc-icon', '🃏'), h('b', '짝 맞추기'))),
         h('button.btn.wide', { onclick: () => { modal.remove(); back(); } }, '닫기')));
     root.appendChild(modal);
   }

@@ -7,12 +7,28 @@ import { showBoot } from './ui/boot';
 import { enterRoom } from './ui/room';
 import { showTitle } from './ui/title';
 import { loadProfile, type Profile } from './profile';
+import { bgm, setSoundMode, soundMode } from './ui/bgm';
 
 const stage = mountStage();
+
+// 소리 버튼 (오른쪽 아래): 전부 켜기 → 효과음만 → 끄기
+const ICON = { all: '🔊', sfx: '🔔', off: '🔇' } as const;
+const TIP = { all: '음악·효과음 켜짐', sfx: '효과음만', off: '소리 끔' } as const;
+const soundBtn = h('button.sound-btn', { title: TIP[soundMode()], 'aria-label': TIP[soundMode()] }, ICON[soundMode()]);
+soundBtn.onclick = () => {
+  const order = ['all', 'sfx', 'off'] as const;
+  const m = order[(order.indexOf(soundMode()) + 1) % 3];
+  setSoundMode(m);
+  soundBtn.textContent = ICON[m];
+  soundBtn.title = TIP[m];
+  soundBtn.setAttribute('aria-label', TIP[m]);
+};
+document.getElementById('app')!.appendChild(soundBtn);
 
 function title(msg?: string) {
   history.replaceState(null, '', location.pathname);
   showTitle(stage, { enterRoom: room });
+  bgm('title');
   if (msg) {
     const s = stage.querySelector('.title-status');
     if (s) s.textContent = msg;

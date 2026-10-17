@@ -6,6 +6,7 @@ import { playMatch } from '../mini/match';
 import { api } from '../net';
 import { charImg, charName, loadProfile, saveProfile, type Profile } from '../profile';
 import { asset, bgUrl, clear, h } from './dom';
+import { bgmPush } from './bgm';
 import { sfx } from './sfx';
 
 export const GAME_TITLE = '트릭컬 마피아 (가제)';
@@ -118,8 +119,8 @@ export function miniMenu(root: HTMLElement, profile: () => Profile) {
     h('div.card.minimenu',
       h('h2', '🎮 혼자 하는 미니게임'),
       h('div.mini-cards',
-        h('button.mini-card', { onclick: () => { modal.remove(); playCatch(root, profile().char, () => {}); } }, h('div.mc-icon', '🍞'), h('b', '빵 받기'), h('small', '떨어지는 빵을 받고 폭탄은 피하기')),
-        h('button.mini-card', { onclick: () => { modal.remove(); playMatch(root, () => {}); } }, h('div.mc-icon', '🃏'), h('b', '짝 맞추기'), h('small', '같은 캐릭터 카드 찾기')),
+        h('button.mini-card', { onclick: () => { modal.remove(); playCatch(root, profile().char, bgmPush('airship')); } }, h('div.mc-icon', '🍞'), h('b', '빵 받기'), h('small', '떨어지는 빵을 받고 폭탄은 피하기')),
+        h('button.mini-card', { onclick: () => { modal.remove(); playMatch(root, bgmPush('airship')); } }, h('div.mc-icon', '🃏'), h('b', '짝 맞추기'), h('small', '같은 캐릭터 카드 찾기')),
       ),
       h('button.btn.wide', { onclick: () => modal.remove() }, '닫기'),
     ));

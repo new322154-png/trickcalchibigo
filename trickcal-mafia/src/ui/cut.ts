@@ -5,6 +5,7 @@
  */
 import type { CutKind } from '../../shared/protocol';
 import { asset, bgUrl, h } from './dom';
+import { sfx } from './sfx';
 
 type Layout = 'char' | 'contact' | 'paper' | 'impact' | 'farm' | 'bat' | 'vanish' | 'drone' | 'droneTry';
 interface CutDef { file?: string; title: string; en: string; color: string; layout?: Layout; ms?: number }
@@ -36,6 +37,15 @@ export const CUTS: Record<CutKind, CutDef> = {
 };
 
 /** 내 직업의 개인 컷씬 */
+/** 컷씬이 뜰 때 나는 소리 [소리, 지연 ms] */
+const SE: Partial<Record<CutKind, [string, number][]>> = {
+  p_kill: [['slash', 0]], p_contact: [['contact', 0]], p_drone_ok: [['droneOk', 0]], p_drone_fail: [['fizzle', 0]],
+  p_farm: [['skill', 0], ['bang', 3450]], p_bat: [['skill', 0], ['pop', 4700]],
+  execute: [['execute', 0]], vanish: [['vanish', 0], ['panic', 0]], saved: [['heal', 0]], counter: [['clang', 0]],
+  blast: [['boom', 0]], wish: [['revive', 0]], uros: [['revive', 0], ['slash', 500]], drone: [['buzz', 0]],
+  reveal: [['reveal', 0]], overturn: [['reveal', 0], ['gavel', 200]],
+};
+
 export const MY_CUT: Record<string, CutKind[]> = {
   nifel: ['p_kill'], mute: ['p_seal'], bella: ['p_identify'], joan: ['p_agitate'], doctor: ['p_protect'],
   police: ['p_investigate'], tracker: ['p_track'], spiky: ['p_disguise'], medium: ['p_farm'], bat: ['p_bat'],
@@ -170,6 +180,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
     const close = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => { el.remove(); next(); }, 300); };
     el.onclick = close;
     host.appendChild(el);
+    for (const [s, d] of SE[kind] ?? [['skill', 0]]) d ? setTimeout(() => !done && sfx(s), d) : sfx(s);
     setTimeout(close, def.ms ?? 2800);
   });
   if (!playing) next();
