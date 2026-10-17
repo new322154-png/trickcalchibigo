@@ -121,19 +121,21 @@ export class MafiaGame {
   private isCitizenTeam(p: GP) { return ROLES[p.role].team === 'citizen' || (p.role === 'bat' && p.batSide === 'citizen'); }
   private inNifelChat(p: GP) { return this.isKiller(p) || (!!ROLES[p.role].member && p.contacted); }
   private matesOf(p: GP) { return this.inNifelChat(p) ? this.all().filter((q) => q.pid !== p.pid && this.inNifelChat(q)).map((q) => q.pid) : []; }
-  /** 밤의 주말농장: 죽은 사람 + 해킹당하지 않은 이드 */
+  /** 밤의 주말농장: 죽은 사람 + 해킹당하지 않은 이드 (이드로 변장한 스피키 포함) */
   private inFarm(p: GP) {
     if (this.phase !== 'night' || this.over) return false;
     if (!p.alive) return p.diedHow !== 'leave';
-    return p.role === 'medium' && !this.sealed.has(p.pid);
+    return this.isIde(p) && !this.sealed.has(p.pid);
   }
-  private farmView(): [number, number, number][] {
-    const out: [number, number, number][] = [];
+  /** 이드 (또는 오늘 밤 이드로 변장한 스피키) — 농장에서 이드 모습으로 보인다 */
+  private isIde(p: GP) { return p.alive && (p.role === 'medium' || (p.role === 'spiky' && p.copyRole === 'medium')); }
+  private farmView(): [number, number, number, number][] {
+    const out: [number, number, number, number][] = [];
     for (const q of this.all()) {
       if (!this.inFarm(q)) continue;
       let pos = this.farmPos.get(q.pid);
       if (!pos) { pos = [300 + Math.random() * (FARM_W - 600), 400 + Math.random() * (FARM_H - 550)]; this.farmPos.set(q.pid, pos); }
-      out.push([q.pid, Math.round(pos[0]), Math.round(pos[1])]);
+      out.push([q.pid, Math.round(pos[0]), Math.round(pos[1]), this.isIde(q) ? 1 : 0]);
     }
     return out;
   }
@@ -212,7 +214,7 @@ export class MafiaGame {
     if (this.phase === 'night') {
       const out: ChatCh[] = [];
       if (this.inNifelChat(p)) out.push('nifel');
-      if (p.role === 'medium' && this.inFarm(p)) out.push('dead');
+      if (this.inFarm(p)) out.push('dead');
       return out;
     }
     return [];
@@ -223,7 +225,7 @@ export class MafiaGame {
     switch (ch) {
       case 'day': case 'defense': return this.all();
       case 'nifel': return this.all().filter((q) => this.inNifelChat(q) || !q.alive);
-      case 'dead': return this.all().filter((q) => !q.alive || (q.role === 'medium' && this.inFarm(q)));
+      case 'dead': return this.all().filter((q) => !q.alive || this.inFarm(q));
     }
   }
 
@@ -335,7 +337,9 @@ export class MafiaGame {
         p.shownRole = this.isMafiaTeam(t) ? undefined : t.role;
         const k = ROLES[t.role].night;
         this.secret(p.pid, `🎭 ${t.name}로 변장했다. ${t.name}의 직업은 ${label(t.role)}!` +
-          (k && k !== 'kill' && k !== 'disguise' ? ' ③차례에 그 능력을 한 번 쓸 수 있다.' : ' 밤에 쓰는 능력은 없는 직업이다.'));
+          (t.role === 'medium' ? ' 오늘 밤은 이드처럼 주말농장에 갈 수 있다.'
+            : k && k !== 'kill' && k !== 'disguise' ? ' ③차례에 그 능력을 한 번 쓸 수 있다.' : ' 밤에 쓰는 능력은 없는 직업이다.'));
+        if (t.role === 'medium') { for (const q of this.all()) if (this.inFarm(q)) this.push(q.pid); }
         break;
       }
     }

@@ -162,7 +162,7 @@ export class GameUI {
       if (v.cands.includes(p.pid) && (v.phase === 'defense' || v.phase === 'vote2')) tags.push(h('span.tag.mafia', '결선'));
       this.plist.appendChild(h(`button.g-p${p.alive ? '' : '.dead'}${p.pid === this.myPid ? '.self' : ''}`,
         { onclick: () => { if (p.pid === this.myPid) return; this.memo.set(p.pid, (m + 1) % MEMO.length); this.renderPlayers(); } },
-        h('img.g-anon', { src: ANON, alt: '' }),
+        h('img.g-anon', { src: p.pid === this.myPid ? roleImg(v.me.role) ?? ANON : ANON, alt: '' }),
         h('div.g-pinfo', h('div.g-pname', p.name, p.alive ? '' : h('span.dead-mark', ' 사망')), h('div.ptags', tags))));
     }
   }
@@ -317,8 +317,11 @@ export class GameUI {
   private renderFarm(v: GameView) {
     if (this.farm) { this.farm.sync(v); return; }
     this.corridor?.destroy(); this.corridor = null;
-    // 정체 보호: 농장에서는 나를 포함해 모두 같은 모습
-    const img = () => ANON;
+    // 정체 보호: 나는 내 직업 캐릭터, 이드(와 이드로 변장한 스피키)는 이드, 나머지는 공용 모습.
+    // 남의 직업은 서버가 아예 보내지 않으므로 화면 오류로 드러날 일은 없다.
+    const myImg = roleImg(v.me.role) ?? ANON;
+    const ideImg = roleImg('medium') ?? ANON;
+    const img = (pid: number, ide: boolean) => (pid === this.myPid ? myImg : ide ? ideImg : ANON);
     const area = h('div.farm-area');
     const me = v.players.find((p) => p.pid === this.myPid);
     clear(this.nightEl).append(area,
@@ -537,7 +540,7 @@ class Farm {
   private lastSent = 0;
 
   constructor(host: HTMLElement, v: GameView, private myPid: number, private name: (p: number) => string,
-    private img: () => string, private onMove: (x: number, y: number) => void) {
+    private img: (pid: number, ide: boolean) => string, private onMove: (x: number, y: number) => void) {
     this.world.style.setProperty('--farm-bg', `url("${new URL(asset('bg/farm.png'), location.href).href}")`);
     this.wrap = h('div.farm-wrap', this.world);
     host.appendChild(this.wrap);
@@ -550,12 +553,12 @@ class Farm {
     const list = v.me.farm ?? [];
     const ids = new Set(list.map(([p]) => p));
     for (const [pid, a] of this.avs) if (!ids.has(pid)) { a.el.remove(); this.avs.delete(pid); }
-    for (const [pid, x, y] of list) {
+    for (const [pid, x, y, ide] of list) {
       if (this.avs.has(pid)) continue;
-      const alive = v.players.find((p) => p.pid === pid)?.alive;
+      const alive = !!ide;
       const bubble = h('div.ch-bubble');
       const el = h(`div.ch${pid === this.myPid ? '.me' : ''}${alive ? '.ide' : '.ghost'}`,
-        h('div.ch-body', h('img', { src: this.img(), alt: '' })), h('div.ch-shadow'), h('div.ch-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
+        h('div.ch-body', h('img', { src: this.img(pid, !!ide), alt: '' })), h('div.ch-shadow'), h('div.ch-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
       this.world.appendChild(el);
       this.avs.set(pid, { el, bubble, x, y, tx: x, ty: y, timer: 0 });
     }

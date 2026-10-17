@@ -145,8 +145,8 @@ export interface GameView {
     drone?: { count: number; tries: number };
     /** 죠안: 지금 대신 말하고 있는 사람 */
     proxyFor?: number;
-    /** 밤의 주말농장에 있으면: 함께 있는 사람과 위치 [pid, x, y] */
-    farm?: [number, number, number][];
+    /** 밤의 주말농장에 있으면: 함께 있는 사람과 위치 [pid, x, y, 이드 모습이면 1] */
+    farm?: [number, number, number, number][];
     /** 죠안에게 입을 빼앗긴 상태 */
     silenced?: boolean;
   };
