@@ -1,6 +1,7 @@
 import './styles/boot.css';
 import './styles/main.css';
 import './styles/room.css';
+import './styles/theme.css';
 import { h, mountStage } from './ui/dom';
 import { showBoot } from './ui/boot';
 import { enterRoom } from './ui/room';

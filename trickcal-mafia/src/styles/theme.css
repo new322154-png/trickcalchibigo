@@ -1,0 +1,198 @@
+/*
+ * 화면 테마 — 배경 그림에 맞춘 시스템 UI
+ *  t-day   : 대기실 · 낮 토론/투표 — 책상 위 문구점 느낌 (크림 종이, 나무, 노란 바느질선)
+ *  t-trial : 결선 · 판결 — 재판장 달빛 (남색 유리, 은빛 선)
+ *  t-night : 밤 — 푸른 방 (짙은 남색, 촛불빛 포인트)
+ * 색 변수만 바꾸면 기존 부품들이 따라 바뀌고, 아래에서 모양을 덧입힌다.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+/* ───────────────────────── 낮 (공통 변수) ───────────────────────── */
+.t-day {
+  --panel: #fffaf0;
+  --panel2: #f7eedb;
+  --line: #e6d3b1;
+  --text: #4a3424;
+  --dim: #94795d;
+  --gold: #e79a2c;
+  --gold2: #d9a24d;
+  --wood: #c58a55;
+  --wood2: #9b6438;
+  --stitch: #f5c32c;
+  --leaf: #6fae5a;
+  --mafia: #d9485f;
+  --citizen: #3f8fd6;
+  --neutral: #9a6bd6;
+  --info: #3fa57d;
+  color: var(--text);
+}
+.t-day .tag { background: #efe3c9; color: #7c624a; }
+.t-day .tag.mafia { background: #fde0e4; color: #c23a52; }
+.t-day .tag.citizen { background: #dcecfb; color: #2f78bd; }
+.t-day .tag.info { background: #dcf3e7; color: #2b8a63; }
+.t-day .tag.me { background: var(--gold); color: #fff; }
+.t-day .dim { color: var(--dim); }
+
+/* 버튼: 말랑한 스티커 */
+.t-day .btn { background: #fffaf0; border: 2px solid var(--line); border-bottom-width: 5px; color: var(--text); border-radius: 16px; }
+.t-day .btn:hover:not(:disabled) { border-color: var(--gold2); }
+.t-day .btn:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 3px; }
+.t-day .btn.gold { background: linear-gradient(#ffd56b, #f5ac2e); border-color: #d98a14; color: #4a2a05; text-shadow: 0 1px 0 rgba(255,255,255,.5); }
+.t-day .btn.small { border-bottom-width: 4px; }
+
+/* 입력창 */
+.t-day .chat-in, .t-day .txt-in { background: #fff; border: 2px solid var(--line); color: var(--text); border-radius: 22px; padding-left: 16px; }
+.t-day .chat-in:focus, .t-day .txt-in:focus { border-color: var(--gold); outline: none; }
+.t-day .chat-in::placeholder { color: #c2ab8e; }
+
+/* 나무 상단 바 + 노란 바느질선 */
+.t-day .r-top, .t-day .g-top {
+  background: linear-gradient(#d39a63, #b67a46); border-bottom: none; color: #fff8ec;
+  box-shadow: inset 0 -4px 0 #9b6438, 0 4px 10px rgba(80,50,20,.25); position: relative; z-index: 2;
+}
+.t-day .r-top::after, .t-day .g-top::after {
+  content: ''; position: absolute; left: 10px; right: 10px; bottom: 9px; height: 0; border-bottom: 3px dashed var(--stitch); opacity: .9; pointer-events: none;
+}
+.t-day .room-code { color: #ffe9c9; }
+.t-day .room-code b { color: #fff; text-shadow: 0 2px 0 #9b6438; }
+.t-day .room-count, .t-day .day-label { color: #fff; text-shadow: 0 2px 0 #9b6438; }
+.t-day .r-top .btn, .t-day .g-top .btn { background: #fff4df; }
+
+/* ── 대기실 ── */
+.room.t-day { background: #efe6d2 radial-gradient(circle at 20% 30%, rgba(255,255,255,.6) 0 2px, transparent 3px) 0 0 / 34px 34px; }
+.t-day .world-wrap { background: transparent; }
+.t-day .r-side { background: #fffaf0; border-left: none; box-shadow: -6px 0 18px rgba(90,60,30,.15); }
+.t-day .host-bar, .t-day .r-plist { border-bottom: 2px dashed var(--line); }
+.t-day .wait-msg { color: #c9761a; font-weight: 700; }
+.t-day .rp { background: #f7eedb; border: 2px solid transparent; }
+.t-day .rp.self { outline: none; border-color: var(--gold); }
+.t-day .chat-log .cl-line { background: #fff; border: 1px solid #f0e3c8; border-radius: 14px 14px 14px 4px; padding: 5px 12px; align-self: flex-start; max-width: 96%; }
+.t-day .cl-line b { color: #c9761a; }
+.t-day .cl-line.mine { align-self: flex-end; background: #fff3cf; border-color: #f3dc9c; border-radius: 14px 14px 4px 14px; }
+.t-day .cl-line.mine b { color: #2f78bd; }
+.t-day .cl-sys { color: #a68b6c; align-self: center; font-size: 15px; }
+.t-day .chat-row { border-top: 2px dashed var(--line); }
+.t-day .mini-banner { background: #fffaf0; border: 3px solid var(--gold); box-shadow: 0 8px 20px rgba(90,60,30,.25); }
+.t-day .mb-title { color: var(--text); }
+.t-day .ch-name { color: #fff; text-shadow: 0 1px 2px #4a3424, 0 0 3px #4a3424, 0 0 6px rgba(74,52,36,.6); }
+
+/* ── 게임 화면 (낮) ── */
+.game-screen.t-day { background: #efe6d2 radial-gradient(circle at 20% 30%, rgba(255,255,255,.6) 0 2px, transparent 3px) 0 0 / 34px 34px; }
+.t-day .g-cols { gap: 12px; padding: 12px; }
+.t-day .g-plist, .t-day .g-panel, .t-day .g-center {
+  background: #fffaf0; border: none; border-radius: 22px; box-shadow: 0 4px 0 #e2cfa9, 0 10px 24px rgba(90,60,30,.12); overflow: hidden;
+}
+.t-day .g-plist { overflow-y: auto; padding: 12px; }
+.t-day .g-panel { overflow-y: auto; }
+.t-day .g-title { color: var(--dim); font-weight: 700; }
+.t-day .g-scene { border-bottom: none; background: #dfe9e4; }
+.t-day .g-chatrow { border-top: 2px dashed var(--line); }
+
+/* 단계 리본 */
+.t-day .phase-pill { background: #fff; color: #9b6438; border-radius: 10px 30px 30px 10px; box-shadow: 0 3px 0 #9b6438; font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 26px; }
+.t-day .me-chip { background: #fff8ea; color: var(--text); border-width: 3px; }
+
+/* 이름표 스티커 */
+.t-day .g-p { background: #fff; border: 2px solid #f0e2c4; border-radius: 16px; box-shadow: 0 3px 0 #ecdcb9; transition: transform .12s; }
+.t-day .g-p:hover { transform: translateY(-2px) rotate(-.6deg); }
+.t-day .g-p.self { border-color: var(--gold); background: #fff8e3; }
+.t-day .g-p.dead { opacity: .55; background: #f1ece2 repeating-linear-gradient(-45deg, transparent 0 10px, rgba(0,0,0,.03) 10px 20px); }
+.t-day .g-pname { color: var(--text); }
+.t-day .dead-mark { color: #b0a08b; font-size: 15px; }
+
+/* 기록: 사건은 초록 라벨, 비밀은 봉투, 쪽지는 노란 메모 */
+.t-day .g-log { gap: 8px; }
+.t-day .gl-event { color: #fff; background: var(--leaf); box-shadow: 0 3px 0 #4f8c3e; border-radius: 14px; font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; }
+.t-day .gl-secret { background: #f3ecff; border: 2px dashed #b9a2e6; color: #5b3f8f; }
+.t-day .gl-note { background: #fff1a8; color: #5a4a12; box-shadow: 0 4px 8px rgba(90,70,10,.18); }
+.t-day .gl-sys { color: #a68b6c; }
+.t-day .gl-chat { align-self: flex-start; background: #fff; border: 1px solid #f0e3c8; border-radius: 16px 16px 16px 4px; padding: 6px 14px; max-width: 92%; color: var(--text); }
+.t-day .gl-chat b { color: #c9761a; }
+.t-day .gl-chat.mine { align-self: flex-end; background: #fff3cf; border-color: #f3dc9c; border-radius: 16px 16px 4px 16px; }
+.t-day .gl-chat.mine b { color: #2f78bd; }
+.t-day .gl-chat.ch-dead { background: #eeeaf3; color: #7b7290; }
+.t-day .gl-chat.ch-defense { background: #fff6e0; color: #6b4a16; }
+.t-day .gl-ch { background: #efe3c9; }
+.t-day .ch-tab, .t-day .ch-label { background: #f7eedb; border-color: var(--line); }
+
+/* 오른쪽 패널 */
+.t-day .ph-title { font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 32px; color: #9b6438; }
+.t-day .ph-sub { color: var(--dim); }
+
+/* 투표: 이름 카드 + 도장 */
+.t-day .pbtn { position: relative; background: #fff; border: 2px solid #ecdcb9; border-bottom-width: 5px; color: var(--text); border-radius: 14px; justify-content: center; min-height: 64px; }
+.t-day .pbtn:hover { border-color: var(--gold2); transform: translateY(-1px); }
+.pbtn.sel::after {
+  content: '투표'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%) rotate(-14deg);
+  font-family: 'Jua', 'Noto Sans KR', sans-serif; font-size: 16px; color: #d9485f; border: 3px solid #d9485f; border-radius: 50%;
+  width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; opacity: .85; animation: stamp .25s ease-out;
+}
+@keyframes stamp { from { transform: translateY(-50%) rotate(-14deg) scale(2.2); opacity: 0; } }
+.t-day .pbtn.sel, .t-day .btn.sel { background: #fff3f3 !important; border-color: #d9485f !important; }
+
+/* 둥근 시계 타이머 */
+.g-timer { position: relative; width: 56px; height: 56px; min-width: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900;
+  background: conic-gradient(var(--ring, var(--gold)) calc(var(--p, 1) * 360deg), rgba(0,0,0,.15) 0); }
+.g-timer::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--clock-face, #fffaf0); }
+.g-timer span { position: relative; color: var(--clock-text, #4a3424); }
+.g-timer.urgent { --ring: #d9485f; }
+.g-timer.empty { visibility: hidden; }
+
+/* 카드들 (역할 카드, 결과, 쪽지) */
+.t-day .card { background: #fffaf0; border: 3px solid var(--line); box-shadow: 0 6px 0 #e2cfa9, 0 30px 60px rgba(60,40,20,.35); }
+.t-day .overlay { background: rgba(70,50,30,.45); }
+.t-day .rc-name, .t-day .res-big.win { color: #9b6438; text-shadow: 0 3px 0 #f3dfb4; }
+.t-day .res-table td { border-bottom: 1px dashed var(--line); }
+.t-day .res-table tr.self { background: #fff3cf; }
+
+/* ───────────────────────── 재판장 ───────────────────────── */
+.t-trial {
+  --panel: rgba(18, 24, 62, .92);
+  --panel2: #1d2766;
+  --line: #3a4aa0;
+  --text: #e9edff;
+  --dim: #a3aedb;
+  --gold: #cfe0ff;
+  --gold2: #8fa6ff;
+  color: var(--text);
+}
+.game-screen.t-trial { background: radial-gradient(ellipse at 50% -10%, #3a4bb0 0%, #121845 45%, #070a1f 100%); }
+.t-trial .g-cols { gap: 12px; padding: 12px; }
+.t-trial .g-top { background: linear-gradient(#18205a, #0f1440); border-bottom: 2px solid #5e72d6; box-shadow: 0 0 24px rgba(120,150,255,.35); }
+.t-trial .g-plist, .t-trial .g-panel, .t-trial .g-center {
+  background: rgba(16, 22, 60, .78); border: 1px solid rgba(150,170,255,.35); border-radius: 22px; box-shadow: inset 0 0 30px rgba(120,150,255,.12); overflow: hidden;
+}
+.t-trial .g-plist, .t-trial .g-panel { overflow-y: auto; }
+.t-trial .phase-pill { background: linear-gradient(#e9efff, #b9c7ff); color: #18205a; box-shadow: 0 0 18px rgba(170,190,255,.8); font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 26px; }
+.t-trial .day-label { color: #cfe0ff; }
+.t-trial .g-p { background: rgba(255,255,255,.05); border: 1px solid rgba(150,170,255,.2); }
+.t-trial .g-p.self { border-color: #cfe0ff; }
+.t-trial .gl-event { color: #eef2ff; background: rgba(120,150,255,.18); border: 1px solid rgba(170,190,255,.4); }
+.t-trial .gl-chat.ch-defense { color: #fff; }
+.t-trial .ph-title { font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; color: #eef2ff; text-shadow: 0 0 12px rgba(170,190,255,.8); }
+.t-trial .pbtn { background: rgba(255,255,255,.06); border: 2px solid rgba(170,190,255,.4); color: #fff; min-height: 70px; justify-content: center; position: relative; }
+.t-trial .pbtn:hover { border-color: #fff; box-shadow: 0 0 16px rgba(170,190,255,.6); }
+.t-trial .pbtn.sel, .t-trial .btn.sel { background: rgba(217,72,95,.25) !important; border-color: #ff8a9c !important; }
+.t-trial .btn { background: rgba(255,255,255,.06); border-color: rgba(170,190,255,.4); }
+.t-trial .btn.big.mafia { background: linear-gradient(#e55a70, #a92c44); border-color: #ff9aaa; color: #fff; }
+.t-trial .chat-in { background: rgba(255,255,255,.08); border-color: rgba(170,190,255,.4); color: #fff; border-radius: 22px; }
+.t-trial .g-timer { --ring: #cfe0ff; --clock-face: #121845; --clock-text: #eef2ff; }
+.t-trial .g-chatrow { border-top: 1px solid rgba(150,170,255,.25); }
+
+/* ───────────────────────── 밤 ───────────────────────── */
+.t-night { --ring: #ffd27a; --clock-face: #0e1838; --clock-text: #ffe6b0; }
+.game-screen.t-night { background: #060b1f; }
+.t-night .g-top { background: linear-gradient(#0f1a40, #0a1230); border-bottom: 1px solid #23356e; }
+.t-night .phase-pill.night { background: #1d2c66; color: #ffe6b0; box-shadow: 0 0 14px rgba(255,210,122,.35); font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 26px; }
+.g-night { background: #060b1f; }
+.n-side { background: linear-gradient(#0e1838, #0a1128) !important; border-left: 1px solid #23356e !important; }
+.n-title { font-family: 'Jua', 'Noto Sans KR', sans-serif; color: #ffe6b0; }
+.n-step span { color: #6f7fb5; }
+.n-step .on { color: #ffe6b0; }
+.n-status { background: rgba(255,210,122,.08) !important; border: 1px solid rgba(255,210,122,.25); color: #ffe6b0 !important; }
+.n-log .nl { color: #c8d3ff; }
+.n-door .btn.gold { background: linear-gradient(#ffe29a, #f0b240); box-shadow: 0 0 30px rgba(255,210,122,.6); }
+
+/* 작은 화면 */
+#stage.compact .t-day .g-cols, #stage.compact .t-trial .g-cols { gap: 8px; padding: 8px; }
+#stage.compact .g-timer { width: 48px; height: 48px; font-size: 19px; }

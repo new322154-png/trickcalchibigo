@@ -67,7 +67,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   };
   chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } else if (e.key === 'Escape') chatIn.blur(); });
 
-  const screen = h('div.room',
+  const screen = h('div.room.t-day',
     h('div.r-top',
       codeEl, countEl, h('div.spacer'),
       h('button.btn.small', { onclick: () => playSolo() }, '🎮 혼자 놀기'),

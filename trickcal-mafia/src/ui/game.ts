@@ -52,6 +52,7 @@ export class GameUI {
   private farm: Farm | null = null;
   private scene: Scene;
   private lastKey = '';
+  private phaseTotal = 1;
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
     this.chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); } });
@@ -100,6 +101,9 @@ export class GameUI {
       if (v.phase === 'vote1' || v.phase === 'vote2') sfx('gavel');
     }
     this.scene.update(v);
+    const theme = v.phase === 'night' ? 't-night' : v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict' ? 't-trial' : 't-day';
+    if (!this.el.classList.contains(theme)) { this.el.classList.remove('t-day', 't-trial', 't-night'); this.el.classList.add(theme); }
+    if (prevPhase !== v.phase || prevStep !== v.step) this.phaseTotal = Math.max(1, this.left());
     this.renderTop();
     this.renderPlayers();
     this.renderChat();
@@ -144,8 +148,10 @@ export class GameUI {
   private renderTimer() {
     if (!this.v) return;
     const l = this.left();
-    this.timerEl.textContent = this.v.phase === 'end' ? '' : `⏱ ${l}초`;
+    this.timerEl.replaceChildren(h('span', this.v.phase === 'end' ? '' : String(l)));
+    this.timerEl.classList.toggle('empty', this.v.phase === 'end');
     this.timerEl.classList.toggle('urgent', l <= 5);
+    this.timerEl.style.setProperty('--p', String(Math.max(0, Math.min(1, l / this.phaseTotal))));
     const nt = this.nightEl.querySelector('.n-timer');
     if (nt) nt.textContent = `${l}초`;
     this.corridor?.timer(l);
