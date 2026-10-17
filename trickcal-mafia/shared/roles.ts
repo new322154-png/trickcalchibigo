@@ -47,7 +47,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   },
   uros: {
     id: 'uros', char: '우로스', job: '부활', team: 'mafia', member: true,
-    desc: '니펠도 우로스를 모른다. 니펠에게 습격당해 죽으면, 그 뒤 3번째 밤에 되살아나 니펠로 합류한다.',
+    desc: '니펠도 우로스를 모른다. 니펠에게 습격당해 죽으면, 그 뒤 3번째 밤에 되살아나 니펠로 합류한다. (되살아나는 순간 정체가 드러난다)',
   },
   joan: {
     id: 'joan', char: '죠안', job: '선동', team: 'mafia', member: true, once: true,
@@ -84,12 +84,12 @@ export const ROLES: Record<RoleId, RoleDef> = {
     desc: '한 번, 결선 투표로 정해진 처형을 무효로 만든다.',
   },
   trap: {
-    id: 'trap', char: '디아나(왕년)', job: '함정', team: 'citizen',
-    desc: '습격을 한 번 버티고, 습격한 니펠 한 명의 정체를 아침에 모두에게 알린다.',
+    id: 'trap', char: '디아나(왕년)', job: '반격', team: 'citizen',
+    desc: '습격을 한 번 반격해서 막아낸다. 막아내는 순간 디아나의 정체가 모두에게 드러나고, 다시는 쓸 수 없다.',
   },
   avenger: {
     id: 'avenger', char: '마리', job: '길동무', team: 'citizen',
-    desc: '투표로 처형당하면 한 명을 골라 함께 데려간다. 밤에 습격당해 죽으면 자신을 찍은 니펠 중 한 명과 함께 폭사한다.',
+    desc: '투표로 처형당하면 한 명을 골라 함께 데려간다. 밤에 습격당해 죽으면 자신을 찍은 니펠 중 한 명과 함께 폭사한다. (폭사하면 마리의 정체가 드러난다)',
   },
   spiky: {
     id: 'spiky', char: '스피키', job: '변장', team: 'citizen', night: 'disguise', once: true,

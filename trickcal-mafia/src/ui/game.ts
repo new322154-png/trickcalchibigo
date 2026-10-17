@@ -181,6 +181,7 @@ export class GameUI {
       const m = this.memo.get(p.pid) ?? 0;
       const tags: (HTMLElement | string)[] = [];
       if (p.pid === this.myPid) tags.push(h('span.tag.me', '나'));
+      if (p.shown) tags.push(h(`span.tag.reveal.${ROLES[p.shown as RoleId]?.team ?? ''}`, `정체: ${roleName(p.shown as RoleId)}`));
       if (v.me.mates.includes(p.pid)) tags.push(h('span.tag.mafia', '동료'));
       if (m) tags.push(h(`span.tag.memo.m${m}`, MEMO[m]));
       if (!p.online && p.alive) tags.push(h('span.tag', '연결 끊김'));

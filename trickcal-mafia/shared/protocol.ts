@@ -120,7 +120,7 @@ export type ChoiceKey = 'bat' | 'overturn' | 'avenge' | 'agitate';
 export type Winner = 'mafia' | 'citizen' | 'jester' | 'elena' | 'draw';
 export type Phase = 'intro' | 'night' | 'morning' | 'day' | 'vote1' | 'defense' | 'vote2' | 'verdict' | 'end';
 
-export interface GPlayer { pid: number; name: string; alive: boolean; online: boolean }
+export interface GPlayer { pid: number; name: string; alive: boolean; online: boolean; /** 모두에게 공개된 직업 */ shown?: string }
 
 /** 주말농장 크기 */
 export const FARM_W = 1600;
