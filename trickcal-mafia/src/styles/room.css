@@ -289,3 +289,11 @@
 @keyframes cutFall { to { transform: translateY(40%) rotate(-12deg); opacity: 0; filter: grayscale(1); } }
 .bot-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
 .tag.bot { background: #4a5a8a; color: #fff; }
+.test-box { margin: 4px 0; padding: 6px 8px; border: 1px dashed rgba(120,140,220,.6); border-radius: 10px; display: flex; flex-direction: column; gap: 6px; }
+.test-sel { width: 100%; font: inherit; font-size: 16px; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,.2); background: #fff; color: #222; }
+.test-speed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.test-box .test-speed .btn.on { background: var(--gold); color: #2a1a05; font-weight: 800; box-shadow: inset 0 0 0 2px #2a1a05; }
+.test-box summary { cursor: pointer; font-size: 15px; font-weight: 700; color: #4a5a8a; }
+.test-box[open] summary { margin-bottom: 4px; }
+.time-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.time-used { margin-top: 10px; font-size: 15px; }

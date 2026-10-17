@@ -123,7 +123,7 @@ export class GameUI {
     this.el.classList.toggle('walking', this.scene.walkingNow);
     const theme = v.phase === 'night' ? 't-night' : v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict' ? 't-trial' : 't-day';
     if (!this.el.classList.contains(theme)) { this.el.classList.remove('t-day', 't-trial', 't-night'); this.el.classList.add(theme); }
-    if (prevPhase !== v.phase || prevStep !== v.step) this.phaseTotal = Math.max(1, this.left());
+    if (prevPhase !== v.phase || prevStep !== v.step || this.left() > this.phaseTotal) this.phaseTotal = Math.max(1, this.left());
     this.renderTop();
     this.renderPlayers();
     this.renderChat();
@@ -272,6 +272,12 @@ export class GameUI {
       case 'day': {
         head('☀ 낮 — 토론', '채팅으로 토론하세요. 왼쪽 목록을 눌러 메모를 남길 수 있어요.');
         if (me.notesLeft > 0) this.panel.append(h('button.btn.wide', { onclick: () => this.noteForm() }, `✉ 익명 쪽지 보내기 (${me.notesLeft})`));
+        if (me.canTime) {
+          const t = (d: 1 | -1) => () => { sfx('click'); this.link.send({ t: 'time', d }); };
+          this.panel.append(h('div.time-btns',
+            h('button.btn.small', { onclick: t(-1), title: '오늘 한 번, 토론 시간을 15초 줄여요' }, '⏬ 시간 단축 −15초'),
+            h('button.btn.small', { onclick: t(1), title: '오늘 한 번, 토론 시간을 15초 늘려요' }, '⏫ 시간 연장 +15초')));
+        } else if (me.alive) this.panel.append(h('div.dim.time-used', '오늘 시간 조절을 이미 썼어요.'));
         break;
       }
       case 'vote1': {

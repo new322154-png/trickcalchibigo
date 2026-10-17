@@ -17,6 +17,24 @@ import {
   FARM_H, FARM_W, PLAZA, STEP_SECONDS, plazaPhase, type C2S, type CutKind, type ChatCh, type ChoiceKey, type GameView, type LogCh, type Phase, type S2C, type Winner,
 } from './protocol';
 
+/** 토론 시간 늘리기/줄이기 한 번에 몇 초 */
+const TIME_STEP = 15;
+
+/** 테스트 모드: 고른 직업을 그 자리에 넣는다. 이미 있으면 맞바꾸고, 없으면 같은 갈래의 직업과 바꿔 인원 구성을 지킨다 */
+function placeRole(roles: RoleId[], at: number, want: RoleId) {
+  if (at < 0) return;
+  const has = roles.indexOf(want);
+  if (has >= 0) { [roles[at], roles[has]] = [roles[has], roles[at]]; return; }
+  const group = (r: RoleId) => (MEMBER_POOL.includes(r) ? 'm' : CITIZEN_POOL.includes(r) ? 'c' : NEUTRAL_POOL.includes(r) ? 'n' : r);
+  // 같은 갈래 → 시민 무작위 → 아무거나(니펠 제외) 순서로 바꿀 자리를 찾는다
+  let swap = roles.findIndex((r) => group(r) === group(want));
+  if (swap < 0) swap = roles.findIndex((r) => group(r) === 'c');
+  if (swap < 0) swap = roles.findIndex((r) => r !== 'nifel');
+  if (swap < 0) return;
+  roles[swap] = want;
+  [roles[at], roles[swap]] = [roles[swap], roles[at]];
+}
+
 export interface GameHost {
   send(pid: number, msg: S2C): void;
   later(ms: number, fn: () => void): unknown;
@@ -39,6 +57,7 @@ interface GP {
   /** 모두에게 공개된 직업 */
   revealedAs?: RoleId;
   notesLeft: number;
+  timeUsed?: boolean;
   /** 우로스: 되살아난 뒤 니펠 */
   urosAwake: boolean;
   /** 우로스: 되살아날 밤 */
@@ -99,7 +118,11 @@ export class MafiaGame {
     };
   }
 
-  constructor(private host: GameHost, seats: { pid: number; name: string }[]) {
+  /** 테스트 모드 배속 (2 = 두 배 빠르게) */
+  private pace = 1;
+  private testNote = '';
+
+  constructor(private host: GameHost, seats: { pid: number; name: string }[], test?: { pid: number; role?: RoleId; speed?: number }) {
     const n = seats.length;
     const [nifel, members, rnd, neutrals] = COMPOSITION[n];
     const forced = (globalThis as { __MAFIA_ROLES?: RoleId[] }).__MAFIA_ROLES; // 테스트용 직업 고정
@@ -110,6 +133,11 @@ export class MafiaGame {
       ...shuffle(CITIZEN_POOL).slice(0, rnd),
       ...shuffle(NEUTRAL_POOL).slice(0, neutrals),
     ]);
+    if (test) {
+      if (test.speed && test.speed >= 1 && test.speed <= 8) this.pace = test.speed;
+      if (test.role && test.role in ROLES) placeRole(roles, seats.findIndex((s) => s.pid === test.pid), test.role);
+      this.testNote = `🧪 테스트 모드${test.role ? ` · 내 직업 ${roleName(test.role)}` : ''}${this.pace > 1 ? ` · ${this.pace}배속` : ''}`;
+    }
     seats.forEach((s, i) => this.ps.set(s.pid, {
       pid: s.pid, name: s.name, role: roles[i], alive: true, online: true,
       contacted: false, usedOnce: false, shieldUsed: false, revealed: false, notesLeft: 1,
@@ -201,6 +229,7 @@ export class MafiaGame {
         teamVotes: killer && this.step === 2 ? [...this.killVotes] : undefined,
         chats: this.chatsOf(p),
         notesLeft: this.phase === 'day' && p.alive ? p.notesLeft : 0,
+        canTime: this.phase === 'day' && p.alive && !p.timeUsed,
         vote: this.votes.has(pid) ? this.votes.get(pid) : undefined,
         canVote: p.alive && ((this.phase === 'vote1') || (this.phase === 'vote2' && !this.cands.includes(pid))),
         prompt: prompt ? { key: prompt.key, options: prompt.options, text: prompt.text } : null,
@@ -251,13 +280,14 @@ export class MafiaGame {
   // ── 진행 ─────────────────────────────────────────
 
   private timer(sec: number, fn: () => void) {
-    const k = (globalThis as { __MAFIA_SPEED?: number }).__MAFIA_SPEED ?? 1; // 테스트용 시간 배속
+    const k = ((globalThis as { __MAFIA_SPEED?: number }).__MAFIA_SPEED ?? 1) / this.pace; // 테스트용 시간 배속
     this.endsAt = Date.now() + sec * 1000 * k;
     this.host.later(sec * 1000 * k, fn);
   }
 
   start() {
     this.phase = 'intro';
+    if (this.testNote) this.logAll('sys', this.testNote);
     for (const p of this.all()) {
       const mates = this.matesOf(p);
       this.secret(p.pid, `당신은 ${label(p.role)}입니다. ${ROLES[p.role].desc}`);
@@ -549,7 +579,7 @@ export class MafiaGame {
       this.logAll('event', `📜 저택의 계시: ${p.name}의 직업은 ${label(r.role)}이다.`);
     }
     this.quietDays = m.deaths.length ? 0 : this.quietDays + 1;
-    for (const p of this.all()) p.notesLeft = 1;
+    for (const p of this.all()) { p.notesLeft = 1; p.timeUsed = false; }
     if (this.checkWin()) return;
     // 박쥐
     const bat = this.alive().find((p) => p.role === 'bat' && !p.batSide);
@@ -817,6 +847,21 @@ export class MafiaGame {
       case 'drone':
         if (this.phase === 'night' && p.alive && p.role === 'elena' && p.droneTries > 0) { this.tryDrone(p, true); this.push(pid); }
         break;
+      case 'time': {
+        // 토론 시간 늘리기/줄이기: 한 사람이 하루 한 번, 15초씩
+        if (this.phase !== 'day' || !p.alive || p.timeUsed) return;
+        const d = msg.d === 1 ? 1 : -1;
+        const k = ((globalThis as { __MAFIA_SPEED?: number }).__MAFIA_SPEED ?? 1) / this.pace;
+        const left = this.endsAt - Date.now();
+        const next = d > 0 ? left + TIME_STEP * 1000 * k : Math.max(3000 * k, left - TIME_STEP * 1000 * k);
+        p.timeUsed = true;
+        this.host.clearTimers();
+        this.endsAt = Date.now() + next;
+        this.host.later(next, () => this.startVote1());
+        this.logAll('sys', d > 0 ? `⏫ ${p.name}님이 토론 시간을 ${TIME_STEP}초 늘렸다.` : `⏬ ${p.name}님이 토론 시간을 ${TIME_STEP}초 줄였다.`);
+        this.push();
+        break;
+      }
       case 'pmove': {
         if (!plazaPhase(this.phase) || !p.alive) return;
         const x = Number(msg.x), y = Number(msg.y);

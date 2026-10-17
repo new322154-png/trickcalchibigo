@@ -11,6 +11,7 @@ import { playMatch } from '../mini/match';
 import { connect, type RoomLink } from '../net';
 import { GameUI } from './game';
 import { AUTO_START, GAME_MIN } from '../../shared/protocol';
+import { ROLES, roleName, type RoleId } from '../../shared/roles';
 import { charImg, type Profile } from '../profile';
 import { bgUrl, clear, h, setCompact } from './dom';
 import { MoveInput, isTouch } from './input';
@@ -253,9 +254,32 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         pub ? '' : h('div.bot-btns',
           h('button.btn.small', { disabled: n >= MAX_PLAYERS, title: '빈자리를 봇으로 채워 혼자서도 시험해 볼 수 있어요', onclick: () => link.send({ t: 'add_bot' }) }, '🤖 봇 추가'),
           h('button.btn.small', { disabled: ![...avatars.values()].some((a) => a.info.bot), onclick: () => link.send({ t: 'remove_bot' }) }, '봇 빼기')),
-        h('button.btn.gold.wide', { disabled: n < GAME_MIN || !!mini, onclick: () => link.send({ t: 'start_game' }) }, n < GAME_MIN ? `게임 시작 (${GAME_MIN}명부터)` : `게임 시작 (${n}명)`),
+        soloTest(),
+        h('button.btn.gold.wide', { disabled: n < GAME_MIN || !!mini, onclick: () => link.send({ t: 'start_game', ...(isSolo() ? { test: { role: testRole || undefined, speed: testSpeed } } : {}) }) }, n < GAME_MIN ? `게임 시작 (${GAME_MIN}명부터)` : `게임 시작 (${n}명)`),
       );
     } else hostBar.append(h('div.dim', '방장이 미니게임이나 게임을 시작할 수 있어요.'));
+  }
+
+  // ── 테스트 설정 (방장 혼자 + 봇일 때만) ──
+  let testRole = '';
+  let testSpeed = 1;
+  let testOpen = false;
+  function isSolo() {
+    const all = [...avatars.values()];
+    return !pub && all.length > 1 && all.every((a) => a.info.id === me || a.info.bot);
+  }
+  function soloTest() {
+    if (!isSolo()) return '';
+    const sel = h('select.test-sel', { onchange: (e: Event) => { testRole = (e.target as HTMLSelectElement).value; refresh(); } },
+      h('option', { value: '' }, '내 직업: 무작위'),
+      ...(['mafia', 'citizen', 'neutral'] as const).map((team) => h('optgroup', { label: { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[team] },
+        ...Object.values(ROLES).filter((r) => r.team === team).map((r) => h('option', { value: r.id }, `${roleName(r.id as RoleId)} · ${r.job}`)))));
+    (sel as HTMLSelectElement).value = testRole;
+    const sp = h('div.test-speed', ...[1, 2, 4].map((k) => h(`button.btn.small${k === testSpeed ? '.on' : ''}`, { onclick: () => { testSpeed = k; refresh(); } }, `${k}배속`)));
+    const box = h('details.test-box', h('summary', `🧪 테스트 설정 — ${testRole ? roleName(testRole as RoleId) : '직업 무작위'} · ${testSpeed}배속`), sel, sp) as HTMLDetailsElement;
+    box.open = testOpen;
+    box.addEventListener('toggle', () => { testOpen = box.open; });
+    return box;
   }
 
   // ── 미니게임 표시 ──

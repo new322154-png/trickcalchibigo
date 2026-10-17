@@ -63,7 +63,8 @@ export type C2S =
   | { t: 'press' }
   | { t: 'ping' }
   // ── 마피아 본게임 ──
-  | { t: 'start_game' }
+  | { t: 'start_game'; test?: { role?: string; speed?: number } }
+  | { t: 'time'; d: 1 | -1 }
   | { t: 'add_bot' }
   | { t: 'remove_bot' }
   | { t: 'act'; target: number | null }
@@ -154,6 +155,8 @@ export interface GameView {
     teamVotes?: [number, number | null][];
     chats: ChatCh[];
     notesLeft: number;
+    /** 오늘 토론 시간 늘리기/줄이기를 아직 쓸 수 있는지 */
+    canTime?: boolean;
     vote: number | null | undefined;
     canVote: boolean;
     prompt: { key: ChoiceKey; options: (number | string)[]; text: string } | null;

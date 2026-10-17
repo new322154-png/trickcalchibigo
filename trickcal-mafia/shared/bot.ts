@@ -143,6 +143,8 @@ export class BotBrain {
         chat(line, 'day');
       });
     }
+    // 가끔 토론 시간 조절 (주로 단축)
+    if (v.phase === 'day' && me.canTime && Math.random() < 0.3) this.after(this.within(v, 5000, 40000), () => { if (this.v?.phase === 'day' && this.v.me.canTime) this.send({ t: 'time', d: Math.random() < 0.7 ? -1 : 1 }); });
     if (v.phase === 'defense' && me.chats.includes('defense')) this.after(rnd(1500, 8000), () => { if (this.v?.phase === 'defense') chat(pick(DEFENSE), 'defense'); });
   }
 

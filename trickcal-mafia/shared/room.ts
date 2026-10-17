@@ -6,6 +6,7 @@
 import { QUIZ } from './quiz';
 import { MafiaGame } from './mafia';
 import { BotBrain } from './bot';
+import { ROLES, type RoleId } from './roles';
 import {
   AUTO_START, GAME_MIN, CHARACTERS, MAX_PLAYERS, SPEED, WALK_TOP, WORLD_H, WORLD_W, clamp, isChar,
   type C2S, type Chair, type MiniId, type MiniState, type PlayerInfo, type S2C, MINI_NAMES,
@@ -209,7 +210,7 @@ export class RoomCore {
       case 'start_game':
         if (!p.host) return p.conn.send({ t: 'error', text: '방장만 게임을 시작할 수 있어요.' });
         if (this.players.size < GAME_MIN) return p.conn.send({ t: 'error', text: `${GAME_MIN}명 이상 모여야 시작할 수 있어요.` });
-        this.startGame();
+        this.startGame(p.id, msg.test);
         break;
       case 'move': {
         const x = Number(msg.x), y = Number(msg.y);
@@ -285,8 +286,17 @@ export class RoomCore {
     }
   }
 
-  private startGame() {
+  /** 혼자서 봇들과 하는 판인지 (테스트 설정을 쓸 수 있음) */
+  soloWithBots(hostId: number) {
+    return !this.pub && [...this.players.values()].every((p) => p.id === hostId || p.bot) && this.players.size > 1;
+  }
+
+  private startGame(by?: number, test?: { role?: string; speed?: number }) {
     if (this.game) return;
+    // 테스트 설정은 방장 혼자 + 봇일 때만 (사람끼리 하는 판에서 직업 고르기 방지)
+    const t = by !== undefined && test && this.soloWithBots(by)
+      ? { pid: by, role: test.role && test.role in ROLES ? (test.role as RoleId) : undefined, speed: Math.max(1, Math.min(8, Number(test.speed) || 1)) }
+      : undefined;
     if (this.autoTimer) { clearTimeout(this.autoTimer); this.autoTimer = null; this.autoAt = null; }
     this.endMini(true);
     const seats = [...this.players.values()].filter((p) => p.online).sort((a, b) => a.joinedAt - b.joinedAt).slice(0, 12);
@@ -298,7 +308,7 @@ export class RoomCore {
       later: (ms, fn) => this.later(ms, fn),
       clearTimers: () => this.clearTimers(),
       onEnd: () => this.endGame(),
-    }, named);
+    }, named, t);
     this.broadcast({ t: 'starting', at: null });
     this.status();
     this.game.start();
