@@ -15,7 +15,9 @@ import { playCut, preloadCuts } from './cut';
 import { sfx } from './sfx';
 
 /** 밤 복도 (배경 2172×724 → 높이 900 기준) */
-const CW = 2700, CH = 900, WALL = 500, FLOOR0 = 540, FLOOR1 = 800;
+const CW = 2700, CH = 900, WALL = 374, FLOOR0 = 398, FLOOR1 = 676;
+/** 배경 속 기둥 위치 (문은 기둥 사이 칸에 들어간다) */
+const PILLARS = [99, 621, 1144, 1678, 2195, 2672];
 const STEP_NAMES = ['', '① 뮤트 · 스피키', '② 니펠', '③ 그 밖의 능력'];
 const ACT_LABEL: Record<string, string> = {
   kill: '습격', seal: '해킹', disguise: '변장', protect: '지키기', investigate: '조사', track: '지켜보기', reveal: '직업 공개', identify: '직업 알아내기', revive: '소원 빌기',
@@ -99,7 +101,7 @@ export class GameUI {
       const mine = m.kind.startsWith('p_');
       sfx(m.kind === 'execute' || m.kind === 'vanish' || m.kind === 'blast' ? 'death' : mine ? 'secret' : 'gavel');
       const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? maskImg(m.pid) : ANON;
-      playCut(this.el, m.kind, m.text, fb);
+      playCut(this.el, m.kind, m.text, fb, { n: m.n });
     }
   }
 
@@ -494,20 +496,29 @@ class Corridor {
     this.world.style.setProperty('--cw-bg', bgUrl('corridor.webp'));
     const ids = v.players.map((p) => p.pid);
     const n = ids.length;
+    // 기둥 사이 5칸에 고르게 나눠 배치
+    const bays = PILLARS.length - 1;
+    const slots: number[] = [];
+    for (let b = 0; b < bays; b++) {
+      const cnt = Math.floor(n / bays) + (b < n % bays ? 1 : 0);
+      const l = PILLARS[b] + 70, r = PILLARS[b + 1] - 70;
+      for (let k = 0; k < cnt; k++) slots.push(l + ((r - l) * (k + 0.5)) / cnt);
+    }
     ids.forEach((pid, i) => {
-      const x = 200 + ((CW - 400) * (i + 0.5)) / n;
+      const x = slots[i];
       const p = v.players.find((q) => q.pid === pid)!;
       const el = h(`div.c-door${p.alive ? '' : '.dead'}${pid === myPid ? '.mine' : ''}`, { style: { left: x + 'px', top: WALL + 'px' } },
-        h('div.c-plate', pid === myPid ? '내 방' : p.name), h('div.c-leaf'));
+        h('div.c-frame', h('div.c-leaf.l'), h('div.c-leaf.r')), h('div.c-plate', pid === myPid ? '내 방' : p.name), h('div.c-shadow'));
       this.world.appendChild(el);
-      this.doors.push({ pid, x, y: FLOOR0 + 30, el });
+      this.doors.push({ pid, x, y: FLOOR0 + 20, el });
     });
     const mine = this.doors.find((d) => d.pid === myPid);
     if (mine) this.x = mine.x;
-    this.y = FLOOR0 + 60;
+    this.y = FLOOR0 + 50;
     this.me = h('div.ch.me', h('div.ch-body', img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?')), h('div.ch-shadow'), h('div.ch-name', '나'));
     this.world.appendChild(this.me);
-    this.view = h('div.cw-wrap', this.world);
+    this.world.append(h('div.cw-dust'));
+    this.view = h('div.cw-wrap', this.world, h('div.cw-vignette'));
     this.wrap = h('div.corridor',
       this.view,
       h('div.c-hud', this.info, this.timerEl),

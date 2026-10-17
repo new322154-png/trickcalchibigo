@@ -185,7 +185,7 @@ export class MafiaGame {
   /** 나만 보는 컷씬 */
   private pcut(pid: number, kind: CutKind, text: string) { this.host.send(pid, { t: 'cut', kind, text }); }
   private killCut = new Set<number>();
-  private cutAll(kind: CutKind, text: string, pid?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text }); }
+  private cutAll(kind: CutKind, text: string, pid?: number, n?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text, n }); }
 
   view(pid: number): GameView {
     const p = this.ps.get(pid)!;
@@ -472,7 +472,7 @@ export class MafiaGame {
     this.startMorning();
   }
 
-  private tryDrone(p: GP) {
+  private tryDrone(p: GP, manual = false) {
     if (p.droneTries <= 0 || p.drones >= DRONE_MAX) { p.droneTries = 0; return; }
     p.droneTries--;
     p.droneTotal++;
@@ -481,9 +481,13 @@ export class MafiaGame {
       p.drones++;
       this.morning.drone = true;
       this.secret(p.pid, `🛸 드론 조립 성공! 이제 투표권 ${1 + p.drones}개.`);
+      if (manual) this.pcut(p.pid, 'p_drone_ok', `드론 ${p.drones}호기 완성!`);
       if (p.drones >= DRONE_MAX) p.droneTries = 0;
       this.checkWin();
-    } else this.secret(p.pid, `🔧 조립 실패… (오늘 밤 남은 기회 ${p.droneTries})`);
+    } else {
+      this.secret(p.pid, `🔧 조립 실패… (오늘 밤 남은 기회 ${p.droneTries})`);
+      if (manual) this.pcut(p.pid, 'p_drone_fail', `실패… (남은 기회 ${p.droneTries})`);
+    }
   }
 
   /** 모두에게 정체 공개 */
@@ -509,9 +513,10 @@ export class MafiaGame {
     const m = this.morning;
     this.logAll('event', `☀ ${this.day}일째 아침`);
     const blasted = new Set(m.blasts.map(([mari]) => mari));
+    const before = this.alive().length;
     for (const d of m.deaths) {
       this.kill(d, 'night');
-      if (!blasted.has(d)) { this.cutAll('vanish', `${this.name(d)} 실종`, d); this.logAll('event', `💀 어젯밤 ${this.name(d)}가 사라졌다.`); }
+      if (!blasted.has(d)) { this.cutAll('vanish', `${this.name(d)}가 사라졌다!`, d, before); this.logAll('event', `💀 어젯밤 ${this.name(d)}가 사라졌다.`); }
     }
     for (const [mari, nifel] of m.blasts) {
       this.kill(nifel, 'blast');
@@ -810,7 +815,7 @@ export class MafiaGame {
         this.answer(pid, msg.key, msg.value);
         break;
       case 'drone':
-        if (this.phase === 'night' && p.alive && p.role === 'elena' && p.droneTries > 0) { this.tryDrone(p); this.push(pid); }
+        if (this.phase === 'night' && p.alive && p.role === 'elena' && p.droneTries > 0) { this.tryDrone(p, true); this.push(pid); }
         break;
       case 'pmove': {
         if (!plazaPhase(this.phase) || !p.alive) return;

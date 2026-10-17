@@ -104,7 +104,7 @@ export type S2C =
   /** 낮 광장(나무 아래) 위치 — 화면 배경 기준 %(0~100) */
   | { t: 'pmove'; pid: number; x: number; y: number }
   /** 모두가 보는 컷씬 (처형 등) */
-  | { t: 'cut'; kind: CutKind; pid?: number; text: string }
+  | { t: 'cut'; kind: CutKind; pid?: number; text: string; /** 실종: 어젯밤 살아 있던 인원 */ n?: number }
   | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[] };
 
 // ── 마피아 본게임 ─────────────────────────────────
@@ -116,7 +116,8 @@ export const STEP_SECONDS = 15;
 /** 모두가 보는 컷씬 */
 export type CutKind = 'execute' | 'overturn' | 'vanish' | 'saved' | 'counter' | 'blast' | 'wish' | 'uros' | 'drone' | 'reveal'
   // 능력 쓴 사람만 보는 컷씬
-  | 'p_kill' | 'p_seal' | 'p_identify' | 'p_agitate' | 'p_protect' | 'p_investigate' | 'p_track' | 'p_disguise' | 'p_farm' | 'p_bat' | 'p_contact';
+  | 'p_kill' | 'p_seal' | 'p_identify' | 'p_agitate' | 'p_protect' | 'p_investigate' | 'p_track' | 'p_disguise' | 'p_farm' | 'p_bat' | 'p_contact'
+  | 'p_drone_ok' | 'p_drone_fail';
 export type ChatCh = 'day' | 'nifel' | 'dead' | 'defense';
 export type LogCh = ChatCh | 'sys' | 'secret' | 'note' | 'event';
 export type ChoiceKey = 'bat' | 'overturn' | 'avenge' | 'agitate';

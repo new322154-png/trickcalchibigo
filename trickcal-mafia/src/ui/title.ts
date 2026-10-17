@@ -39,10 +39,7 @@ export function showTitle(root: HTMLElement, act: TitleActions) {
   const screen = h('div.title.tt',
     day, night, seam, floor,
     chip,
-    h('div.tt-logo',
-      h('div.tt-kicker', 'TRICKCAL · MASQUERADE'),
-      h('h1.tt-name', '트릭컬 마피아'),
-      h('div.tt-sub', '가면 속 거짓말쟁이를 찾아라 — 4~12인 온라인 마피아')),
+    logo(),
     h('div.tt-menu',
       h('button.tt-btn.main', { onclick: quick }, h('small', 'QUICK MATCH'), h('b', '빠른 매칭')),
       h('button.tt-btn', { onclick: () => { sfx('click'); roomMenu(root, () => profile, act, busy); } }, h('small', 'PRIVATE ROOM'), h('b', '방 만들기 · 코드 입장')),
@@ -169,4 +166,23 @@ export function showRules(root: HTMLElement) {
     ),
   );
   root.appendChild(modal);
+}
+
+/** 로고: 글자 하나씩 떨어져 내려와 통통 튀고, 마지막에 가면이 날아와 씌워진다 */
+function logo() {
+  // [파일, 원본 기준 x, 너비] — 글자 조각은 public/assets/ui/logo/
+  const top: [string, number, number][] = [['t1', 25, 235], ['t2', 249, 186], ['t3', 446, 197]];
+  const bottom: [string, number, number][] = [['b1', 2, 354], ['b2', 331, 310], ['b3', 627, 354]];
+  const piece = (f: string, x: number, w: number, i: number, cls: string) => {
+    const src = asset(`ui/logo/${f}.webp`);
+    return h(`div.lg-ch.${cls}`, { style: `left:${x}px; width:${w}px; --i:${i}; --m: url("${new URL(src, location.href).href}")` },
+      h('img', { src, alt: '' }), h('div.lg-tint'), h('div.lg-shine'));
+  };
+  return h('div.tt-logo',
+    h('div.tt-kicker', 'TRICKCAL · MASQUERADE'),
+    h('h1.lg', { 'aria-label': '트릭컬 불피아' },
+      h('div.lg-row.top', ...top.map(([f, x, w], i) => piece(f, x, w, i, 'warm'))),
+      h('div.lg-row.bottom', ...bottom.map(([f, x, w], i) => piece(f, x, w, i + 3, i === 0 ? 'cool' : 'hot'))),
+      h('img.lg-mask', { src: asset('ui/logo/mask.webp'), alt: '' })),
+    h('div.tt-sub', '가면 속 거짓말쟁이를 찾아라 — 4~12인 온라인 마피아'));
 }

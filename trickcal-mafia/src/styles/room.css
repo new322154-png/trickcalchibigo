@@ -184,23 +184,38 @@
 .corridor { position: absolute; inset: 0; z-index: 50; background: #050409; }
 .cw-wrap { position: absolute; inset: 0; overflow: hidden; }
 .cw { position: absolute; left: 0; top: 0; width: 2700px; height: 900px; transform-origin: 0 0; background: var(--cw-bg) 0 0 / 100% 100% no-repeat, #1a2340; will-change: transform; }
-.c-door { position: absolute; width: 130px; height: 200px; margin: -200px 0 0 -65px; z-index: 1; }
-.c-door .c-leaf { position: absolute; inset: 34px 8px 0 8px; border-radius: 60px 60px 0 0; background: linear-gradient(90deg, #3d2a1e, #6b4a32 50%, #3d2a1e); box-shadow: inset 0 0 0 7px #24170f, 0 8px 18px rgba(0,0,0,.45); }
-.c-door .c-leaf::after { content: ''; position: absolute; right: 18px; top: 52%; width: 10px; height: 10px; border-radius: 50%; background: #e8c27a; box-shadow: 0 0 6px #e8c27a; }
-.c-plate { position: absolute; left: 50%; transform: translateX(-50%); top: 0; white-space: nowrap; font-size: 20px; font-weight: 700; background: #e8d6b0; color: #3b2b12; padding: 2px 10px; border-radius: 6px; z-index: 2; box-shadow: 0 3px 6px rgba(0,0,0,.4); }
-.c-door.mine .c-plate { background: var(--gold); }
-.c-door.dead { opacity: .4; filter: grayscale(1); }
-.c-door.near .c-leaf { box-shadow: inset 0 0 0 7px #24170f, 0 0 40px rgba(255,217,138,.9); }
-.c-door.chosen .c-plate { background: var(--mafia); color: #fff; }
-.c-hud { position: absolute; left: 20px; top: 16px; z-index: 5; background: rgba(10,7,18,.85); border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; font-size: 18px; max-width: 60%; }
+.c-door { position: absolute; width: 150px; height: 262px; margin: -262px 0 0 -75px; z-index: 1; }
+/* 돌 아치 문틀 + 나무 양문 */
+.c-frame { position: absolute; inset: 0; border-radius: 75px 75px 0 0; background: linear-gradient(90deg, #8a93b8, #b8c0dc 30%, #c7cee6 50%, #9aa3c6 75%, #737ca3); box-shadow: inset 0 0 0 3px rgba(40,46,80,.55), 0 10px 24px rgba(0,0,0,.45); padding: 16px 14px 0; display: flex; gap: 3px; }
+.c-frame::before { content: ''; position: absolute; left: 50%; top: 4px; width: 26px; height: 22px; margin-left: -13px; background: linear-gradient(#e7ecff, #9aa3c6); clip-path: polygon(50% 0, 100% 30%, 85% 100%, 15% 100%, 0 30%); }
+.c-leaf { position: relative; flex: 1; background: linear-gradient(90deg, #2c1c14, #5b3a26 40%, #6e4730 60%, #3a2519); box-shadow: inset 0 0 0 4px #1d120c, inset 0 -30px 40px rgba(0,0,0,.35); }
+.c-leaf.l { border-radius: 60px 0 0 0; }
+.c-leaf.r { border-radius: 0 60px 0 0; }
+.c-leaf::before { content: ''; position: absolute; left: 10px; right: 10px; top: 40%; bottom: 14px; border: 3px solid rgba(0,0,0,.35); border-radius: 4px; }
+.c-leaf.l::after, .c-leaf.r::after { content: ''; position: absolute; top: 52%; width: 9px; height: 9px; border-radius: 50%; background: #f0cf8c; box-shadow: 0 0 8px #f0cf8c; }
+.c-leaf.l::after { right: 7px; } .c-leaf.r::after { left: 7px; }
+.c-plate { position: absolute; left: 50%; top: 52px; transform: translateX(-50%); white-space: nowrap; font-size: 19px; font-weight: 800; color: #3b2b12; padding: 3px 12px; border-radius: 4px; z-index: 2;
+  background: linear-gradient(#f6e2ac, #d8b46a); box-shadow: 0 0 0 2px #7a5a24, 0 4px 8px rgba(0,0,0,.5); }
+.c-shadow { position: absolute; left: -10%; right: -10%; bottom: -18px; height: 26px; border-radius: 50%; background: radial-gradient(rgba(0,0,0,.5), transparent 70%); z-index: -1; }
+.c-door.mine .c-plate { background: linear-gradient(#ffe9a8, #f0b240); }
+.c-door.dead { filter: grayscale(1) brightness(.6); }
+.c-door.dead .c-plate::after { content: ' ✝'; }
+.c-door.near .c-frame { box-shadow: inset 0 0 0 3px rgba(40,46,80,.55), 0 0 0 4px #ffe6a0, 0 0 50px rgba(255,217,138,.9); }
+.c-door.near .c-leaf { background: linear-gradient(90deg, #3c2618, #7a5034 40%, #8a5c3c 60%, #4a3020); }
+.c-door.chosen .c-plate { background: linear-gradient(#ff8a9c, #d9304a); color: #fff; box-shadow: 0 0 0 2px #7a1020, 0 0 16px #ff3355; }
+.cw-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, transparent 45%, rgba(4,6,20,.7) 100%), linear-gradient(rgba(10,14,40,.35), transparent 35%); }
+.cw-dust { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,.5), transparent), radial-gradient(2px 2px at 30% 60%, rgba(255,255,255,.35), transparent), radial-gradient(1.5px 1.5px at 55% 35%, rgba(255,255,255,.45), transparent), radial-gradient(2px 2px at 75% 70%, rgba(255,255,255,.35), transparent), radial-gradient(1.5px 1.5px at 90% 25%, rgba(255,255,255,.4), transparent); background-size: 900px 900px; animation: dust 18s linear infinite; opacity: .7; }
+@keyframes dust { to { background-position: 300px -900px; } }
+.c-hud { position: absolute; left: 20px; top: 16px; z-index: 5; background: linear-gradient(135deg, rgba(20,24,58,.82), rgba(8,10,28,.72)); border: 1px solid rgba(160,180,255,.35); border-left: 4px solid var(--gold); border-radius: 4px 16px 16px 4px; padding: 10px 18px; font-size: 18px; max-width: 60%; box-shadow: 0 8px 26px rgba(0,0,0,.45); color: #e8ecff; }
 .c-hud b { font-size: 21px; }
 .c-votes { color: #ff9aa9; margin-top: 4px; }
 .c-timer { position: absolute; right: 18px; top: 10px; font-size: 26px; font-weight: 900; color: var(--gold); }
 .c-hud .c-timer { position: static; display: inline-block; margin-top: 4px; }
-.c-act { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 6; }
+.c-act { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 6; box-shadow: 0 0 0 3px rgba(255,230,160,.35), 0 0 30px rgba(255,210,120,.55); animation: actPulse 1.4s ease-in-out infinite; }
+@keyframes actPulse { 50% { box-shadow: 0 0 0 6px rgba(255,230,160,.15), 0 0 44px rgba(255,210,120,.8); } }
 .c-back { position: absolute; right: 20px; top: 16px; z-index: 6; }
 .c-toast { position: absolute; right: 20px; top: 70px; z-index: 6; width: 420px; display: flex; flex-direction: column; gap: 6px; font-size: 17px; }
-.c-toast div { background: rgba(10,7,18,.85); border: 1px solid var(--gold2); border-radius: 10px; padding: 6px 10px; color: #f3dfb4; }
+.c-toast div { background: linear-gradient(135deg, rgba(20,24,58,.85), rgba(8,10,28,.8)); border: 1px solid var(--gold2); border-radius: 10px; padding: 6px 10px; color: #f3dfb4; }
 .ch.mate .ch-body { opacity: .85; }
 .ch.mate .n-sil { color: #ff9aa9; }
 #stage.compact .g-cols { grid-template-columns: 220px 1fr 330px; }
