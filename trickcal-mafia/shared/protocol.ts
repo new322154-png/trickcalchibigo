@@ -113,7 +113,8 @@ export const GAME_MIN = 4;
 export const AUTO_START = 8;
 export const STEP_SECONDS = 15;
 
-export type CutKind = 'execute' | 'overturn';
+/** 모두가 보는 컷씬 */
+export type CutKind = 'execute' | 'overturn' | 'vanish' | 'saved' | 'counter' | 'blast' | 'wish' | 'uros' | 'drone' | 'reveal';
 export type ChatCh = 'day' | 'nifel' | 'dead' | 'defense';
 export type LogCh = ChatCh | 'sys' | 'secret' | 'note' | 'event';
 export type ChoiceKey = 'bat' | 'overturn' | 'avenge' | 'agitate';

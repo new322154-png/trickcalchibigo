@@ -139,13 +139,24 @@ export class Scene {
   };
 }
 
-/** 모두가 보는 컷씬 (전용 그림은 assets/cut/<kind>.png 가 생기면 그걸 쓴다) */
+/** 모두가 보는 컷씬 (전용 그림은 assets/cut/<kind>.png 가 생기면 그걸 쓴다). 여러 개면 차례대로 */
+const cutQueue: (() => void)[] = [];
+let cutPlaying = false;
+function nextCut() {
+  const f = cutQueue.shift();
+  cutPlaying = !!f;
+  f?.();
+}
 export function playCut(host: HTMLElement, kind: CutKind, text: string, fallbackImg: string) {
-  const img = h('img.cut-img', { src: `./assets/cut/${kind}.png`, alt: '' }) as HTMLImageElement;
-  img.onerror = () => { img.onerror = null; img.src = fallbackImg; img.classList.add('fallback'); };
-  const el = h(`div.cut.cut-${kind}`, h('div.cut-light'), img, h('div.cut-text', text), h('div.cut-skip', '눌러서 넘기기'));
-  const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); };
-  el.onclick = close;
-  host.appendChild(el);
-  setTimeout(close, 2800);
+  cutQueue.push(() => {
+    const img = h('img.cut-img', { src: `./assets/cut/${kind}.png`, alt: '' }) as HTMLImageElement;
+    img.onerror = () => { img.onerror = null; img.src = fallbackImg; img.classList.add('fallback'); };
+    const el = h(`div.cut.cut-${kind}`, h('div.cut-light'), img, h('div.cut-text', text), h('div.cut-skip', '눌러서 넘기기'));
+    let done = false;
+    const close = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => { el.remove(); nextCut(); }, 400); };
+    el.onclick = close;
+    host.appendChild(el);
+    setTimeout(close, 2600);
+  });
+  if (!cutPlaying) nextCut();
 }

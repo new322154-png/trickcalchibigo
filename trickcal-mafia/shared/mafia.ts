@@ -14,7 +14,7 @@ import {
   roleName, type NightKind, type RoleId,
 } from './roles';
 import {
-  FARM_H, FARM_W, PLAZA, STEP_SECONDS, plazaPhase, type C2S, type ChatCh, type ChoiceKey, type GameView, type LogCh, type Phase, type S2C, type Winner,
+  FARM_H, FARM_W, PLAZA, STEP_SECONDS, plazaPhase, type C2S, type CutKind, type ChatCh, type ChoiceKey, type GameView, type LogCh, type Phase, type S2C, type Winner,
 } from './protocol';
 
 export interface GameHost {
@@ -95,7 +95,7 @@ export class MafiaGame {
     return {
       deaths: [] as number[], blasts: [] as [number, number][], saved: 0, revives: [] as number[], drone: false,
       reveals: [] as { who: number; role: RoleId; why: 'reveal' }[],
-      counters: [] as number[],
+      counters: [] as [number, number][],
     };
   }
 
@@ -182,7 +182,7 @@ export class MafiaGame {
   private log(to: number, ch: LogCh, text: string, from = -1) { this.host.send(to, { t: 'glog', ch, from, text }); }
   private logAll(ch: LogCh, text: string, from = -1) { for (const p of this.all()) this.log(p.pid, ch, text, from); }
   private secret(pid: number, text: string) { this.log(pid, 'secret', text); }
-  private cutAll(kind: 'execute' | 'overturn', text: string, pid?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text }); }
+  private cutAll(kind: CutKind, text: string, pid?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text }); }
 
   view(pid: number): GameView {
     const p = this.ps.get(pid)!;
@@ -285,8 +285,9 @@ export class MafiaGame {
     for (const u of this.all()) {
       if (u.role !== 'uros' || u.alive || u.urosReviveNight !== this.night) continue;
       u.alive = true; u.diedHow = undefined; u.urosAwake = true; u.urosReviveNight = undefined;
-      this.unmask(u.pid, 'uros');
-      this.logAll('event', `💫 ${u.name}가 어둠 속에서 되살아났다! 정체는 ${label('uros')}.`);
+      this.unmask(u.pid, 'uros'); // 따로 발표 없이 목록의 정체만 바뀐다
+      this.cutAll('uros', '되살아났다', u.pid);
+      this.logAll('event', `💫 ${u.name}가 어둠 속에서 되살아났다!`);
       this.secret(u.pid, '되살아났다! 이제 니펠로서 습격에 함께한다.');
       this.contact(u, '니펠의 손에 죽었다가 돌아왔다.');
     }
@@ -439,8 +440,8 @@ export class MafiaGame {
       if (protectedSet.has(t.pid)) m.saved++;
       else if (t.role === 'trap' && !t.shieldUsed) {
         t.shieldUsed = true;
-        m.counters.push(t.pid);
-        this.secret(t.pid, '습격당했지만 반격해서 막아냈다! 대신 아침에 내 정체가 모두에게 드러난다. (이제 다시는 못 막는다)');
+        m.counters.push([t.pid, k.executor]);
+        this.secret(t.pid, '습격당했지만 반격해서 막아냈다! 아침에 습격한 자와 내 정체가 모두에게 드러난다. (이제 다시는 못 막는다)');
       } else {
         m.deaths.push(t.pid);
         if (t.role === 'avenger') {
@@ -494,26 +495,39 @@ export class MafiaGame {
     this.phase = 'morning';
     const m = this.morning;
     this.logAll('event', `☀ ${this.day}일째 아침`);
-    for (const d of m.deaths) { this.kill(d, 'night'); this.logAll('event', `💀 어젯밤 ${this.name(d)}가 사라졌다.`); }
+    const blasted = new Set(m.blasts.map(([mari]) => mari));
+    for (const d of m.deaths) {
+      this.kill(d, 'night');
+      if (!blasted.has(d)) { this.cutAll('vanish', `${this.name(d)} 실종`, d); this.logAll('event', `💀 어젯밤 ${this.name(d)}가 사라졌다.`); }
+    }
     for (const [mari, nifel] of m.blasts) {
       this.kill(nifel, 'blast');
-      this.unmask(mari, 'avenger');
-      this.logAll('event', `💥 ${this.name(mari)}가 쓰러지며 폭발했다! 정체는 마리. 습격한 ${this.name(nifel)}도 함께 사라졌다.`);
+      this.unmask(mari, 'avenger'); // 따로 발표 없이 목록의 정체만 바뀐다
+      this.cutAll('blast', '폭사!', mari);
+      this.logAll('event', `💥 ${this.name(mari)}가 쓰러지며 폭발했다! 습격한 ${this.name(nifel)}도 함께 사라졌다.`);
     }
-    for (let i = 0; i < m.saved; i++) this.logAll('event', '누군가 습격당했지만 무사히 아침을 맞았다.');
-    for (const d of m.counters) { this.unmask(d, 'trap'); this.logAll('event', `🛡 ${this.name(d)}가 습격을 반격해 막아냈다! 정체는 ${label('trap')}.`); }
+    for (let i = 0; i < m.saved; i++) { this.cutAll('saved', '습격을 막아냈다'); this.logAll('event', '누군가 습격당했지만 무사히 아침을 맞았다.'); }
+    for (const [d, ex] of m.counters) {
+      const e = this.ps.get(ex)!;
+      this.unmask(d, 'trap');
+      this.unmask(ex, e.role);
+      this.cutAll('counter', '반격!', d);
+      this.logAll('event', `🛡 ${this.name(d)}가 습격을 반격해 막아냈다! 습격한 자는 ${e.name}, 정체는 ${label(e.role)}!`);
+    }
     if (!m.deaths.length && !m.saved && !m.counters.length) this.logAll('event', '조용한 밤이었다.');
     for (const r of m.revives) {
       const p = this.ps.get(r);
       if (!p || p.alive) continue;
       p.alive = true; p.diedHow = undefined; p.urosReviveNight = undefined;
+      this.cutAll('wish', '소원이 이루어졌다', p.pid);
       this.logAll('event', `🌠 누군가의 소원이 이루어졌다! ${p.name}가 되살아났다.`);
       this.secret(p.pid, '소원의 힘으로 되살아났다!');
     }
-    if (m.drone) this.logAll('event', '🛸 밤새 어디선가 드론 소리가 들렸다…');
+    if (m.drone) { this.cutAll('drone', '위이이잉…'); this.logAll('event', '🛸 밤새 어디선가 드론 소리가 들렸다…'); }
     for (const r of m.reveals) {
       const p = this.ps.get(r.who)!;
       this.unmask(p.pid, r.role);
+      this.cutAll('reveal', `${p.name}의 정체`, p.pid);
       this.logAll('event', `📜 저택의 계시: ${p.name}의 직업은 ${label(r.role)}이다.`);
     }
     this.quietDays = m.deaths.length ? 0 : this.quietDays + 1;
