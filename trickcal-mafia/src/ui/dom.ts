@@ -62,17 +62,28 @@ export function mountStage(): HTMLElement {
 }
 
 let compact = false;
+let compactWanted = false;
+/** 휴대폰: 터치 화면이면서 짧은 변이 작음 → 모바일 전용 배치 (무대를 화면 비율에 맞춰 꽉 채우고 글자는 크게) */
+export const isPhone = () => {
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  const vh = document.documentElement.clientHeight || window.innerHeight;
+  return (matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window) && Math.min(vw, vh) < 600;
+};
 /** 폰처럼 작은 화면에서 게임 화면은 1280×720 무대를 써서 글자를 키운다 */
 export function setCompact(on: boolean) {
+  compactWanted = on;
   compact = on && Math.min(document.documentElement.clientWidth, (document.documentElement.clientHeight * 16) / 9) < 1400;
   stage.classList.toggle('compact', compact);
   fitStage();
 }
 
 function fitStage() {
-  const [w, hh] = compact ? [1280, 720] : [1920, 1080];
   const vw = document.documentElement.clientWidth || window.innerWidth;
   const vh = document.documentElement.clientHeight || window.innerHeight;
+  // 휴대폰 가로: 높이 540 무대를 화면 비율 그대로 (양옆 검은 띠 없이)
+  const phone = compactWanted && isPhone() && vw > vh;
+  stage.classList.toggle('mobile', phone);
+  const [w, hh] = phone ? [Math.round(Math.max(900, Math.min(1260, (540 * vw) / vh))), 540] : compact ? [1280, 720] : [1920, 1080];
   const k = Math.min(vw / w, vh / hh);
   stage.style.width = w + 'px';
   stage.style.height = hh + 'px';

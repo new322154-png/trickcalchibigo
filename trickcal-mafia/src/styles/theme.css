@@ -560,3 +560,86 @@
 }
 .game-screen .g-panel.urgent { box-shadow: 0 0 0 3px #ffb648, 0 0 30px rgba(255,182,72,.7); animation: urgentIn .4s cubic-bezier(.2,1.6,.4,1); }
 @keyframes urgentIn { from { transform: scale(.94); } }
+
+/* ═════════════════════ 휴대폰 가로 전용 배치 (#stage.mobile: 높이 540 무대) ═════════════════════ */
+.plist-toggle { display: none; }
+#stage.mobile .game-screen .g-top { padding: 8px 12px 0; }
+#stage.mobile .pt-day { width: 50px; height: 50px; font-size: 25px; }
+#stage.mobile .pt-day small { font-size: 9px; letter-spacing: 2px; margin-top: 2px; }
+#stage.mobile .phase-title { gap: 10px; }
+#stage.mobile .pt-main b { font-size: 26px; }
+#stage.mobile .pt-main small { display: none; }
+#stage.mobile .game-screen .g-timer { width: 150px; margin-top: 4px; font-size: 14px; }
+#stage.mobile .game-screen .g-timer span { min-width: 30px; }
+#stage.mobile .game-screen .me-chip { height: 46px; padding: 0 14px 0 54px; min-width: 0; }
+#stage.mobile .mc-img { left: 8px; width: 42px; height: 42px; bottom: 2px; }
+#stage.mobile .mc-text small { font-size: 11px; }
+#stage.mobile .mc-text b { font-size: 17px; }
+
+/* 목록은 서랍: 👥 버튼으로 열고 닫음 */
+#stage.mobile .plist-toggle { display: flex; align-items: center; justify-content: center; position: absolute; left: 12px; top: 66px; z-index: 47; width: 44px; height: 44px; border-radius: 50%; border: 0; font-size: 22px; background: var(--glass); box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+#stage.mobile .game-screen.plist-open .plist-toggle { background: var(--accent); }
+#stage.mobile .game-screen .g-cols { inset: 64px 10px 8px 10px; grid-template-columns: 0 1fr 250px; gap: 8px; }
+#stage.mobile .game-screen .g-plist { position: absolute; left: 0; top: 54px; width: 200px; max-height: calc(100% - 60px); z-index: 5; padding: 8px; transform: translateX(-115%); transition: transform .2s ease-out; }
+#stage.mobile .game-screen.plist-open .g-plist { transform: none; }
+#stage.mobile .game-screen .g-title { font-size: 15px; padding-bottom: 4px; }
+#stage.mobile .game-screen .g-p { padding: 3px 6px; gap: 6px; }
+#stage.mobile .game-screen .g-pname { font-size: 14px; }
+#stage.mobile .game-screen .g-anon { width: 24px; height: 34px; }
+#stage.mobile .game-screen .ptags .tag { font-size: 11px; padding: 1px 5px; }
+#stage.mobile .game-screen.walking .g-plist { max-height: calc(100% - 60px); }
+
+/* 오른쪽 행동 패널: 작고 촘촘하게 */
+#stage.mobile .game-screen .g-panel { padding: 10px 12px; gap: 6px; max-height: calc(100% - 4px); }
+#stage.mobile .game-screen .ph-head { margin-bottom: 6px; padding-bottom: 6px; }
+#stage.mobile .game-screen .ph-title { font-size: 19px; }
+#stage.mobile .game-screen .ph-title::before { height: 18px; width: 4px; }
+#stage.mobile .game-screen .ph-sub { font-size: 12px; line-height: 1.35; }
+#stage.mobile .game-screen .pbtns { gap: 5px; }
+#stage.mobile .game-screen .pbtn { min-height: 36px; font-size: 14px; padding: 4px 8px; }
+#stage.mobile .game-screen .pbtn::before { width: 16px; height: 24px; }
+#stage.mobile .game-screen .g-panel .btn { font-size: 13px; padding: 7px 8px; }
+#stage.mobile .time-btns { gap: 5px; margin-top: 4px; }
+#stage.mobile .time-used { font-size: 12px; }
+
+/* 대화 기록: 아래쪽 가운데, 낮게 (왼쪽은 방향패드 자리) */
+#stage.mobile .g-dialog { height: 150px; border-radius: 4px 16px 4px 4px; }
+#stage.mobile .g-dialog-head { display: none; }
+#stage.mobile .game-screen .g-log { font-size: 13px; padding: 6px 10px; gap: 3px; }
+#stage.mobile .game-screen .gl-event { font-size: 14px; padding: 2px 10px; }
+#stage.mobile .game-screen .g-chatrow { padding: 5px 8px; gap: 5px; }
+#stage.mobile .game-screen .chat-in { font-size: 14px; padding: 6px 8px; }
+#stage.mobile .game-screen .g-chatrow .btn { font-size: 13px; padding: 6px 10px; }
+#stage.mobile .game-screen.walking .g-center { padding-left: 132px; }
+#stage.mobile .game-screen .sc-joy { width: 120px; height: 120px; left: 10px; bottom: 10px; }
+#stage.mobile .game-screen .sc-joy .joy-knob { left: 35px; top: 35px; width: 50px; height: 50px; }
+
+/* 밤 */
+#stage.mobile .g-night { grid-template-columns: 1fr 250px !important; }
+#stage.mobile .g-night .n-side { margin: 64px 10px 8px 0; padding: 10px 12px; font-size: 13px; }
+#stage.mobile .g-night .n-side .btn { font-size: 13px; padding: 7px 8px; }
+#stage.mobile .g-night .n-door .btn.big { font-size: 18px; padding: 10px 18px; }
+
+/* 복도 안내 */
+#stage.mobile .c-hud { font-size: 13px; padding: 6px 12px; left: 10px; top: 8px; max-width: 50%; }
+#stage.mobile .c-hud b { font-size: 15px; }
+#stage.mobile .c-back { right: 10px; top: 8px; font-size: 13px; }
+#stage.mobile .c-act { bottom: 18px; font-size: 18px; padding: 10px 22px; }
+
+/* 대기실 */
+#stage.mobile .room.t-day .r-side { right: 10px; top: 52px; bottom: 8px; width: 290px; font-size: 13px; }
+#stage.mobile .room .btn { font-size: 13px; }
+#stage.mobile .room .btn.big, #stage.mobile .room .btn.gold.wide { font-size: 17px; padding: 8px; }
+
+/* 세로로 든 휴대폰: 돌려 달라고 안내 */
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
+  #app::after { content: '📱↻  휴대폰을 가로로 돌려 주세요'; position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px;
+    background: rgba(10,12,28,.94); color: #fff; font-size: 20px; font-weight: 800; white-space: pre-line; }
+}
+#stage.mobile .r-top { height: 44px; padding: 0 10px; gap: 8px; }
+#stage.mobile .room-code { font-size: 14px; }
+#stage.mobile .room-code b { font-size: 18px; }
+#stage.mobile .r-top .btn { font-size: 12px; padding: 5px 9px; }
+#stage.mobile .game-screen .g-center { grid-column: 2; grid-row: 1; }
+#stage.mobile .game-screen .g-panel { grid-column: 3; grid-row: 1; }
+#stage.mobile .game-screen.t-night .plist-toggle, #stage.mobile .game-screen.in-corridor .plist-toggle { display: none; }

@@ -183,7 +183,10 @@
 /* 밤: 복도 */
 .corridor { position: absolute; inset: 0; z-index: 50; background: #050409; }
 .cw-wrap { position: absolute; inset: 0; overflow: hidden; }
-.cw { position: absolute; left: 0; top: 0; width: 2700px; height: 900px; transform-origin: 0 0; background: var(--cw-bg) 0 0 / 100% 100% no-repeat, #1a2340; will-change: transform; }
+.cw { position: absolute; left: 0; top: 0; width: 2700px; height: 900px; transform-origin: 0 0; background: #1a2340; will-change: transform; }
+.cw-bg { position: absolute; left: 0; top: 0; width: 2700px; height: 900px; pointer-events: none; will-change: transform; }
+/* 문마다 따로 한 번만 그려 두고 옮기기만 */
+.c-door { will-change: transform; }
 .c-door { position: absolute; width: 150px; height: 262px; margin: -262px 0 0 -75px; z-index: 1; }
 /* 복도 사람은 언제나 벽에 붙은 문보다 앞 */
 .cw .ch { z-index: 3; }

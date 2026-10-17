@@ -8,7 +8,7 @@ import { CHARACTERS, FARM_H, FARM_W, type ChatCh, type GameView, type LogCh, typ
 import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import type { RoomLink } from '../net';
-import { bgUrl, clear, h } from './dom';
+import { asset, bgUrl, clear, h } from './dom';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
 import { playCut, preloadCuts } from './cut';
@@ -73,6 +73,9 @@ export class GameUI {
         this.panel),
       this.nightEl);
     if (isTouch()) this.el.appendChild(this.scene.joy);
+    // 휴대폰에서만 보이는 버튼: 플레이어 목록 열고 닫기
+    const tog = h('button.plist-toggle', { onclick: () => { this.el.classList.toggle('plist-open'); } }, '👥');
+    this.el.appendChild(tog);
     this.el.style.setProperty('--anon', `url("${new URL(ANON, location.href).href}")`);
     root.appendChild(this.el);
     this.tick = window.setInterval(() => this.renderTimer(), 250);
@@ -529,7 +532,8 @@ class Corridor {
   constructor(host: HTMLElement, private v: GameView, private myPid: number, img: string | null, private name: (p: number) => string,
     private onAct: (target: number | null) => void, private onMove: (x: number, y: number) => void, private onExit: () => void) {
     // 복도 배치: 긴 벽을 따라 문이 한 줄로, 바닥을 걸어 다닌다 (화면은 나를 따라 옆으로 움직임)
-    this.world.style.setProperty('--cw-bg', bgUrl('corridor.webp'));
+    // 배경은 CSS 배경이 아니라 <img> 한 장: 스크롤할 때 다시 그리지 않고 그림 그대로 옮기기만 한다 (모바일 버벅임 원인이었음)
+    this.world.appendChild(h('img.cw-bg', { src: asset('bg/corridor.webp'), alt: '', decoding: 'async' }));
     const ids = v.players.map((p) => p.pid);
     const n = ids.length;
     // 기둥 사이 5칸에 고르게 나눠 배치
