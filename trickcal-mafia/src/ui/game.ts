@@ -63,7 +63,7 @@ export class GameUI {
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
     this.chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); } });
-    this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, maskImg, this.name, (x, y) => this.link.send({ t: 'pmove', x, y }));
+    this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, (pid) => this.face(pid), this.name, (x, y) => this.link.send({ t: 'pmove', x, y }));
     this.el = h('div.game-screen',
       this.scene.el,
       this.top,
@@ -102,9 +102,16 @@ export class GameUI {
       const mine = m.kind.startsWith('p_');
       if (m.kind === 'vanish') { this.sadMorning = true; if (this.v?.phase === 'morning') bgm('rain'); }
       if (m.kind === 'execute') bgm('after_trial');
-      const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? maskImg(m.pid) : ANON;
+      const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? this.face(m.pid) : ANON;
       playCut(this.el, m.kind, m.text, fb, { n: m.n });
     }
+  }
+
+  /** 다른 사람 얼굴: 정체가 드러났으면 그 직업 캐릭터, 아니면 가면 케이크. 나는 늘 내 캐릭터 */
+  private face(pid: number) {
+    if (pid === this.myPid) return roleImg(this.v?.me.role ?? '') ?? ANON;
+    const shown = this.v?.players.find((p) => p.pid === pid)?.shown;
+    return (shown && roleImg(shown)) || maskImg(pid);
   }
 
   private update(v: GameView) {
@@ -219,7 +226,7 @@ export class GameUI {
       if (v.cands.includes(p.pid) && (v.phase === 'defense' || v.phase === 'vote2')) tags.push(h('span.tag.mafia', '결선'));
       this.plist.appendChild(h(`button.g-p${p.alive ? '' : '.dead'}${p.pid === this.myPid ? '.self' : ''}`,
         { onclick: () => { if (p.pid === this.myPid) return; this.memo.set(p.pid, (m + 1) % MEMO.length); this.renderPlayers(); } },
-        h('img.g-anon', { src: p.pid === this.myPid ? roleImg(v.me.role) ?? ANON : maskImg(p.pid), alt: '' }),
+        h(`img.g-anon${p.shown && p.pid !== this.myPid ? '.shown' : ''}`, { src: this.face(p.pid), alt: '' }),
         h('div.g-pinfo', h('div.g-pname', p.name, p.alive ? '' : h('span.dead-mark', ' 사망')), h('div.ptags', tags))));
     }
   }
@@ -383,7 +390,7 @@ export class GameUI {
     // 남의 직업은 서버가 아예 보내지 않으므로 화면 오류로 드러날 일은 없다.
     const myImg = roleImg(v.me.role) ?? ANON;
     const ideImg = roleImg('medium') ?? ANON;
-    const img = (pid: number, ide: boolean) => (pid === this.myPid ? myImg : ide ? ideImg : maskImg(pid));
+    const img = (pid: number, ide: boolean) => (pid === this.myPid ? myImg : ide ? ideImg : this.face(pid));
     const area = h('div.farm-area');
     const me = v.players.find((p) => p.pid === this.myPid);
     clear(this.nightEl).append(area,

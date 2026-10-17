@@ -72,10 +72,10 @@
 .game-screen .g-timer.urgent span { color: #ff4d6a; animation: shake .5s infinite; }
 
 /* ── 오른쪽 위: 내 캐릭터 카드 ── */
-.game-screen .me-chip { position: relative; display: flex; align-items: center; gap: 0; padding: 0 22px 0 96px; height: 72px; border-radius: 0; border: 0; background: var(--glass); backdrop-filter: blur(10px); box-shadow: var(--shade); clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px); }
+.game-screen .me-chip { position: relative; display: flex; align-items: center; gap: 0; padding: 0 22px 0 100px; height: 72px; min-width: 210px; border-radius: 0; border: 0; background: var(--glass); backdrop-filter: blur(10px); box-shadow: var(--shade); clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px); }
 .game-screen .me-chip::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--team, var(--accent)); }
 .me-chip.mafia { --team: #ff4d6a; } .me-chip.citizen { --team: #4da3ff; } .me-chip.neutral { --team: #b57bff; }
-.mc-img { position: absolute; left: 14px; bottom: -6px; height: 96px; width: auto; filter: drop-shadow(0 3px 4px rgba(0,0,0,.3)); }
+.mc-img { position: absolute; left: 12px; bottom: 0; width: 80px; height: 70px; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 3px 4px rgba(0,0,0,.3)); }
 .mc-text { display: flex; flex-direction: column; text-align: left; line-height: 1.15; }
 .mc-text small { font-size: 14px; color: var(--ink-dim); font-weight: 700; }
 .mc-text b { font-family: var(--cute-font); font-weight: 400; font-size: 28px; color: var(--ink); }
@@ -97,7 +97,8 @@
 .game-screen .g-p.dead { opacity: .45; background: none; }
 .game-screen .g-p.dead .g-pname { text-decoration: line-through; }
 .game-screen .g-pname { font-size: 19px; color: var(--ink); }
-.game-screen .g-anon { width: 34px; height: 50px; }
+.game-screen .g-anon { width: 34px; height: 50px; object-fit: contain; object-position: 50% 100%; }
+.game-screen .g-anon.shown { filter: drop-shadow(0 0 3px var(--accent, #ffd38a)); }
 
 /* 가운데 아래: 대화창 (비주얼노벨식) */
 .game-screen .g-center { background: none; border: 0; box-shadow: none; display: flex; flex-direction: column; justify-content: flex-end; min-height: 0; overflow: visible; }
@@ -215,7 +216,8 @@
 #stage.compact .game-screen .g-timer { width: 220px; margin-top: 6px; }
 #stage.compact .g-dialog { height: 220px; }
 #stage.compact .game-screen .g-log { font-size: 16px; }
-#stage.compact .game-screen .me-chip { height: 58px; padding-left: 78px; }
+#stage.compact .game-screen .me-chip { height: 58px; padding-left: 80px; min-width: 180px; }
+#stage.compact .mc-img { width: 64px; height: 56px; left: 10px; }
 #stage.compact .mc-img { height: 76px; }
 #stage.compact .mc-text b { font-size: 22px; }
 #stage.compact .game-screen .ph-title { font-size: 26px; }
@@ -408,7 +410,7 @@
 
 #stage.compact .game-screen .g-title small { display: none; }
 #stage.compact .game-screen .g-panel .btn { font-size: 18px; padding: 10px 12px; }
-#stage.compact .game-screen .me-chip { padding-left: 88px; }
+#stage.compact .game-screen .me-chip { padding-left: 80px; }
 .game-screen .sc-joy { background: rgba(20, 24, 40, .35); border-color: rgba(255,255,255,.6); }
 .game-screen .sc-joy .joy-knob { background: rgba(255,255,255,.75); }
 .game-screen.walking .g-plist { max-height: calc(100% - 240px); }

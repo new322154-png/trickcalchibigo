@@ -8,7 +8,7 @@ import { PLAZA, plazaPhase, type GameView } from '../../shared/protocol';
 import { bgUrl, h } from './dom';
 import { MoveInput } from './input';
 
-interface Av { el: HTMLElement; bubble: HTMLElement; timer: number; x: number; y: number; tx: number; ty: number; /** 마지막으로 그린 값 (같으면 DOM을 안 건드림) */ dk: string }
+interface Av { el: HTMLElement; img: HTMLImageElement; src: string; bubble: HTMLElement; timer: number; x: number; y: number; tx: number; ty: number; /** 마지막으로 그린 값 (같으면 DOM을 안 건드림) */ dk: string }
 
 /** 광장 걷는 속도 (배경 폭 % / 초) */
 const WALK = 16;
@@ -85,17 +85,21 @@ export class Scene {
       let av = this.avs.get(pid);
       if (!av) {
         const bubble = h('div.sc-bubble');
-        const el = h(`div.sc-av${pid === this.myPid ? '.me' : ''}`,
-          h('img', { src: pid === this.myPid ? this.myImg() : this.anon(pid), alt: '' }),
+        const src = pid === this.myPid ? this.myImg() : this.anon(pid);
+        const img = h('img', { src, alt: '' }) as HTMLImageElement;
+        const el = h(`div.sc-av${pid === this.myPid ? '.me' : ''}`, img,
           h('div.sc-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
         this.box.appendChild(el);
-        av = { el, bubble, timer: 0, x, y, tx: x, ty: y, dk: '' };
+        av = { el, img, src, bubble, timer: 0, x, y, tx: x, ty: y, dk: '' };
         this.avs.set(pid, av);
       }
       // 광장에서 내 위치는 내가 정한다 (처음 한 번만 서버 값을 받음)
       if (!(this.walking && pid === this.myPid && av.el.dataset.placed)) { av.tx = x; av.ty = y; }
       if (!this.walking) { av.x = x; av.y = y; }
       av.el.dataset.placed = '1';
+      // 정체가 드러나면 가면 대신 그 캐릭터로
+      const src = pid === this.myPid ? this.myImg() : this.anon(pid);
+      if (src !== av.src) { av.src = src; av.img.src = src; }
       av.el.classList.toggle('onstage', stage.includes(pid));
     }
     this.box.classList.toggle('static', !this.walking);
