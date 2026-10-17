@@ -14,7 +14,7 @@ import {
   roleName, type NightKind, type RoleId,
 } from './roles';
 import {
-  FARM_H, FARM_W, STEP_SECONDS, type C2S, type ChatCh, type ChoiceKey, type GameView, type LogCh, type Phase, type S2C, type Winner,
+  FARM_H, FARM_W, PLAZA, STEP_SECONDS, plazaPhase, type C2S, type ChatCh, type ChoiceKey, type GameView, type LogCh, type Phase, type S2C, type Winner,
 } from './protocol';
 
 export interface GameHost {
@@ -84,6 +84,8 @@ export class MafiaGame {
   private pendingKill: { target: number; executor: number; voters: number[] } | null = null;
   private overturned = false;
   private stage: number[] = [];
+  /** 낮 광장 위치 (%) */
+  private plazaPos = new Map<number, [number, number]>();
   /** 주말농장 위치 */
   private farmPos = new Map<number, [number, number]>();
 
@@ -139,6 +141,13 @@ export class MafiaGame {
       out.push([q.pid, Math.round(pos[0]), Math.round(pos[1]), this.isIde(q) ? 1 : 0]);
     }
     return out;
+  }
+  private plazaView(): [number, number, number][] {
+    return this.alive().map((q) => {
+      let pos = this.plazaPos.get(q.pid);
+      if (!pos) { pos = [PLAZA.x0 + 4 + Math.random() * (PLAZA.x1 - PLAZA.x0 - 8), PLAZA.y0 + 3 + Math.random() * (PLAZA.y1 - PLAZA.y0 - 6)]; this.plazaPos.set(q.pid, pos); }
+      return [q.pid, Math.round(pos[0] * 10) / 10, Math.round(pos[1] * 10) / 10];
+    });
   }
   private weight(pid: number) { const p = this.ps.get(pid); return p && p.role === 'elena' ? 1 + p.drones : 1; }
 
@@ -196,6 +205,7 @@ export class MafiaGame {
       },
       cands: this.cands,
       counts: this.counts,
+      plaza: plazaPhase(this.phase) ? this.plazaView() : undefined,
       stage: this.phase === 'defense' || this.phase === 'vote2' || this.phase === 'verdict' ? this.stage : undefined,
     };
   }
@@ -762,6 +772,15 @@ export class MafiaGame {
       case 'drone':
         if (this.phase === 'night' && p.alive && p.role === 'elena' && p.droneTries > 0) { this.tryDrone(p); this.push(pid); }
         break;
+      case 'pmove': {
+        if (!plazaPhase(this.phase) || !p.alive) return;
+        const x = Number(msg.x), y = Number(msg.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        const pos: [number, number] = [Math.max(PLAZA.x0, Math.min(PLAZA.x1, x)), Math.max(PLAZA.y0, Math.min(PLAZA.y1, y))];
+        this.plazaPos.set(pid, pos);
+        for (const q of this.all()) if (q.pid !== pid && q.online) this.host.send(q.pid, { t: 'pmove', pid, x: pos[0], y: pos[1] });
+        break;
+      }
       case 'fmove': {
         if (!this.inFarm(p)) return;
         const x = Math.max(40, Math.min(FARM_W - 40, Number(msg.x))), y = Math.max(200, Math.min(FARM_H - 40, Number(msg.y)));

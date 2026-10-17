@@ -56,7 +56,7 @@ export class GameUI {
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
     this.chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); } });
-    this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, ANON, this.name);
+    this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, ANON, this.name, (x, y) => this.link.send({ t: 'pmove', x, y }));
     this.el = h('div.game-screen',
       this.scene.el,
       this.top,
@@ -74,6 +74,7 @@ export class GameUI {
     clearInterval(this.tick);
     this.corridor?.destroy();
     this.farm?.destroy();
+    this.scene.destroy();
     this.el.remove();
   }
 
@@ -87,6 +88,7 @@ export class GameUI {
     else if (m.t === 'glog') this.addLog(m.ch, m.from, m.text);
     else if (m.t === 'gcmove') this.corridor?.mate(m.pid, m.x, m.y);
     else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
+    else if (m.t === 'pmove') this.scene.move(m.pid, m.x, m.y);
     else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
     else if (m.t === 'cut') { sfx(m.kind === 'execute' ? 'death' : 'gavel'); playCut(this.el, m.kind, m.text, ANON); }
   }

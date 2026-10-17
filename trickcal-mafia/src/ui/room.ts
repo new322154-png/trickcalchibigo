@@ -130,7 +130,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   }
 
   function onMsg(m: S2C) {
-    if (m.t === 'g' || m.t === 'glog' || m.t === 'gcmove' || m.t === 'fmove' || m.t === 'cut' || m.t === 'gend') {
+    if (m.t === 'g' || m.t === 'glog' || m.t === 'gcmove' || m.t === 'fmove' || m.t === 'pmove' || m.t === 'cut' || m.t === 'gend') {
       if (!gameUI) {
         gameUI = new GameUI(root, link, me);
         input.enabled = false;

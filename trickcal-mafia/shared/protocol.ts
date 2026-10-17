@@ -69,7 +69,8 @@ export type C2S =
   | { t: 'choice'; key: ChoiceKey; value: number | string | null }
   | { t: 'cmove'; x: number; y: number }
   | { t: 'drone' }
-  | { t: 'fmove'; x: number; y: number };
+  | { t: 'fmove'; x: number; y: number }
+  | { t: 'pmove'; x: number; y: number };
 
 export interface Chair { id: number; x: number; y: number; by: number | null }
 
@@ -100,6 +101,8 @@ export type S2C =
   | { t: 'gcmove'; pid: number; x: number; y: number }
   /** 주말농장(이드 + 죽은 사람) 위치 */
   | { t: 'fmove'; pid: number; x: number; y: number }
+  /** 낮 광장(나무 아래) 위치 — 화면 배경 기준 %(0~100) */
+  | { t: 'pmove'; pid: number; x: number; y: number }
   /** 모두가 보는 컷씬 (처형 등) */
   | { t: 'cut'; kind: CutKind; pid?: number; text: string }
   | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[] };
@@ -159,6 +162,12 @@ export interface GameView {
   counts?: [number, number][];
   /** 재판장 무대 위에 선 사람 (결선 후보 → 판결 뒤엔 처형될 사람만) */
   stage?: number[];
+  /** 낮에 걸어 다니는 광장: [pid, x%, y%] (결선·투표 땐 없음) */
+  plaza?: [number, number, number][];
 }
+
+/** 낮 광장에서 걸을 수 있는 범위 (배경 그림 기준 %) */
+export const PLAZA = { x0: 17, x1: 79, y0: 52, y1: 67 };
+export const plazaPhase = (p: Phase) => p === 'intro' || p === 'morning' || p === 'day' || p === 'vote1';
 
 export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));

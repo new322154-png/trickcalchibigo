@@ -246,7 +246,15 @@
 .g-scene .sc-box { position: absolute; top: 0; height: 100%; aspect-ratio: 1280 / 820; left: 50%; transform: translateX(-50%); background: var(--sc-bg) center / 100% 100% no-repeat; transition: filter .6s; }
 .g-scene .sc-box.trial { filter: saturate(1.1); }
 .g-scene:has(.sc-box.trial) { background: #1b2050; }
-.sc-av { position: absolute; aspect-ratio: 200 / 360; transform: translate(-50%, -100%); transition: left .7s ease, top .7s ease, height .7s ease; }
+.sc-av { position: absolute; aspect-ratio: 200 / 360; transform: translate(-50%, -100%); }
+.sc-box.static .sc-av { transition: left .7s ease, top .7s ease, height .7s ease; }
+.sc-av.flip img { transform: translateX(-50%) scaleX(-1); }
+.sc-av.moving img { animation: scHop .32s infinite; }
+.sc-av.flip.moving img { animation: scHopFlip .32s infinite; }
+@keyframes scHop { 0%, 100% { transform: translateX(-50%); } 50% { transform: translateX(-50%) translateY(-6%) rotate(-4deg); } }
+@keyframes scHopFlip { 0%, 100% { transform: translateX(-50%) scaleX(-1); } 50% { transform: translateX(-50%) scaleX(-1) translateY(-6%) rotate(4deg); } }
+.sc-joy { position: absolute; left: 300px; bottom: 340px; z-index: 30; display: none; }
+.g-scene.walking .sc-joy { display: block; }
 .sc-av img { position: absolute; left: 50%; bottom: 0; height: 100%; width: auto; max-width: none; transform: translateX(-50%); filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
 .sc-av.me img { filter: drop-shadow(0 0 3px var(--gold)) drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
 .sc-av.onstage img { filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 22px rgba(170,190,255,.9)); }
