@@ -33,11 +33,14 @@ export class Scene {
     const spots = new Map<number, [number, number, number]>();
     if (trial) {
       const on = stage.filter((id) => v.players.some((p) => p.pid === id));
-      on.forEach((id, i) => spots.set(id, [on.length === 1 ? 50 : 44 + i * 12, 55, 25]));
+      on.forEach((id, i) => spots.set(id, [on.length === 1 ? 50 : 45 + i * 10, 54.5, 17]));
+      // 구경꾼: 무대 앞 바닥에 넓은 반원
       const crowd = alive.filter((p) => !on.includes(p.pid));
       crowd.forEach((p, i) => {
         const n = crowd.length;
-        spots.set(p.pid, [n === 1 ? 50 : 10 + (80 * i) / (n - 1), 97 - (i % 2) * 5, 22]);
+        const t = n === 1 ? 0.5 : i / (n - 1);
+        const a = Math.PI * (0.08 + 0.84 * t);
+        spots.set(p.pid, [49 - 27 * Math.cos(a), 60 + 5 * Math.sin(a), 13]);
       });
     } else {
       // 잔디 앞쪽 반원 (가운데가 가장 앞)
@@ -45,7 +48,7 @@ export class Scene {
       alive.forEach((p, i) => {
         const t = n === 1 ? 0.5 : i / (n - 1);
         const a = Math.PI * (0.06 + 0.88 * t);
-        spots.set(p.pid, [50 - 42 * Math.cos(a), 63 + 14 * Math.sin(a), 22 + 4 * Math.sin(a)]);
+        spots.set(p.pid, [49 - 28 * Math.cos(a), 55 + 7 * Math.sin(a), 14 + 2 * Math.sin(a)]);
       });
     }
     for (const [pid, av] of this.avs) if (!spots.has(pid)) { av.el.remove(); this.avs.delete(pid); }

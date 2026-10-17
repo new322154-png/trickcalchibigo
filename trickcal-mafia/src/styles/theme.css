@@ -1,198 +1,226 @@
 /*
- * 화면 테마 — 배경 그림에 맞춘 시스템 UI
- *  t-day   : 대기실 · 낮 토론/투표 — 책상 위 문구점 느낌 (크림 종이, 나무, 노란 바느질선)
- *  t-trial : 결선 · 판결 — 재판장 달빛 (남색 유리, 은빛 선)
- *  t-night : 밤 — 푸른 방 (짙은 남색, 촛불빛 포인트)
- * 색 변수만 바꾸면 기존 부품들이 따라 바뀌고, 아래에서 모양을 덧입힌다.
+ * 게임 화면 연출 — 배경 그림을 화면 가득 깔고, UI는 그 위에 떠 있는 유리판.
+ * (비주얼노벨/모바일 게임식: 굵은 제목 + 영문 캡션, 얇은 선, 반투명 패널, 아래쪽 대화창)
+ *  t-day   : 밝은 유리 (흰 반투명 + 진한 글씨)
+ *  t-trial : 남색 유리 + 은빛
+ *  t-night : 남색 유리 + 촛불빛
  */
-@import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Black+Han+Sans&display=swap');
 
-/* ───────────────────────── 낮 (공통 변수) ───────────────────────── */
+.game-screen, .room {
+  --title-font: 'Black Han Sans', 'Jua', 'Noto Sans KR', sans-serif;
+  --cute-font: 'Jua', 'Noto Sans KR', sans-serif;
+}
 .t-day {
-  --panel: #fffaf0;
-  --panel2: #f7eedb;
-  --line: #e6d3b1;
-  --text: #4a3424;
-  --dim: #94795d;
-  --gold: #e79a2c;
-  --gold2: #d9a24d;
-  --wood: #c58a55;
-  --wood2: #9b6438;
-  --stitch: #f5c32c;
-  --leaf: #6fae5a;
-  --mafia: #d9485f;
-  --citizen: #3f8fd6;
-  --neutral: #9a6bd6;
-  --info: #3fa57d;
-  color: var(--text);
+  --glass: rgba(255, 255, 255, .78);
+  --glass2: rgba(255, 255, 255, .55);
+  --gline: rgba(255, 255, 255, .95);
+  --ink: #2b2f3a;
+  --ink-dim: #6c7385;
+  --accent: #ff8a3d;
+  --accent2: #ffb648;
+  --shade: 0 10px 30px rgba(30, 40, 60, .22);
+  --text: var(--ink); --dim: var(--ink-dim); --gold: var(--accent); --gold2: var(--accent2);
+  --line: rgba(43, 47, 58, .14); --panel: #fff; --panel2: rgba(255,255,255,.7);
 }
-.t-day .tag { background: #efe3c9; color: #7c624a; }
-.t-day .tag.mafia { background: #fde0e4; color: #c23a52; }
-.t-day .tag.citizen { background: #dcecfb; color: #2f78bd; }
-.t-day .tag.info { background: #dcf3e7; color: #2b8a63; }
-.t-day .tag.me { background: var(--gold); color: #fff; }
-.t-day .dim { color: var(--dim); }
-
-/* 버튼: 말랑한 스티커 */
-.t-day .btn { background: #fffaf0; border: 2px solid var(--line); border-bottom-width: 5px; color: var(--text); border-radius: 16px; }
-.t-day .btn:hover:not(:disabled) { border-color: var(--gold2); }
-.t-day .btn:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 3px; }
-.t-day .btn.gold { background: linear-gradient(#ffd56b, #f5ac2e); border-color: #d98a14; color: #4a2a05; text-shadow: 0 1px 0 rgba(255,255,255,.5); }
-.t-day .btn.small { border-bottom-width: 4px; }
-
-/* 입력창 */
-.t-day .chat-in, .t-day .txt-in { background: #fff; border: 2px solid var(--line); color: var(--text); border-radius: 22px; padding-left: 16px; }
-.t-day .chat-in:focus, .t-day .txt-in:focus { border-color: var(--gold); outline: none; }
-.t-day .chat-in::placeholder { color: #c2ab8e; }
-
-/* 나무 상단 바 + 노란 바느질선 */
-.t-day .r-top, .t-day .g-top {
-  background: linear-gradient(#d39a63, #b67a46); border-bottom: none; color: #fff8ec;
-  box-shadow: inset 0 -4px 0 #9b6438, 0 4px 10px rgba(80,50,20,.25); position: relative; z-index: 2;
+.t-trial, .t-night {
+  --glass: rgba(14, 20, 52, .72);
+  --glass2: rgba(14, 20, 52, .5);
+  --gline: rgba(190, 205, 255, .45);
+  --ink: #eef2ff;
+  --ink-dim: #a7b1d8;
+  --accent: #cfdcff;
+  --accent2: #8fa6ff;
+  --shade: 0 10px 40px rgba(0, 0, 0, .45);
+  --text: var(--ink); --dim: var(--ink-dim); --gold: var(--accent); --gold2: var(--accent2);
+  --line: rgba(190, 205, 255, .2); --panel: #141c48; --panel2: rgba(255,255,255,.07);
 }
-.t-day .r-top::after, .t-day .g-top::after {
-  content: ''; position: absolute; left: 10px; right: 10px; bottom: 9px; height: 0; border-bottom: 3px dashed var(--stitch); opacity: .9; pointer-events: none;
+.t-night { --accent: #ffd98a; --accent2: #ffb648; }
+
+/* ── 화면 뼈대: 배경 + 떠 있는 UI ── */
+.game-screen { background: #000; color: var(--ink); }
+.game-screen .g-scene { position: absolute; inset: 0; z-index: 0; border: 0; background: #0b0f20; }
+.game-screen .g-scene .sc-box { top: 50%; left: 0; width: 100%; height: auto; aspect-ratio: 1280 / 820; transform: translateY(-50%); }
+.game-screen.t-day .g-scene .sc-box::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(255,255,255,.15), transparent 25%, transparent 70%, rgba(20,30,50,.35)); pointer-events: none; }
+.game-screen.t-trial .g-scene .sc-box::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(0,0,10,.35), transparent 30%, transparent 65%, rgba(0,0,10,.55)); pointer-events: none; }
+
+.game-screen .g-top { position: absolute; left: 0; right: 0; top: 0; height: auto; z-index: 46; padding: 26px 32px 0; border: 0; background: none; box-shadow: none; align-items: flex-start; pointer-events: none; }
+.game-screen .g-top > * { pointer-events: auto; }
+.game-screen .g-top::after { display: none; }
+.game-screen .g-cols { position: absolute; inset: 150px 28px 24px 28px; z-index: 2; display: grid; grid-template-columns: 250px 1fr 400px; gap: 24px; pointer-events: none; padding: 0; }
+.game-screen .g-cols > * { pointer-events: auto; }
+.g-night { inset: 0 !important; }
+
+/* ── 왼쪽 위: 단계 제목 ── */
+.phase-title { display: flex; align-items: stretch; gap: 16px; filter: drop-shadow(0 4px 14px rgba(0,0,0,.25)); }
+.pt-day { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 92px; height: 92px; background: var(--ink); color: var(--glass); font-family: var(--title-font); font-size: 46px; line-height: 1; clip-path: polygon(0 0, 100% 0, 100% 78%, 78% 100%, 0 100%); }
+.t-trial .pt-day, .t-night .pt-day { background: var(--accent); color: #0e1434; }
+.pt-day small { font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 900; letter-spacing: 4px; margin-top: 4px; }
+.pt-main { display: flex; flex-direction: column; justify-content: center; }
+.pt-main b { font-family: var(--title-font); font-weight: 400; font-size: 52px; line-height: 1; color: var(--ink); text-shadow: 0 2px 0 var(--glass), 0 0 18px var(--glass2); letter-spacing: 1px; }
+.t-day .pt-main b { color: #fff; text-shadow: 0 3px 0 #2b2f3a, 0 0 2px #2b2f3a, 0 0 20px rgba(0,0,0,.35); }
+.pt-main small { font-size: 14px; font-weight: 900; letter-spacing: 6px; color: var(--accent); margin-top: 6px; }
+.t-day .pt-main small { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+
+/* 타이머: 숫자 + 줄어드는 선 */
+.game-screen .g-timer { width: 300px; height: auto; min-width: 0; border-radius: 0; background: none; display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 20px; font-weight: 900; animation: none; }
+.game-screen .g-timer::before { display: none; }
+.game-screen .g-timer span { color: var(--ink); min-width: 46px; }
+.t-day .g-timer span { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.game-screen .g-timer i { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.35); position: relative; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.game-screen .g-timer i::after { content: ''; position: absolute; inset: 0; right: auto; width: calc(var(--p, 1) * 100%); background: var(--accent); transition: width .25s linear; }
+.game-screen .g-timer.urgent i::after { background: #ff4d6a; }
+.game-screen .g-timer.urgent span { color: #ff4d6a; animation: shake .5s infinite; }
+
+/* ── 오른쪽 위: 내 캐릭터 카드 ── */
+.game-screen .me-chip { position: relative; display: flex; align-items: center; gap: 0; padding: 0 22px 0 96px; height: 72px; border-radius: 0; border: 0; background: var(--glass); backdrop-filter: blur(10px); box-shadow: var(--shade); clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px); }
+.game-screen .me-chip::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--team, var(--accent)); }
+.me-chip.mafia { --team: #ff4d6a; } .me-chip.citizen { --team: #4da3ff; } .me-chip.neutral { --team: #b57bff; }
+.mc-img { position: absolute; left: 14px; bottom: -6px; height: 96px; width: auto; filter: drop-shadow(0 3px 4px rgba(0,0,0,.3)); }
+.mc-text { display: flex; flex-direction: column; text-align: left; line-height: 1.15; }
+.mc-text small { font-size: 14px; color: var(--ink-dim); font-weight: 700; }
+.mc-text b { font-family: var(--cute-font); font-weight: 400; font-size: 28px; color: var(--ink); }
+
+/* ── 공통 유리판 ── */
+.game-screen .g-plist, .game-screen .g-panel, .g-dialog {
+  background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--gline); border-radius: 6px; box-shadow: var(--shade);
 }
-.t-day .room-code { color: #ffe9c9; }
-.t-day .room-code b { color: #fff; text-shadow: 0 2px 0 #9b6438; }
-.t-day .room-count, .t-day .day-label { color: #fff; text-shadow: 0 2px 0 #9b6438; }
-.t-day .r-top .btn, .t-day .g-top .btn { background: #fff4df; }
+.sec-head, .g-title, .g-dialog-head { display: flex; align-items: baseline; gap: 10px; }
 
-/* ── 대기실 ── */
-.room.t-day { background: #efe6d2 radial-gradient(circle at 20% 30%, rgba(255,255,255,.6) 0 2px, transparent 3px) 0 0 / 34px 34px; }
-.t-day .world-wrap { background: transparent; }
-.t-day .r-side { background: #fffaf0; border-left: none; box-shadow: -6px 0 18px rgba(90,60,30,.15); }
-.t-day .host-bar, .t-day .r-plist { border-bottom: 2px dashed var(--line); }
-.t-day .wait-msg { color: #c9761a; font-weight: 700; }
-.t-day .rp { background: #f7eedb; border: 2px solid transparent; }
-.t-day .rp.self { outline: none; border-color: var(--gold); }
-.t-day .chat-log .cl-line { background: #fff; border: 1px solid #f0e3c8; border-radius: 14px 14px 14px 4px; padding: 5px 12px; align-self: flex-start; max-width: 96%; }
-.t-day .cl-line b { color: #c9761a; }
-.t-day .cl-line.mine { align-self: flex-end; background: #fff3cf; border-color: #f3dc9c; border-radius: 14px 14px 4px 14px; }
-.t-day .cl-line.mine b { color: #2f78bd; }
-.t-day .cl-sys { color: #a68b6c; align-self: center; font-size: 15px; }
-.t-day .chat-row { border-top: 2px dashed var(--line); }
-.t-day .mini-banner { background: #fffaf0; border: 3px solid var(--gold); box-shadow: 0 8px 20px rgba(90,60,30,.25); }
-.t-day .mb-title { color: var(--text); }
-.t-day .ch-name { color: #fff; text-shadow: 0 1px 2px #4a3424, 0 0 3px #4a3424, 0 0 6px rgba(74,52,36,.6); }
+/* 왼쪽: 플레이어 */
+.game-screen .g-plist { align-self: start; max-height: 100%; overflow-y: auto; padding: 14px 12px; gap: 6px; }
+.game-screen .g-title { font-family: var(--cute-font); font-size: 20px; color: var(--ink); padding: 0 4px 8px; margin: 0 0 4px; border-bottom: 1px solid var(--line); }
+.game-screen .g-title small { font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: var(--ink-dim); margin-left: auto; }
+.game-screen .g-title::before { content: ''; width: 4px; height: 18px; background: var(--accent); align-self: center; }
+.game-screen .g-p { background: transparent; border: 0; border-radius: 4px; padding: 6px 8px; gap: 10px; transition: background .15s, transform .15s; }
+.game-screen .g-p:hover { background: var(--glass2); transform: translateX(4px); }
+.game-screen .g-p.self { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 30%, transparent), transparent); }
+.game-screen .g-p.dead { opacity: .45; background: none; }
+.game-screen .g-p.dead .g-pname { text-decoration: line-through; }
+.game-screen .g-pname { font-size: 19px; color: var(--ink); }
+.game-screen .g-anon { width: 34px; height: 50px; }
 
-/* ── 게임 화면 (낮) ── */
-.game-screen.t-day { background: #efe6d2 radial-gradient(circle at 20% 30%, rgba(255,255,255,.6) 0 2px, transparent 3px) 0 0 / 34px 34px; }
-.t-day .g-cols { gap: 12px; padding: 12px; }
-.t-day .g-plist, .t-day .g-panel, .t-day .g-center {
-  background: #fffaf0; border: none; border-radius: 22px; box-shadow: 0 4px 0 #e2cfa9, 0 10px 24px rgba(90,60,30,.12); overflow: hidden;
-}
-.t-day .g-plist { overflow-y: auto; padding: 12px; }
-.t-day .g-panel { overflow-y: auto; }
-.t-day .g-title { color: var(--dim); font-weight: 700; }
-.t-day .g-scene { border-bottom: none; background: #dfe9e4; }
-.t-day .g-chatrow { border-top: 2px dashed var(--line); }
+/* 가운데 아래: 대화창 (비주얼노벨식) */
+.game-screen .g-center { background: none; border: 0; box-shadow: none; display: flex; flex-direction: column; justify-content: flex-end; min-height: 0; overflow: visible; }
+.g-dialog { display: flex; flex-direction: column; height: 300px; position: relative; border-radius: 4px 28px 4px 4px; overflow: hidden; }
+.g-dialog-head { padding: 10px 18px 6px; border-bottom: 1px solid var(--line); }
+.g-dialog-head span { font-size: 12px; font-weight: 900; letter-spacing: 4px; color: var(--accent); }
+.g-dialog-head b { font-family: var(--cute-font); font-weight: 400; font-size: 18px; color: var(--ink-dim); }
+.game-screen .g-log { padding: 10px 18px; gap: 6px; font-size: 19px; }
+.game-screen .g-chatrow { border-top: 1px solid var(--line); padding: 10px 14px; }
+.game-screen .chat-in { background: var(--glass2); border: 1px solid var(--line); border-radius: 4px; color: var(--ink); }
+.game-screen .chat-in:focus { border-color: var(--accent); outline: none; }
 
-/* 단계 리본 */
-.t-day .phase-pill { background: #fff; color: #9b6438; border-radius: 10px 30px 30px 10px; box-shadow: 0 3px 0 #9b6438; font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 26px; }
-.t-day .me-chip { background: #fff8ea; color: var(--text); border-width: 3px; }
+.game-screen .gl-event { color: var(--ink); background: none; border-radius: 0; padding: 4px 20px; font-family: var(--cute-font); font-weight: 400; font-size: 20px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); align-self: stretch; }
+.game-screen .gl-secret { background: color-mix(in srgb, #8a5cff 14%, transparent); border: 0; border-left: 4px solid #8a5cff; border-radius: 2px; color: var(--ink); align-self: stretch; max-width: none; }
+.game-screen .gl-note { background: #fff4a8; color: #4a3b06; border-radius: 2px; }
+.game-screen .gl-sys { color: var(--ink-dim); }
+.game-screen .gl-chat { color: var(--ink); background: none; border: 0; padding: 0; }
+.game-screen .gl-chat b { color: var(--accent); margin-right: 4px; }
+.t-day .gl-chat b { color: #e0691c; }
+.game-screen .gl-chat.mine b { color: #3d8bff; }
+.t-trial .gl-chat.mine b, .t-night .gl-chat.mine b { color: #ffd98a; }
+.game-screen .gl-ch { background: var(--glass2); color: var(--ink-dim); }
 
-/* 이름표 스티커 */
-.t-day .g-p { background: #fff; border: 2px solid #f0e2c4; border-radius: 16px; box-shadow: 0 3px 0 #ecdcb9; transition: transform .12s; }
-.t-day .g-p:hover { transform: translateY(-2px) rotate(-.6deg); }
-.t-day .g-p.self { border-color: var(--gold); background: #fff8e3; }
-.t-day .g-p.dead { opacity: .55; background: #f1ece2 repeating-linear-gradient(-45deg, transparent 0 10px, rgba(0,0,0,.03) 10px 20px); }
-.t-day .g-pname { color: var(--text); }
-.t-day .dead-mark { color: #b0a08b; font-size: 15px; }
-
-/* 기록: 사건은 초록 라벨, 비밀은 봉투, 쪽지는 노란 메모 */
-.t-day .g-log { gap: 8px; }
-.t-day .gl-event { color: #fff; background: var(--leaf); box-shadow: 0 3px 0 #4f8c3e; border-radius: 14px; font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; }
-.t-day .gl-secret { background: #f3ecff; border: 2px dashed #b9a2e6; color: #5b3f8f; }
-.t-day .gl-note { background: #fff1a8; color: #5a4a12; box-shadow: 0 4px 8px rgba(90,70,10,.18); }
-.t-day .gl-sys { color: #a68b6c; }
-.t-day .gl-chat { align-self: flex-start; background: #fff; border: 1px solid #f0e3c8; border-radius: 16px 16px 16px 4px; padding: 6px 14px; max-width: 92%; color: var(--text); }
-.t-day .gl-chat b { color: #c9761a; }
-.t-day .gl-chat.mine { align-self: flex-end; background: #fff3cf; border-color: #f3dc9c; border-radius: 16px 16px 4px 16px; }
-.t-day .gl-chat.mine b { color: #2f78bd; }
-.t-day .gl-chat.ch-dead { background: #eeeaf3; color: #7b7290; }
-.t-day .gl-chat.ch-defense { background: #fff6e0; color: #6b4a16; }
-.t-day .gl-ch { background: #efe3c9; }
-.t-day .ch-tab, .t-day .ch-label { background: #f7eedb; border-color: var(--line); }
-
-/* 오른쪽 패널 */
-.t-day .ph-title { font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 32px; color: #9b6438; }
-.t-day .ph-sub { color: var(--dim); }
-
-/* 투표: 이름 카드 + 도장 */
-.t-day .pbtn { position: relative; background: #fff; border: 2px solid #ecdcb9; border-bottom-width: 5px; color: var(--text); border-radius: 14px; justify-content: center; min-height: 64px; }
-.t-day .pbtn:hover { border-color: var(--gold2); transform: translateY(-1px); }
+/* 오른쪽: 행동 패널 */
+.game-screen .g-panel { align-self: start; max-height: 100%; padding: 22px 22px 24px; border-left: 0; }
+.game-screen .ph-head { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.game-screen .ph-title { font-family: var(--title-font); font-weight: 400; font-size: 34px; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+.game-screen .ph-title::before { content: ''; width: 5px; height: 30px; background: var(--accent); }
+.game-screen .ph-sub { color: var(--ink-dim); font-size: 18px; }
+.game-screen .pbtns { grid-template-columns: 1fr 1fr; gap: 8px; }
+.game-screen .pbtn { position: relative; justify-content: flex-start; min-height: 58px; background: var(--glass2); border: 1px solid var(--line); border-radius: 4px; color: var(--ink); font-size: 20px; padding: 8px 12px; transition: transform .12s, border-color .12s, background .12s; }
+.game-screen .pbtn::before { content: ''; width: 26px; height: 38px; flex: none; background: var(--anon) center / contain no-repeat; opacity: .9; }
+.game-screen .pbtn:hover { transform: translateY(-2px); border-color: var(--accent); }
+.game-screen .pbtn.sel, .game-screen .btn.sel { background: color-mix(in srgb, #ff4d6a 22%, transparent) !important; border-color: #ff4d6a !important; }
 .pbtn.sel::after {
-  content: '투표'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%) rotate(-14deg);
-  font-family: 'Jua', 'Noto Sans KR', sans-serif; font-size: 16px; color: #d9485f; border: 3px solid #d9485f; border-radius: 50%;
-  width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; opacity: .85; animation: stamp .25s ease-out;
+  content: 'VOTE'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%) rotate(-14deg);
+  font-family: var(--title-font); font-size: 13px; letter-spacing: 1px; color: #ff4d6a; border: 3px double #ff4d6a; border-radius: 50%;
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; animation: stamp .25s ease-out;
 }
 @keyframes stamp { from { transform: translateY(-50%) rotate(-14deg) scale(2.2); opacity: 0; } }
-.t-day .pbtn.sel, .t-day .btn.sel { background: #fff3f3 !important; border-color: #d9485f !important; }
 
-/* 둥근 시계 타이머 */
-.g-timer { position: relative; width: 56px; height: 56px; min-width: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900;
-  background: conic-gradient(var(--ring, var(--gold)) calc(var(--p, 1) * 360deg), rgba(0,0,0,.15) 0); }
-.g-timer::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--clock-face, #fffaf0); }
-.g-timer span { position: relative; color: var(--clock-text, #4a3424); }
-.g-timer.urgent { --ring: #d9485f; }
-.g-timer.empty { visibility: hidden; }
+/* 버튼 */
+.game-screen .btn { background: var(--glass2); border: 1px solid var(--line); border-radius: 4px; color: var(--ink); }
+.game-screen .btn:hover:not(:disabled) { border-color: var(--accent); }
+.game-screen .btn.gold { background: var(--ink); color: var(--glass); border: 0; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+.t-trial .btn.gold, .t-night .btn.gold { background: var(--accent); color: #0e1434; }
+.game-screen .btn.big.mafia { background: #ff4d6a; color: #fff; border: 0; }
+.game-screen .ch-tab, .game-screen .ch-label { background: var(--glass2); border: 1px solid var(--line); border-radius: 3px; color: var(--ink); }
+.game-screen .ch-tab.on { border-color: var(--accent); color: var(--accent); }
+.game-screen .tag { border-radius: 3px; background: var(--glass2); color: var(--ink-dim); }
+.game-screen .tag.me { background: var(--ink); color: var(--glass); }
+.t-trial .tag.me, .t-night .tag.me { background: var(--accent); color: #0e1434; }
+.game-screen .tag.mafia { background: rgba(255,77,106,.18); color: #ff4d6a; }
+.game-screen .tag.info { background: rgba(60,180,130,.18); color: #20a070; }
+.t-trial .tag.info { color: #8ff0c8; }
 
-/* 카드들 (역할 카드, 결과, 쪽지) */
-.t-day .card { background: #fffaf0; border: 3px solid var(--line); box-shadow: 0 6px 0 #e2cfa9, 0 30px 60px rgba(60,40,20,.35); }
-.t-day .overlay { background: rgba(70,50,30,.45); }
-.t-day .rc-name, .t-day .res-big.win { color: #9b6438; text-shadow: 0 3px 0 #f3dfb4; }
-.t-day .res-table td { border-bottom: 1px dashed var(--line); }
-.t-day .res-table tr.self { background: #fff3cf; }
+/* 장면 위 말풍선·이름 */
+.game-screen .sc-name { font-size: 17px; }
+.game-screen .sc-bubble { font-size: 18px; border-radius: 4px 16px 16px 16px; max-width: 300px; }
 
-/* ───────────────────────── 재판장 ───────────────────────── */
-.t-trial {
-  --panel: rgba(18, 24, 62, .92);
-  --panel2: #1d2766;
-  --line: #3a4aa0;
-  --text: #e9edff;
-  --dim: #a3aedb;
-  --gold: #cfe0ff;
-  --gold2: #8fa6ff;
-  color: var(--text);
-}
-.game-screen.t-trial { background: radial-gradient(ellipse at 50% -10%, #3a4bb0 0%, #121845 45%, #070a1f 100%); }
-.t-trial .g-cols { gap: 12px; padding: 12px; }
-.t-trial .g-top { background: linear-gradient(#18205a, #0f1440); border-bottom: 2px solid #5e72d6; box-shadow: 0 0 24px rgba(120,150,255,.35); }
-.t-trial .g-plist, .t-trial .g-panel, .t-trial .g-center {
-  background: rgba(16, 22, 60, .78); border: 1px solid rgba(150,170,255,.35); border-radius: 22px; box-shadow: inset 0 0 30px rgba(120,150,255,.12); overflow: hidden;
-}
-.t-trial .g-plist, .t-trial .g-panel { overflow-y: auto; }
-.t-trial .phase-pill { background: linear-gradient(#e9efff, #b9c7ff); color: #18205a; box-shadow: 0 0 18px rgba(170,190,255,.8); font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 26px; }
-.t-trial .day-label { color: #cfe0ff; }
-.t-trial .g-p { background: rgba(255,255,255,.05); border: 1px solid rgba(150,170,255,.2); }
-.t-trial .g-p.self { border-color: #cfe0ff; }
-.t-trial .gl-event { color: #eef2ff; background: rgba(120,150,255,.18); border: 1px solid rgba(170,190,255,.4); }
-.t-trial .gl-chat.ch-defense { color: #fff; }
-.t-trial .ph-title { font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; color: #eef2ff; text-shadow: 0 0 12px rgba(170,190,255,.8); }
-.t-trial .pbtn { background: rgba(255,255,255,.06); border: 2px solid rgba(170,190,255,.4); color: #fff; min-height: 70px; justify-content: center; position: relative; }
-.t-trial .pbtn:hover { border-color: #fff; box-shadow: 0 0 16px rgba(170,190,255,.6); }
-.t-trial .pbtn.sel, .t-trial .btn.sel { background: rgba(217,72,95,.25) !important; border-color: #ff8a9c !important; }
-.t-trial .btn { background: rgba(255,255,255,.06); border-color: rgba(170,190,255,.4); }
-.t-trial .btn.big.mafia { background: linear-gradient(#e55a70, #a92c44); border-color: #ff9aaa; color: #fff; }
-.t-trial .chat-in { background: rgba(255,255,255,.08); border-color: rgba(170,190,255,.4); color: #fff; border-radius: 22px; }
-.t-trial .g-timer { --ring: #cfe0ff; --clock-face: #121845; --clock-text: #eef2ff; }
-.t-trial .g-chatrow { border-top: 1px solid rgba(150,170,255,.25); }
+/* 카드(역할·결과·쪽지) */
+.game-screen .card { background: var(--glass); backdrop-filter: blur(14px); border: 1px solid var(--gline); border-radius: 6px; color: var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.game-screen .overlay { background: rgba(10, 14, 30, .45); }
+.game-screen .rc-name, .game-screen .res-big.win { font-family: var(--title-font); font-weight: 400; color: var(--ink); }
+.game-screen .rolecard { border-top: 8px solid var(--team, var(--accent)); }
+.rolecard.mafia { --team: #ff4d6a; } .rolecard.citizen { --team: #4da3ff; } .rolecard.neutral { --team: #b57bff; }
 
-/* ───────────────────────── 밤 ───────────────────────── */
-.t-night { --ring: #ffd27a; --clock-face: #0e1838; --clock-text: #ffe6b0; }
-.game-screen.t-night { background: #060b1f; }
-.t-night .g-top { background: linear-gradient(#0f1a40, #0a1230); border-bottom: 1px solid #23356e; }
-.t-night .phase-pill.night { background: #1d2c66; color: #ffe6b0; box-shadow: 0 0 14px rgba(255,210,122,.35); font-family: 'Jua', 'Noto Sans KR', sans-serif; font-weight: 400; font-size: 26px; }
-.g-night { background: #060b1f; }
-.n-side { background: linear-gradient(#0e1838, #0a1128) !important; border-left: 1px solid #23356e !important; }
-.n-title { font-family: 'Jua', 'Noto Sans KR', sans-serif; color: #ffe6b0; }
-.n-step span { color: #6f7fb5; }
+/* ── 밤: 남색 유리 ── */
+.t-night .pt-main b { color: #ffe6b0; text-shadow: 0 0 20px rgba(255,210,122,.5); }
+.g-night .n-side { margin: 150px 28px 24px 0; border: 1px solid var(--gline) !important; background: var(--glass) !important; backdrop-filter: blur(12px); border-radius: 6px; }
+.g-night { grid-template-columns: 1fr 420px !important; }
+.g-night .n-room { grid-row: 1; grid-column: 1 / -1; }
+.g-night .farm-area { grid-row: 1; grid-column: 1; }
+.game-screen.in-corridor .g-top { display: none; }
+.n-title { font-size: 24px !important; }
+.g-night .n-side { grid-row: 1; grid-column: 2; z-index: 3; }
+.n-title { font-family: var(--title-font); font-weight: 400; color: #ffe6b0; }
+.n-step span { color: var(--ink-dim); }
 .n-step .on { color: #ffe6b0; }
-.n-status { background: rgba(255,210,122,.08) !important; border: 1px solid rgba(255,210,122,.25); color: #ffe6b0 !important; }
-.n-log .nl { color: #c8d3ff; }
-.n-door .btn.gold { background: linear-gradient(#ffe29a, #f0b240); box-shadow: 0 0 30px rgba(255,210,122,.6); }
+.n-status { background: rgba(255,210,122,.08) !important; border-left: 4px solid #ffd98a; border-radius: 2px !important; color: #ffe6b0 !important; }
+.n-door { right: 470px !important; bottom: 40px !important; }
+.n-door .btn.gold { background: #ffd98a; color: #1a1430; box-shadow: 0 0 30px rgba(255,210,122,.6); border: 0; clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+.g-night .n-me { left: 34%; }
 
-/* 작은 화면 */
-#stage.compact .t-day .g-cols, #stage.compact .t-trial .g-cols { gap: 8px; padding: 8px; }
-#stage.compact .g-timer { width: 48px; height: 48px; font-size: 19px; }
+/* ── 대기실 ── */
+.room.t-day { background: #0b0f20; }
+.room.t-day .r-cols { position: absolute; inset: 0; display: block; }
+.room.t-day .world-wrap { position: absolute; inset: 0; background: #e9e2cf; }
+.room.t-day .r-top { position: absolute; left: 0; right: 0; top: 0; z-index: 5; height: auto; padding: 22px 28px; background: none; border: 0; box-shadow: none; pointer-events: none; }
+.room.t-day .r-top > * { pointer-events: auto; }
+.room.t-day .room-code { background: rgba(43,47,58,.88); color: #c7cde0; padding: 10px 20px; clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px); }
+.room.t-day .room-code b { color: #fff; font-family: var(--title-font); font-weight: 400; letter-spacing: 6px; }
+.room.t-day .room-count { background: #fff; color: #2b2f3a; padding: 10px 16px; font-family: var(--cute-font); font-weight: 400; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+.room.t-day .r-top .btn { background: rgba(255,255,255,.9); border: 0; border-radius: 4px; color: #2b2f3a; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+.room.t-day .r-side { position: absolute; right: 28px; top: 100px; bottom: 24px; width: 400px; z-index: 4; background: rgba(255,255,255,.82); backdrop-filter: blur(12px); border: 1px solid #fff; border-radius: 6px; box-shadow: 0 10px 30px rgba(30,40,60,.25); overflow: hidden; color: #2b2f3a; --text: #2b2f3a; --dim: #6c7385; --line: rgba(43,47,58,.14); --panel2: rgba(43,47,58,.06); --gold: #ff8a3d; --gold2: #ffb648; }
+.room.t-day .r-side .btn { background: rgba(43,47,58,.06); border: 1px solid rgba(43,47,58,.14); border-radius: 4px; color: #2b2f3a; }
+.room.t-day .r-side .btn.gold { background: #2b2f3a; color: #fff; border: 0; font-family: var(--title-font); font-weight: 400; letter-spacing: 1px; clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+.room.t-day .r-side .btn.gold:disabled { opacity: .35; }
+.room.t-day .host-bar, .room.t-day .r-plist { border-bottom: 1px solid rgba(43,47,58,.12); }
+.room.t-day .wait-msg { color: #e0691c; font-weight: 700; }
+.room.t-day .rp { background: rgba(43,47,58,.06); border-radius: 3px; }
+.room.t-day .rp.self { outline: 2px solid #ff8a3d; }
+.room.t-day .chat-log .cl-line b { color: #e0691c; }
+.room.t-day .chat-row { border-top: 1px solid rgba(43,47,58,.12); }
+.room.t-day .chat-in { background: #fff; border: 1px solid rgba(43,47,58,.18); border-radius: 4px; color: #2b2f3a; }
+.room.t-day .world { border-radius: 0; box-shadow: none; }
+.room.t-day .ch-name { text-shadow: 0 1px 2px #2b2f3a, 0 0 3px #2b2f3a; }
+.room.t-day .mini-banner { background: rgba(43,47,58,.9); border: 0; border-radius: 4px; }
+
+/* 작은 화면 (1280×720) */
+#stage.compact .game-screen .g-top { padding: 16px 20px 0; }
+#stage.compact .game-screen .g-cols { inset: 108px 16px 14px 16px; grid-template-columns: 190px 1fr 300px; gap: 14px; }
+#stage.compact .pt-day { width: 68px; height: 68px; font-size: 34px; }
+#stage.compact .pt-main b { font-size: 38px; }
+#stage.compact .game-screen .g-timer { width: 220px; margin-top: 6px; }
+#stage.compact .g-dialog { height: 220px; }
+#stage.compact .game-screen .g-log { font-size: 16px; }
+#stage.compact .game-screen .me-chip { height: 58px; padding-left: 78px; }
+#stage.compact .mc-img { height: 76px; }
+#stage.compact .mc-text b { font-size: 22px; }
+#stage.compact .game-screen .ph-title { font-size: 26px; }
+#stage.compact .g-night .n-side { margin: 108px 16px 14px 0; }
+#stage.compact .g-night { grid-template-columns: 1fr 320px !important; }
+#stage.compact .n-door { right: 350px !important; }
+#stage.compact .room.t-day .r-side { width: 320px; top: 80px; right: 16px; bottom: 14px; }

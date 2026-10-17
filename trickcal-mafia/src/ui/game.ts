@@ -58,12 +58,14 @@ export class GameUI {
     this.chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); } });
     this.scene = new Scene(myPid, () => roleImg(this.v?.me.role ?? '') ?? ANON, ANON, this.name);
     this.el = h('div.game-screen',
+      this.scene.el,
       this.top,
       h('div.g-cols',
         this.plist,
-        h('div.g-center', this.scene.el, this.log, this.chatRow),
+        h('div.g-center', h('div.g-dialog', h('div.g-dialog-head', h('span', 'LOG'), h('b', '대화 기록')), this.log, this.chatRow)),
         this.panel),
       this.nightEl);
+    this.el.style.setProperty('--anon', `url("${new URL(ANON, location.href).href}")`);
     root.appendChild(this.el);
     this.tick = window.setInterval(() => this.renderTimer(), 250);
   }
@@ -135,20 +137,29 @@ export class GameUI {
       intro: '게임 시작', night: `밤 · ${STEP_NAMES[v.step] ?? ''}`, morning: '아침', day: '낮 토론', vote1: '1차 투표', defense: '결선 변론', vote2: '결선 투표', verdict: '판결', end: '게임 끝',
     };
     const role = v.me.role;
+    const EN: Record<string, string> = {
+      intro: 'GAME START', night: 'NIGHT', morning: 'MORNING', day: 'DISCUSSION', vote1: 'VOTE', defense: 'FINAL DEFENSE', vote2: 'FINAL VOTE', verdict: 'VERDICT', end: 'GAME OVER',
+    };
+    const myImg = roleImg(role);
     clear(this.top).append(
-      h(`div.phase-pill.${v.phase === 'night' ? 'night' : 'day'}`, phaseName[v.phase]),
-      h('div.day-label', v.day ? `${v.day}일째` : ''),
-      this.timerEl,
+      h('div.phase-title',
+        v.phase === 'night'
+          ? h('div.pt-day', String(v.night).padStart(2, '0'), h('small', 'NIGHT'))
+          : h('div.pt-day', String(Math.max(1, v.day)).padStart(2, '0'), h('small', 'DAY')),
+        h('div.pt-main', h('b', phaseName[v.phase]), h('small', EN[v.phase] ?? ''), this.timerEl)),
       h('div.spacer'),
-      h(`button.me-chip.${ROLES[role as RoleId]?.team ?? ''}`, { onclick: () => this.showRoleCard() }, `나: ${this.name(this.myPid)} · ${roleName(role as RoleId)}`, v.me.alive ? '' : h('small', ' (사망)')),
+      h(`button.me-chip.${ROLES[role as RoleId]?.team ?? ''}`, { onclick: () => this.showRoleCard() },
+        myImg ? h('img.mc-img', { src: myImg, alt: '' }) : '',
+        h('div.mc-text', h('small', v.me.alive ? this.name(this.myPid) : `${this.name(this.myPid)} · 사망`), h('b', roleName(role as RoleId)))),
     );
     this.renderTimer();
   }
 
   private renderTimer() {
     if (!this.v) return;
+    this.el.classList.toggle('in-corridor', !!this.corridor);
     const l = this.left();
-    this.timerEl.replaceChildren(h('span', this.v.phase === 'end' ? '' : String(l)));
+    this.timerEl.replaceChildren(h('span', this.v.phase === 'end' ? '' : `${l}s`), h('i'));
     this.timerEl.classList.toggle('empty', this.v.phase === 'end');
     this.timerEl.classList.toggle('urgent', l <= 5);
     this.timerEl.style.setProperty('--p', String(Math.max(0, Math.min(1, l / this.phaseTotal))));
@@ -161,7 +172,7 @@ export class GameUI {
 
   private renderPlayers() {
     const v = this.v!;
-    clear(this.plist).append(h('div.g-title', '플레이어 (눌러서 메모)'));
+    clear(this.plist).append(h('div.g-title', '플레이어', h('small', '눌러서 메모')));
     for (const p of v.players) {
       const m = this.memo.get(p.pid) ?? 0;
       const tags: (HTMLElement | string)[] = [];
