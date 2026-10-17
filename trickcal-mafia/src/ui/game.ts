@@ -463,7 +463,7 @@ class Corridor {
     const d = this.input.dir();
     this.x = Math.max(60, Math.min(CW - 60, this.x + d.x * 420 * dt));
     this.y = Math.max(330, Math.min(640, this.y + d.y * 420 * dt));
-    if (d.x) this.me.classList.toggle('flip', d.x < 0);
+    if (d.x) this.me.classList.toggle('flip', d.x > 0);
     this.me.classList.toggle('moving', d.x !== 0 || d.y !== 0);
     this.me.style.transform = `translate(${this.x}px, ${this.y}px)`;
     if (t - this.lastSent > 120 && this.v.me.act?.kind === 'kill') { this.onMove(Math.round(this.x), Math.round(this.y)); this.lastSent = t; }

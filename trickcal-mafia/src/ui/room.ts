@@ -355,7 +355,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
       mine.x = clamp(mine.x + d.x * SPEED * dt, 30, WORLD_W - 30);
       mine.y = clamp(mine.y + d.y * SPEED * dt, 60, WORLD_H - 20);
       mine.moving = d.x !== 0 || d.y !== 0;
-      if (d.x) mine.el.classList.toggle('flip', d.x < 0);
+      if (d.x) mine.el.classList.toggle('flip', d.x > 0);
       if (t - lastSent > 80 && (Math.abs(mine.x - sentX) > 0.5 || Math.abs(mine.y - sentY) > 0.5)) {
         link.send({ t: 'move', x: Math.round(mine.x), y: Math.round(mine.y) });
         sentX = mine.x; sentY = mine.y; lastSent = t;
@@ -368,7 +368,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         const nx = a.fx + (a.tx - a.fx) * k, ny = a.fy + (a.ty - a.fy) * k;
         const dx = nx - a.x;
         a.moving = k < 1 && Math.hypot(a.tx - a.fx, a.ty - a.fy) > 2;
-        if (Math.abs(dx) > 0.5) a.el.classList.toggle('flip', dx < 0);
+        if (Math.abs(dx) > 0.5) a.el.classList.toggle('flip', dx > 0);
         a.x = nx; a.y = ny;
       }
       const tf = `translate3d(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px, 0)`;
