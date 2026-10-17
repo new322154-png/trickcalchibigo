@@ -13,9 +13,9 @@ import { MoveInput, isTouch } from './input';
 import { sfx } from './sfx';
 
 const CW = 1600, CH = 900;
-const STEP_NAMES = ['', '① 봉인 · 위장', '② 니펠 · 접선', '③ 의사 · 경찰 · 추적 · 공개'];
+const STEP_NAMES = ['', '① 뮤트 · 스피키', '② 니펠', '③ 그 밖의 능력'];
 const ACT_LABEL: Record<string, string> = {
-  kill: '습격', contact: '접선 시도', seal: '봉인', disguise: '위장시키기', protect: '지키기', investigate: '조사', track: '지켜보기', reveal: '정체 공개',
+  kill: '습격', seal: '해킹', disguise: '변장', protect: '지키기', investigate: '조사', track: '지켜보기', reveal: '직업 공개', identify: '직업 알아내기', revive: '소원 빌기',
 };
 const CH_LABEL: Record<ChatCh, string> = { day: '전체', nifel: '니펠', dead: '죽은 사람', defense: '변론' };
 const MEMO = ['', '의심', '마피아?', '시민?', '확정 시민', '확정 마피아'];
@@ -163,7 +163,7 @@ export class GameUI {
     const chats = this.v!.me.chats;
     if (!chats.includes(this.chatCh)) this.chatCh = chats[0] ?? 'day';
     clear(this.chatRow);
-    if (!chats.length) { this.chatRow.append(h('div.dim', this.v!.phase === 'vote1' || this.v!.phase === 'vote2' ? '투표 중에는 채팅할 수 없어요.' : this.v!.phase === 'defense' ? '결선에 오른 두 사람만 말할 수 있어요.' : '지금은 채팅할 수 없어요.')); return; }
+    if (!chats.length) { this.chatRow.append(h('div.dim', this.v!.phase === 'vote1' || this.v!.phase === 'vote2' ? '투표 중에는 채팅할 수 없어요.' : this.v!.phase === 'defense' ? (this.v!.me.silenced ? '입이 막혀 말할 수 없어요.' : '결선에 오른 두 사람만 말할 수 있어요.') : '지금은 채팅할 수 없어요.')); return; }
     if (chats.length > 1) this.chatRow.append(h('div.ch-tabs', chats.map((c) => h(`button.ch-tab${c === this.chatCh ? '.on' : ''}`, { onclick: () => { this.chatCh = c; this.renderChat(); } }, CH_LABEL[c]))));
     else this.chatRow.append(h(`span.ch-label.ch-${chats[0]}`, CH_LABEL[chats[0]]));
     this.chatRow.append(this.chatIn, h('button.btn.small.gold', { onclick: () => this.sendChat() }, '전송'));
@@ -181,7 +181,7 @@ export class GameUI {
   private renderPanel() {
     const v = this.v!;
     const me = v.me;
-    const key = JSON.stringify([v.phase, v.step, me.vote, me.prompt?.key, me.notesLeft, me.alive, v.cands, me.canVote]);
+    const key = JSON.stringify([v.phase, v.step, me.vote, me.prompt?.key, me.notesLeft, me.alive, v.cands, me.canVote, me.proxyFor, me.silenced]);
     if (key === this.lastKey) return;
     this.lastKey = key;
     clear(this.panel);
@@ -197,7 +197,7 @@ export class GameUI {
       if (pr.key === 'agitate' || pr.key === 'avenge') this.panel.append(h('button.btn.wide', { onclick: () => this.link.send({ t: 'choice', key: pr.key, value: null }) }, '쓰지 않는다'));
       return;
     }
-    if (!me.alive) { head('👻 관전 중', '죽은 사람끼리 채팅할 수 있고, 밤에는 니펠의 대화를 엿볼 수 있어요. 영매는 밤에 죽은 사람과 대화해요.'); return; }
+    if (!me.alive) { head('👻 관전 중', '죽은 사람끼리 채팅할 수 있고, 밤에는 니펠의 대화를 엿볼 수 있어요. 캐시는 밤에 죽은 사람과 대화해요.'); return; }
     switch (v.phase) {
       case 'intro': head('게임 시작!', '직업을 확인하세요. 곧 첫 밤이 찾아옵니다.'); break;
       case 'night': head('🌙 밤', '자기 방에 있어요.'); break;
@@ -216,7 +216,9 @@ export class GameUI {
         break;
       }
       case 'defense':
-        head('⚖ 결선 변론', v.cands.includes(this.myPid) ? '당신이 결선에 올랐어요! 45초 동안 변론하세요.' : `${v.cands.map(this.name).join(' vs ')} — 변론을 들어 보세요.`);
+        if (me.silenced) head('🤐 입이 막혔다', '누군가 당신의 목소리를 훔쳤어요. 이번 변론에서는 말할 수 없어요.');
+        else if (me.proxyFor !== undefined) head('🗣 선동 중', `지금 채팅은 ${this.name(me.proxyFor)}의 이름으로 나갑니다.`);
+        else head('⚖ 결선 변론', v.cands.includes(this.myPid) ? '당신이 결선에 올랐어요! 45초 동안 변론하세요.' : `${v.cands.map(this.name).join(' vs ')} — 변론을 들어 보세요.`);
         break;
       case 'vote2': {
         if (!me.canVote) { head('🗳 결선 투표', '다른 사람들이 투표하고 있어요.'); break; }
@@ -288,6 +290,8 @@ export class GameUI {
         h('div.n-step', STEP_NAMES.slice(1).map((s, i) => h(`span${v.step === i + 1 ? '.on' : ''}`, s))),
         h('div.n-status', status),
         act && act.optional && myTurn ? h('button.btn.small', { onclick: () => this.link.send({ t: 'act', target: null }) }, '오늘은 쓰지 않기') : '',
+        v.me.drone ? h('div.n-drone', `🛸 드론 ${v.me.drone.count}/3 · 투표권 ${1 + v.me.drone.count}`,
+          v.me.drone.tries > 0 && v.me.drone.count < 3 ? h('button.btn.small.gold', { onclick: () => { sfx('click'); this.link.send({ t: 'drone' }); } }, `🔧 조립하기 (남은 기회 ${v.me.drone.tries})`) : h('span.dim', ' 오늘 밤 조립 끝')) : '',
         this.nightLogEl,
         v.me.chats.length ? h('div.n-chat', h('span', CH_LABEL[v.me.chats[0]]), this.nightChatInput()) : '',
         h('div.n-mini', h('span', '기다리는 동안:'),
@@ -339,7 +343,7 @@ export class GameUI {
   private showEnd(winner: string, roles: { pid: number; role: string; alive: boolean }[], winners: number[]) {
     const won = winners.includes(this.myPid);
     sfx(won ? 'win' : 'lose');
-    const title = ({ mafia: '마피아 팀 승리', citizen: '시민 팀 승리', jester: '광대 승리', draw: '무승부' } as Record<string, string>)[winner];
+    const title = ({ mafia: '마피아 팀 승리', citizen: '시민 팀 승리', jester: '코미 승리', elena: '엘레나 승리', draw: '무승부' } as Record<string, string>)[winner];
     const ov = h('div.overlay',
       h('div.card.result',
         h(`div.res-big.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…'),

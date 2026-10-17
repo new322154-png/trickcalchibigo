@@ -1,12 +1,16 @@
 /**
  * 마피아 본게임 (서버에서만 돈다. 화면에는 각자 알아도 되는 정보만 보낸다)
  *
- * 밤: ① 봉인·위장 → ② 니펠·접선 → ③ 의사·경찰·추적·공개 (차례마다 15초, 없는 직업 차례도 항상 기다림)
- *     경찰·접선은 쓰자마자 결과, 추적은 ③차례 끝, 습격·보호·공개는 아침에 한꺼번에.
+ * 밤: ① 뮤트·스피키 → ② 니펠 → ③ 나머지 능력 (차례마다 15초, 없는 직업 차례도 항상 기다림)
+ *     조사·직업 탐지·변장은 쓰자마자 결과, 추적은 ③차례 끝, 습격·보호·공개·소원은 아침에 한꺼번에.
  * 낮: 토론(살아 있는 사람 × 20초, 최소 90초) → 1차 투표 20초 → 결선 변론 45초 → 결선 투표 15초 → 판결
+ *
+ * 접선 (마피아 팀원이 니펠과 서로 알아보고 니펠 채팅에 들어가는 것)
+ *  뮤트: 니펠을 해킹 · 벨라: 니펠의 직업을 알아냄 · 죠안: 니펠이 습격하려 함 · 우로스: 습격당해 죽은 뒤 되살아남
  */
 import {
-  BAT_CHOOSE_DAY, CITIZEN_POOL, COMPOSITION, MEMBER_POOL, NEUTRAL_POOL, NIGHT_STEP, NO_FIRST_KILL, OPTIONAL_NIGHT, ROLES,
+  BAT_CHOOSE_DAY, CITIZEN_POOL, COMPOSITION, DRONE_MAX, DRONE_MAX_CHANCE, DRONE_PITY, DRONE_TRIES, JESTER_NIGHT,
+  MEMBER_POOL, NEUTRAL_POOL, NIGHT_STEP, NO_FIRST_KILL, OPTIONAL_NIGHT, ROLES, UROS_REVIVE_NIGHTS,
   roleName, type NightKind, type RoleId,
 } from './roles';
 import {
@@ -26,14 +30,25 @@ interface GP {
   role: RoleId;
   alive: boolean;
   online: boolean;
-  diedHow?: 'night' | 'vote' | 'avenge' | 'leave';
+  diedHow?: 'night' | 'vote' | 'avenge' | 'leave' | 'blast';
   contacted: boolean;
-  heirAwake: boolean;
   usedOnce: boolean;
   shieldUsed: boolean;
   batSide?: 'mafia' | 'citizen';
   revealed: boolean;
   notesLeft: number;
+  /** 우로스: 되살아난 뒤 니펠 */
+  urosAwake: boolean;
+  /** 우로스: 되살아날 밤 */
+  urosReviveNight?: number;
+  /** 스피키: 오늘 밤 빌린 직업 */
+  copyRole?: RoleId;
+  /** 스피키: 공개될 때 보이는 직업 */
+  shownRole?: RoleId;
+  /** 엘레나 */
+  drones: number;
+  droneTries: number;
+  droneTotal: number;
 }
 
 interface Act { kind: NightKind; targets: number[]; optional: boolean; choice: number | null; locked: boolean; done: boolean }
@@ -45,6 +60,7 @@ function shuffle<T>(arr: T[]): T[] {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
+const label = (r: RoleId) => `${roleName(r)}(${ROLES[r].job})`;
 
 export class MafiaGame {
   ps = new Map<number, GP>();
@@ -56,17 +72,24 @@ export class MafiaGame {
   over = false;
   private acts = new Map<number, Act>();
   private sealed = new Set<number>();
-  private disguised = new Set<number>();
   private killVotes = new Map<number, number | null>();
   private visits = new Map<number, number>();
-  private morning: { deaths: number[]; saved: number; reveals: { who: number; role: RoleId; why: 'reveal' | 'trap' }[] } = { deaths: [], saved: 0, reveals: [] };
+  private morning = this.emptyMorning();
   private votes = new Map<number, number | null>();
   private cands: number[] = [];
   private counts: [number, number][] | undefined;
-  private agitated: { voter: number } | null = null;
+  private proxy: { joan: number; target: number } | null = null;
   private prompts = new Map<number, Prompt>();
   private quietDays = 0;
-  private trackerJobs: { pid: number; target: number }[] = [];
+  private pendingKill: { target: number; executor: number; voters: number[] } | null = null;
+  private overturned = false;
+
+  private emptyMorning() {
+    return {
+      deaths: [] as number[], blasts: [] as [number, number][], saved: 0, revives: [] as number[], drone: false,
+      reveals: [] as { who: number; role: RoleId; why: 'reveal' | 'trap' }[],
+    };
+  }
 
   constructor(private host: GameHost, seats: { pid: number; name: string }[]) {
     const n = seats.length;
@@ -80,7 +103,8 @@ export class MafiaGame {
     ]);
     seats.forEach((s, i) => this.ps.set(s.pid, {
       pid: s.pid, name: s.name, role: roles[i], alive: true, online: true,
-      contacted: false, heirAwake: false, usedOnce: false, shieldUsed: false, revealed: false, notesLeft: 1,
+      contacted: false, usedOnce: false, shieldUsed: false, revealed: false, notesLeft: 1,
+      urosAwake: false, drones: 0, droneTries: 0, droneTotal: 0,
     }));
   }
 
@@ -89,25 +113,32 @@ export class MafiaGame {
   private all() { return [...this.ps.values()]; }
   private alive() { return this.all().filter((p) => p.alive); }
   private name = (pid: number) => this.ps.get(pid)?.name ?? '?';
-  isKiller(p: GP) { return p.role === 'nifel' || (p.role === 'heir' && p.heirAwake) || (p.role === 'bat' && p.batSide === 'mafia'); }
+  isKiller(p: GP) { return p.role === 'nifel' || (p.role === 'uros' && p.urosAwake) || (p.role === 'bat' && p.batSide === 'mafia'); }
   isMafiaTeam(p: GP) { return p.role === 'nifel' || !!ROLES[p.role].member || (p.role === 'bat' && p.batSide === 'mafia'); }
+  private isCitizenTeam(p: GP) { return ROLES[p.role].team === 'citizen' || (p.role === 'bat' && p.batSide === 'citizen'); }
   private inNifelChat(p: GP) { return this.isKiller(p) || (!!ROLES[p.role].member && p.contacted); }
   private matesOf(p: GP) { return this.inNifelChat(p) ? this.all().filter((q) => q.pid !== p.pid && this.inNifelChat(q)).map((q) => q.pid) : []; }
+  private weight(pid: number) { const p = this.ps.get(pid); return p && p.role === 'elena' ? 1 + p.drones : 1; }
 
-  private nightKind(p: GP): NightKind | null {
+  /** 이 차례에 쓸 능력 */
+  private kindAt(p: GP, step: 1 | 2 | 3): NightKind | null {
     if (!p.alive) return null;
-    if (this.isKiller(p)) return 'kill';
+    if (this.isKiller(p)) return step === 2 ? 'kill' : null;
+    if (p.role === 'spiky' && step === 3 && p.copyRole) {
+      const k = ROLES[p.copyRole].night;
+      return k && k !== 'kill' && k !== 'disguise' ? k : null;
+    }
     const def = ROLES[p.role];
-    if (def.member) return p.contacted ? def.night ?? null : 'contact';
-    if (!def.night) return null;
-    if (def.once && p.usedOnce) return null;
-    return def.night;
+    if (!def.night || (def.once && p.usedOnce)) return null;
+    return NIGHT_STEP[def.night] === step ? def.night : null;
   }
 
   private targetsFor(p: GP, kind: NightKind) {
+    if (kind === 'revive') return this.all().filter((q) => !q.alive && q.diedHow !== 'leave' && q.pid !== p.pid).map((q) => q.pid);
     const mates = this.matesOf(p);
+    const self = kind === 'protect';
     return this.alive()
-      .filter((q) => q.pid !== p.pid || ROLES[p.role].selfTarget)
+      .filter((q) => q.pid !== p.pid || self)
       .filter((q) => (kind === 'kill' ? !mates.includes(q.pid) : true))
       .map((q) => q.pid);
   }
@@ -135,6 +166,9 @@ export class MafiaGame {
         vote: this.votes.has(pid) ? this.votes.get(pid) : undefined,
         canVote: p.alive && ((this.phase === 'vote1') || (this.phase === 'vote2' && !this.cands.includes(pid))),
         prompt: prompt ? { key: prompt.key, options: prompt.options, text: prompt.text } : null,
+        drone: p.role === 'elena' ? { count: p.drones, tries: this.phase === 'night' && p.alive ? p.droneTries : 0 } : undefined,
+        proxyFor: this.proxy && this.proxy.joan === pid && this.phase === 'defense' ? this.proxy.target : undefined,
+        silenced: !!this.proxy && this.proxy.target === pid && this.phase === 'defense',
       },
       cands: this.cands,
       counts: this.counts,
@@ -150,7 +184,11 @@ export class MafiaGame {
     if (this.over) return ['day'];
     if (!p.alive) return ['dead'];
     if (this.phase === 'day') return ['day'];
-    if (this.phase === 'defense') return this.cands.includes(p.pid) ? ['defense'] : [];
+    if (this.phase === 'defense') {
+      if (this.proxy?.target === p.pid) return [];
+      if (this.proxy?.joan === p.pid) return ['defense'];
+      return this.cands.includes(p.pid) ? ['defense'] : [];
+    }
     if (this.phase === 'night') {
       const out: ChatCh[] = [];
       if (this.inNifelChat(p)) out.push('nifel');
@@ -181,21 +219,38 @@ export class MafiaGame {
     this.phase = 'intro';
     for (const p of this.all()) {
       const mates = this.matesOf(p);
-      this.secret(p.pid, `당신은 ${roleName(p.role)}(${ROLES[p.role].job})입니다. ${ROLES[p.role].desc}`);
+      this.secret(p.pid, `당신은 ${label(p.role)}입니다. ${ROLES[p.role].desc}`);
       if (mates.length) this.secret(p.pid, `함께하는 니펠: ${mates.map(this.name).join(', ')}`);
-      if (ROLES[p.role].member) this.secret(p.pid, '아직 니펠과 접선하지 못했어요. 밤 ②차례에 한 명의 방에 들어가 니펠이면 접선 성공! 접선해야 능력을 쓸 수 있어요.');
+      if (ROLES[p.role].member) this.secret(p.pid, '마피아 팀원이에요. 니펠은 아직 당신을 몰라요. 능력은 처음부터 쓸 수 있어요.');
     }
     this.timer(8, () => this.startNight());
     this.push();
+  }
+
+  /** 마피아 팀원이 니펠과 접선 */
+  private contact(p: GP, how: string) {
+    if (p.contacted) return;
+    p.contacted = true;
+    this.secret(p.pid, `🤝 접선 성공! ${how} 이제 니펠 채팅에 들어간다. 동료: ${this.matesOf(p).map(this.name).join(', ') || '없음'}`);
+    for (const q of this.all()) if (q.pid !== p.pid && this.isKiller(q)) this.secret(q.pid, `🤝 ${p.name}가 접선해 왔다. 마피아 팀원(${roleName(p.role)})이다.`);
   }
 
   private startNight() {
     if (this.over) return;
     this.night++;
     this.phase = 'night';
-    this.sealed.clear(); this.disguised.clear(); this.killVotes.clear(); this.visits.clear(); this.trackerJobs = [];
-    this.morning = { deaths: [], saved: 0, reveals: [] };
+    this.sealed.clear(); this.killVotes.clear(); this.visits.clear();
+    this.morning = this.emptyMorning();
+    for (const p of this.all()) { p.copyRole = undefined; if (p.role === 'elena') p.droneTries = DRONE_TRIES; }
     this.logAll('event', `🌙 ${this.night}번째 밤이 찾아왔다. 모두 자기 방으로…`);
+    // 우로스 부활
+    for (const u of this.all()) {
+      if (u.role !== 'uros' || u.alive || u.urosReviveNight !== this.night) continue;
+      u.alive = true; u.diedHow = undefined; u.urosAwake = true; u.urosReviveNight = undefined;
+      this.logAll('event', `💫 ${u.name}가 어둠 속에서 되살아났다!`);
+      this.secret(u.pid, '되살아났다! 이제 니펠로서 습격에 함께한다.');
+      this.contact(u, '니펠의 손에 죽었다가 돌아왔다.');
+    }
     this.runStep(1);
   }
 
@@ -203,15 +258,17 @@ export class MafiaGame {
     this.step = step;
     this.acts.clear();
     for (const p of this.alive()) {
-      const kind = this.nightKind(p);
-      if (!kind || NIGHT_STEP[kind] !== step) continue;
+      const kind = this.kindAt(p, step);
+      if (!kind) continue;
       const targets = this.targetsFor(p, kind);
       if (!targets.length) continue;
       const locked = this.sealed.has(p.pid);
-      this.acts.set(p.pid, { kind, targets, optional: OPTIONAL_NIGHT.includes(kind), choice: null, locked, done: false });
-      if (locked) this.secret(p.pid, '방 문이 잠겨 있다… 누군가에게 봉인당했다. 오늘 밤은 능력을 쓸 수 없다.');
+      const optional = OPTIONAL_NIGHT.includes(kind) || (p.role === 'spiky' && step === 3);
+      this.acts.set(p.pid, { kind, targets, optional, choice: null, locked, done: false });
+      if (locked) this.secret(p.pid, '방 문이 잠겨 있다… 누군가에게 해킹당했다. 오늘 밤은 능력을 쓸 수 없다.');
     }
     if (step === 2) for (const [pid, a] of this.acts) if (a.kind === 'kill' && !a.locked) this.killVotes.set(pid, null);
+    if (step === 3) for (const p of this.alive()) if (p.role === 'spiky' && p.copyRole && this.acts.has(p.pid)) this.secret(p.pid, `🎭 ${roleName(p.copyRole)}의 능력을 쓸 차례다!`);
     this.timer(STEP_SECONDS, () => this.endStep(step));
     this.push();
   }
@@ -231,17 +288,36 @@ export class MafiaGame {
     a.done = true;
     if (target === null) { this.push(p.pid); return; }
     const t = this.ps.get(target)!;
+    const copying = p.role === 'spiky' && this.step === 3;
     // 즉발형
-    if (a.kind === 'investigate') {
-      const mafia = this.isKiller(t) && !this.disguised.has(t.pid);
-      this.secret(p.pid, `🔍 조사 결과: ${t.name}는 ${mafia ? '마피아다!' : '마피아가 아니다.'}`);
-    }
-    if (a.kind === 'contact') {
-      if (t.role === 'nifel') {
-        p.contacted = true;
-        this.secret(p.pid, `🤝 접선 성공! ${t.name}는 니펠이었다. 이제 능력을 쓸 수 있고 니펠 채팅에 들어간다. 동료: ${this.matesOf(p).map(this.name).join(', ')}`);
-        for (const q of this.all()) if (q.pid !== p.pid && this.isKiller(q)) this.secret(q.pid, `🤝 ${p.name}가 접선해 왔다. 마피아 팀원(${roleName(p.role)})이다.`);
-      } else this.secret(p.pid, `접선 실패. ${t.name}는 니펠이 아니었다.`);
+    switch (a.kind) {
+      case 'investigate':
+        this.secret(p.pid, `🔍 조사 결과: ${t.name}는 ${this.isKiller(t) ? '니펠이다!' : '니펠이 아니다.'}`);
+        break;
+      case 'identify': {
+        const shown = t.shownRole ?? t.role;
+        this.secret(p.pid, `🔎 ${t.name}의 직업은 ${label(shown)}이다.`);
+        if (p.role === 'bella' && this.isKiller(t)) this.contact(p, `${t.name}가 니펠이었다.`);
+        break;
+      }
+      case 'seal':
+        if (p.role === 'mute' && this.isKiller(t)) { this.contact(p, `${t.name}는 니펠이었다. (니펠은 해킹하지 않는다)`); break; }
+        if (copying) {
+          // 스피키가 빌린 해킹: 아직 능력을 안 쓴 ③차례 사람을 막는다
+          const ta = this.acts.get(t.pid);
+          if (ta && !ta.done && ta.kind !== 'kill') { ta.locked = true; this.secret(t.pid, '방 문이 갑자기 잠겼다! 오늘 밤은 더 이상 능력을 쓸 수 없다.'); this.push(t.pid); }
+        }
+        break;
+      case 'disguise': {
+        p.usedOnce = true;
+        if (this.isKiller(t)) { this.secret(p.pid, `🎭 ${t.name}로 변장하려 했지만… ${t.name}는 마피아다! 니펠의 능력은 쓸 수 없다.`); break; }
+        p.copyRole = t.role;
+        p.shownRole = this.isMafiaTeam(t) ? undefined : t.role;
+        const k = ROLES[t.role].night;
+        this.secret(p.pid, `🎭 ${t.name}로 변장했다. ${t.name}의 직업은 ${label(t.role)}!` +
+          (k && k !== 'kill' && k !== 'disguise' ? ' ③차례에 그 능력을 한 번 쓸 수 있다.' : ' 밤에 쓰는 능력은 없는 직업이다.'));
+        break;
+      }
     }
     this.push(p.pid);
   }
@@ -250,8 +326,7 @@ export class MafiaGame {
     if (this.over) return;
     // 시간 안에 못 고른 사람: 필수 능력은 무작위
     for (const [pid, a] of this.acts) {
-      if (a.locked) continue;
-      if (a.kind === 'kill') continue;
+      if (a.locked || a.kind === 'kill') continue;
       if (!a.done && !a.optional) {
         const p = this.ps.get(pid)!;
         this.secret(pid, '시간이 다 되어 대상이 무작위로 정해졌다.');
@@ -261,10 +336,11 @@ export class MafiaGame {
     // 방문 기록
     for (const [pid, a] of this.acts) if (!a.locked && a.kind !== 'kill' && a.choice !== null) this.visits.set(pid, a.choice);
     if (step === 1) {
-      for (const [, a] of this.acts) {
-        if (a.locked || a.choice === null) continue;
-        if (a.kind === 'seal') this.sealed.add(a.choice);
-        if (a.kind === 'disguise') this.disguised.add(a.choice);
+      for (const [pid, a] of this.acts) {
+        if (a.locked || a.choice === null || a.kind !== 'seal') continue;
+        const t = this.ps.get(a.choice)!;
+        if (this.ps.get(pid)!.role === 'mute' && this.isKiller(t)) continue;
+        this.sealed.add(a.choice);
       }
       return this.runStep(2);
     }
@@ -272,33 +348,45 @@ export class MafiaGame {
       const noKill = this.night === 1 && NO_FIRST_KILL(this.ps.size);
       const tally = new Map<number, number>();
       for (const t of this.killVotes.values()) if (t !== null) tally.set(t, (tally.get(t) ?? 0) + 1);
+      this.pendingKill = null;
       if (tally.size && !noKill) {
         const max = Math.max(...tally.values());
         const target = rand([...tally].filter(([, c]) => c === max).map(([t]) => t));
         const voters = [...this.killVotes].filter(([, t]) => t === target).map(([v]) => v);
         const executor = rand(voters);
         this.visits.set(executor, target);
-        this.pendingKill = { target, executor };
-        for (const v of this.killVotes.keys()) this.secret(v, `오늘 밤 습격 대상: ${this.name(target)}`);
+        const t = this.ps.get(target)!;
+        if (t.role === 'joan' && !t.contacted) {
+          for (const v of this.killVotes.keys()) this.secret(v, `${t.name}를 습격하러 갔더니… 같은 편이었다! 습격은 멈췄다.`);
+          this.contact(t, '니펠이 당신을 습격하러 왔다가 서로를 알아봤다.');
+        } else {
+          this.pendingKill = { target, executor, voters };
+          for (const v of this.killVotes.keys()) this.secret(v, `오늘 밤 습격 대상: ${this.name(target)}`);
+        }
       } else {
-        this.pendingKill = null;
         for (const v of this.killVotes.keys()) this.secret(v, noKill ? '첫날 밤이라 습격은 하지 않는다.' : '오늘 밤은 아무도 습격하지 않았다.');
       }
       return this.runStep(3);
     }
-    // ③ 끝: 추적 결과 → 밤 정산
+    // ③ 끝: 추적·공개·소원 → 밤 정산
+    const m = this.morning;
     for (const [pid, a] of this.acts) {
       if (a.locked || a.choice === null) continue;
+      const p = this.ps.get(pid)!;
       if (a.kind === 'track') {
         const went = this.visits.get(a.choice);
         this.secret(pid, went === undefined ? `👣 추적: ${this.name(a.choice)}는 어젯밤 방을 나서지 않았다.` : `👣 추적: ${this.name(a.choice)}는 ${this.name(went)}의 방에 갔다.`);
       }
       if (a.kind === 'reveal') {
-        const p = this.ps.get(pid)!;
-        p.usedOnce = true;
+        if (p.role === 'revealer') p.usedOnce = true;
         const t = this.ps.get(a.choice)!;
-        this.morning.reveals.push({ who: t.pid, role: t.role, why: 'reveal' });
-        this.secret(pid, `📜 아침에 ${t.name}의 정체가 공개된다.`);
+        m.reveals.push({ who: t.pid, role: t.shownRole ?? t.role, why: 'reveal' });
+        this.secret(pid, `📜 아침에 ${t.name}의 직업이 공개된다.`);
+      }
+      if (a.kind === 'revive') {
+        if (p.role === 'wish') p.usedOnce = true;
+        m.revives.push(a.choice);
+        this.secret(pid, `🌠 ${this.name(a.choice)}가 돌아오기를 빌었다…`);
       }
     }
     const protectedSet = new Set<number>();
@@ -306,19 +394,42 @@ export class MafiaGame {
     const k = this.pendingKill;
     if (k) {
       const t = this.ps.get(k.target)!;
-      if (protectedSet.has(t.pid)) this.morning.saved++;
-      else if ((t.role === 'sturdy' || t.role === 'trap') && !t.shieldUsed) {
+      if (protectedSet.has(t.pid)) m.saved++;
+      else if (t.role === 'trap' && !t.shieldUsed) {
         t.shieldUsed = true;
-        this.morning.saved++;
-        if (t.role === 'trap') this.morning.reveals.push({ who: k.executor, role: this.ps.get(k.executor)!.role, why: 'trap' });
-        this.secret(t.pid, t.role === 'trap' ? '습격당했지만 함정이 발동했다! 습격한 자의 정체가 아침에 드러난다.' : '습격당했지만 버텨냈다! (다음엔 못 버틴다)');
-      } else this.morning.deaths.push(t.pid);
+        m.saved++;
+        m.reveals.push({ who: k.executor, role: this.ps.get(k.executor)!.role, why: 'trap' });
+        this.secret(t.pid, '습격당했지만 함정이 발동했다! 습격한 자의 정체가 아침에 드러난다.');
+      } else {
+        m.deaths.push(t.pid);
+        if (t.role === 'avenger') {
+          const v = k.voters.filter((x) => this.ps.get(x)?.alive);
+          if (v.length) m.blasts.push([t.pid, rand(v)]);
+        }
+        if (t.role === 'uros') t.urosReviveNight = this.night + UROS_REVIVE_NIGHTS;
+      }
     }
+    // 엘레나: 남은 조립 기회는 자동으로
+    for (const p of this.alive()) if (p.role === 'elena') while (p.droneTries > 0 && !this.over) this.tryDrone(p);
+    if (this.over) return;
     this.step = 0;
     this.acts.clear();
     this.startMorning();
   }
-  private pendingKill: { target: number; executor: number } | null = null;
+
+  private tryDrone(p: GP) {
+    if (p.droneTries <= 0 || p.drones >= DRONE_MAX) { p.droneTries = 0; return; }
+    p.droneTries--;
+    p.droneTotal++;
+    const ok = p.droneTotal % DRONE_PITY === 0 || Math.random() < Math.random() * DRONE_MAX_CHANCE;
+    if (ok) {
+      p.drones++;
+      this.morning.drone = true;
+      this.secret(p.pid, `🛸 드론 조립 성공! 이제 투표권 ${1 + p.drones}개.`);
+      if (p.drones >= DRONE_MAX) p.droneTries = 0;
+      this.checkWin();
+    } else this.secret(p.pid, `🔧 조립 실패… (오늘 밤 남은 기회 ${p.droneTries})`);
+  }
 
   private kill(pid: number, how: GP['diedHow']) {
     const p = this.ps.get(pid);
@@ -335,14 +446,26 @@ export class MafiaGame {
     const m = this.morning;
     this.logAll('event', `☀ ${this.day}일째 아침`);
     for (const d of m.deaths) { this.kill(d, 'night'); this.logAll('event', `💀 어젯밤 ${this.name(d)}가 사라졌다.`); }
+    for (const [mari, nifel] of m.blasts) {
+      this.kill(nifel, 'blast');
+      this.logAll('event', `💥 ${this.name(mari)}가 쓰러지며 폭발했다! 습격한 ${this.name(nifel)}도 함께 사라졌다.`);
+    }
     for (let i = 0; i < m.saved; i++) this.logAll('event', '누군가 습격당했지만 무사히 아침을 맞았다.');
     if (!m.deaths.length && !m.saved) this.logAll('event', '조용한 밤이었다.');
+    for (const r of m.revives) {
+      const p = this.ps.get(r);
+      if (!p || p.alive) continue;
+      p.alive = true; p.diedHow = undefined; p.urosReviveNight = undefined;
+      this.logAll('event', `🌠 누군가의 소원이 이루어졌다! ${p.name}가 되살아났다.`);
+      this.secret(p.pid, '소원의 힘으로 되살아났다!');
+    }
+    if (m.drone) this.logAll('event', '🛸 밤새 어디선가 드론 소리가 들렸다…');
     for (const r of m.reveals) {
       const p = this.ps.get(r.who)!;
       p.revealed = true;
       this.logAll('event', r.why === 'trap'
-        ? `⚠ 함정 발동! 습격한 자는 ${p.name}, 정체는 ${roleName(r.role)}(${ROLES[r.role].job})!`
-        : `📜 저택의 계시: ${p.name}의 정체는 ${roleName(r.role)}(${ROLES[r.role].job})이다.`);
+        ? `⚠ 함정 발동! 습격한 자는 ${p.name}, 정체는 ${label(r.role)}!`
+        : `📜 저택의 계시: ${p.name}의 직업은 ${label(r.role)}이다.`);
     }
     this.quietDays = m.deaths.length ? 0 : this.quietDays + 1;
     for (const p of this.all()) p.notesLeft = 1;
@@ -389,11 +512,10 @@ export class MafiaGame {
     if (this.over || this.phase !== 'vote1') return;
     this.host.clearTimers();
     const tally = new Map<number, number>();
-    for (const t of this.votes.values()) if (t !== null) tally.set(t, (tally.get(t) ?? 0) + 1);
+    for (const [v, t] of this.votes) if (t !== null) tally.set(t, (tally.get(t) ?? 0) + this.weight(v));
     const sorted = [...tally].sort((a, b) => b[1] - a[1]);
     this.counts = sorted;
     this.logAll('event', `1차 투표 결과 — ${sorted.map(([t, c]) => `${this.name(t)} ${c}표`).join(' · ') || '모두 기권'}`);
-    this.peek('1차 투표');
     if (!sorted.length) { this.logAll('event', '처형 없이 밤이 된다.'); this.host.later(3000, () => this.startNight()); this.push(); return; }
     const top = sorted[0][1];
     const firsts = sorted.filter(([, c]) => c === top).map(([t]) => t);
@@ -403,25 +525,35 @@ export class MafiaGame {
       this.cands = rest.length ? [firsts[0], rand(rest.filter(([, c]) => c === rest[0][1]).map(([t]) => t))] : [firsts[0]];
     }
     this.phase = 'defense';
+    this.proxy = null;
     this.logAll('event', this.cands.length === 2 ? `⚖ 결선 대결: ${this.name(this.cands[0])} vs ${this.name(this.cands[1])} — 45초 동안 변론하세요!` : `⚖ ${this.name(this.cands[0])}의 최후 변론 (45초)`);
+    // 죠안의 선동
+    const joan = this.alive().find((p) => p.role === 'joan' && !p.usedOnce);
+    if (joan) {
+      const opts = this.cands.filter((c) => c !== joan.pid);
+      if (opts.length) this.ask(joan.pid, 'agitate', opts, '선동 (한 번): 고른 후보가 시민 팀이면 변론 시간 내내 그 사람 대신 채팅한다. 쓰지 않으려면 그냥 두세요.', (v) => {
+        if (typeof v !== 'number' || !opts.includes(v) || this.phase !== 'defense') return;
+        joan.usedOnce = true;
+        const t = this.ps.get(v)!;
+        if (!this.isCitizenTeam(t)) { this.secret(joan.pid, `🗣 선동이 통하지 않았다. ${t.name}는 시민 팀이 아니다.`); return; }
+        this.proxy = { joan: joan.pid, target: v };
+        this.secret(joan.pid, `🗣 이제 ${t.name} 대신 말한다. 채팅은 ${t.name}의 이름으로 나간다.`);
+        this.secret(v, '🤐 입이 막혔다… 누군가 당신의 목소리를 훔쳤다! 변론 시간 동안 말할 수 없다.');
+        this.push();
+      });
+    }
     this.timer(45, () => this.startVote2());
     this.push();
   }
 
   private startVote2() {
     if (this.over) return;
+    this.resolvePrompts();
+    this.proxy = null;
     this.phase = 'vote2';
     this.votes.clear();
     this.counts = undefined;
-    this.agitated = null;
     this.logAll('event', this.cands.length === 2 ? '🗳 결선 투표! 둘 중 한 명을 고르세요. 동표면 처형 없이 밤.' : '🗳 처형 찬반 투표!');
-    const agit = this.alive().find((p) => p.role === 'agitator' && p.contacted && !p.usedOnce && !this.cands.includes(p.pid));
-    if (agit) {
-      const opts = this.alive().filter((q) => q.pid !== agit.pid && !this.cands.includes(q.pid)).map((q) => q.pid);
-      this.ask(agit.pid, 'agitate', opts, '선동 (한 번): 고른 사람의 표를 반대쪽으로 뒤집는다. 쓰지 않으려면 그냥 두세요.', (v) => {
-        if (typeof v === 'number' && opts.includes(v)) { this.agitated = { voter: v }; agit.usedOnce = true; this.secret(agit.pid, `🗣 ${this.name(v)}의 표를 뒤집기로 했다.`); }
-      });
-    }
     this.timer(15, () => this.endVote2());
     this.push();
   }
@@ -431,16 +563,11 @@ export class MafiaGame {
     this.host.clearTimers();
     this.resolvePrompts();
     const [a, b] = this.cands;
-    if (this.agitated && this.votes.has(this.agitated.voter)) {
-      const cur = this.votes.get(this.agitated.voter);
-      this.votes.set(this.agitated.voter, b === undefined ? (cur === null ? a : null) : cur === a ? b : a);
-      this.logAll('event', '개표 직전, 어딘가에서 속삭임이 들렸다… 누군가의 마음이 바뀐 것 같다.');
-    }
-    const ca = [...this.votes.values()].filter((v) => v === a).length;
-    const cb = b === undefined ? [...this.votes.values()].filter((v) => v === null).length : [...this.votes.values()].filter((v) => v === b).length;
+    const sum = (f: (t: number | null) => boolean) => [...this.votes].filter(([, t]) => f(t)).reduce((n, [v]) => n + this.weight(v), 0);
+    const ca = sum((t) => t === a);
+    const cb = b === undefined ? sum((t) => t === null) : sum((t) => t === b);
     this.counts = b === undefined ? [[a, ca]] : [[a, ca], [b, cb]];
     this.logAll('event', b === undefined ? `결과 — 찬성 ${ca} · 반대 ${cb}` : `결선 결과 — ${this.name(a)} ${ca}표 · ${this.name(b)} ${cb}표`);
-    this.peek('결선 투표');
     let executed: number | null = null;
     if (ca > cb) executed = a;
     else if (b !== undefined && cb > ca) executed = b;
@@ -472,19 +599,18 @@ export class MafiaGame {
     });
     this.push();
   }
-  private overturned = false;
 
   private execute(pid: number) {
     const p = this.ps.get(pid)!;
     this.logAll('event', `⚖ ${p.name}가 처형되었다.`);
     this.kill(pid, 'vote');
-    if (p.role === 'jester') {
-      this.logAll('event', `${p.name}가 웃음을 터뜨렸다. "속았지~!" — 광대였다!`);
+    if (p.role === 'jester' && this.night >= JESTER_NIGHT) {
+      this.logAll('event', `${p.name}가 웃음을 터뜨렸다. "속았지~!" — 코미였다!`);
       return void this.finish('jester');
     }
     if (p.role === 'avenger') {
       const opts = this.alive().map((q) => q.pid);
-      this.ask(pid, 'avenge', opts, '길동무: 한 명을 골라 함께 데려갈 수 있다. (10초)', (v) => {
+      this.ask(pid, 'avenge', opts, '마리: 한 명을 골라 함께 데려갈 수 있다. (10초)', (v) => {
         if (typeof v === 'number' && opts.includes(v)) { this.logAll('event', `☠ ${p.name}가 마지막 힘으로 ${this.name(v)}를 끌고 갔다!`); this.kill(v, 'avenge'); }
       });
       this.timer(10, () => { this.resolvePrompts(); if (!this.checkWin()) this.startNight(); });
@@ -494,13 +620,6 @@ export class MafiaGame {
     if (this.checkWin()) return;
     this.timer(4, () => this.startNight());
     this.push();
-  }
-
-  private peek(label: string) {
-    for (const p of this.alive()) {
-      if (p.role !== 'peeker') continue;
-      this.secret(p.pid, `👀 엿보기 (${label}): ${[...this.votes].map(([v, t]) => `${this.name(v)}→${t === null ? '기권/반대' : this.name(t)}`).join(', ') || '없음'}`);
-    }
   }
 
   // ── 선택창 ───────────────────────────────────────
@@ -526,16 +645,17 @@ export class MafiaGame {
   private checkWin(): boolean {
     if (this.over) return true;
     const alive = this.alive();
-    let killers = alive.filter((p) => this.isKiller(p));
-    if (!killers.length) {
-      const heir = alive.find((p) => p.role === 'heir' && p.contacted && !p.heirAwake);
-      if (heir) {
-        heir.heirAwake = true;
-        this.secret(heir.pid, '니펠이 모두 사라졌다… 후계로서 니펠의 힘을 이어받았다! 이제 밤마다 습격한다.');
-        killers = [heir];
-      }
+    const elena = alive.find((p) => p.role === 'elena');
+    if (elena && 1 + elena.drones > alive.length - 1) {
+      this.logAll('event', `🛸 하늘을 뒤덮은 드론! ${elena.name}(엘레나)가 저택을 손에 넣었다.`);
+      return this.finish('elena');
     }
-    if (!killers.length) return this.finish('citizen');
+    const killers = alive.filter((p) => this.isKiller(p));
+    if (!killers.length) {
+      const waiting = this.all().some((p) => p.role === 'uros' && !p.alive && p.urosReviveNight !== undefined);
+      if (waiting) return false;
+      return this.finish('citizen');
+    }
     const mafia = alive.filter((p) => this.isMafiaTeam(p)).length;
     if (mafia >= alive.length - mafia) return this.finish('mafia');
     if (this.quietDays >= 6) return this.finish('draw');
@@ -550,11 +670,10 @@ export class MafiaGame {
     const winners: number[] = [];
     for (const p of this.all()) {
       const team = this.isMafiaTeam(p) ? 'mafia' : p.role === 'bat' ? p.batSide ?? 'none' : ROLES[p.role].team;
-      if (w === 'jester' ? p.role === 'jester' : team === w) winners.push(p.pid);
-      else if (p.role === 'survivor' && p.alive && w !== 'draw') winners.push(p.pid);
+      if (w === 'jester' ? p.role === 'jester' : w === 'elena' ? p.role === 'elena' : team === w) winners.push(p.pid);
     }
-    const label = w === 'mafia' ? '마피아 팀 승리!' : w === 'citizen' ? '시민 팀 승리!' : w === 'jester' ? '광대 승리!' : '무승부';
-    this.logAll('event', `🏆 ${label}`);
+    const title = { mafia: '마피아 팀 승리!', citizen: '시민 팀 승리!', jester: '코미 승리!', elena: '엘레나 승리!', draw: '무승부' }[w];
+    this.logAll('event', `🏆 ${title}`);
     const roles = this.all().map((p) => ({ pid: p.pid, role: p.role, alive: p.alive }));
     for (const p of this.all()) this.host.send(p.pid, { t: 'gend', winner: w, roles, winners });
     this.push();
@@ -590,7 +709,8 @@ export class MafiaGame {
       case 'gchat': {
         const text = String(msg.text ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 120);
         if (!text || !this.chatsOf(p).includes(msg.ch)) return;
-        for (const q of this.readers(msg.ch)) this.log(q.pid, msg.ch, text, pid);
+        const from = msg.ch === 'defense' && this.proxy?.joan === pid ? this.proxy.target : pid;
+        for (const q of this.readers(msg.ch)) this.log(q.pid, msg.ch, text, from);
         break;
       }
       case 'note': {
@@ -605,6 +725,9 @@ export class MafiaGame {
       }
       case 'choice':
         this.answer(pid, msg.key, msg.value);
+        break;
+      case 'drone':
+        if (this.phase === 'night' && p.alive && p.role === 'elena' && p.droneTries > 0) { this.tryDrone(p); this.push(pid); }
         break;
       case 'cmove': {
         // 니펠 차례: 같이 나온 동료에게 내 위치를 알려 준다
@@ -622,7 +745,7 @@ export class MafiaGame {
     if (!p) return;
     p.online = online;
     if (online) this.push(pid);
-    this.pushPlayersOnly();
+    this.push();
   }
 
   /** 30초 넘게 끊긴 사람 */
@@ -631,9 +754,8 @@ export class MafiaGame {
     if (!p || !p.alive || this.over) return;
     this.logAll('event', `🔌 ${p.name}의 연결이 끊겨 저택에서 사라졌다.`);
     this.kill(pid, 'leave');
+    p.urosReviveNight = undefined;
     this.checkWin();
     this.push();
   }
-
-  private pushPlayersOnly() { this.push(); }
 }

@@ -1,32 +1,30 @@
 /**
  * 직업(= 캐릭터) 목록과 인원별 구성.
- *
- * 캐릭터 이름 바꾸기: 각 직업의 char 에 캐릭터 이름을 쓰면 게임 전체에 그 이름으로 나온다.
- * char 가 비어 있으면 job(직업명)이 대신 표시된다.
+ * 직업 이름이 곧 캐릭터 이름이다. job 은 능력을 한눈에 알아보기 위한 짧은 설명.
  */
 
 export type Team = 'mafia' | 'citizen' | 'neutral';
 
 export type RoleId =
   | 'nifel'
-  // 마피아 팀원 (접선해야 능력 사용)
-  | 'sealer' | 'disguiser' | 'agitator' | 'heir'
+  // 마피아 팀원 (능력은 처음부터, 접선은 각자 조건으로)
+  | 'mute' | 'uros' | 'joan' | 'bella'
   // 시민
-  | 'doctor' | 'police' | 'medium' | 'tracker' | 'revealer' | 'overturn' | 'trap' | 'avenger' | 'peeker' | 'sturdy'
+  | 'doctor' | 'police' | 'medium' | 'tracker' | 'revealer' | 'overturn' | 'trap' | 'avenger' | 'spiky' | 'wish'
   // 중립
-  | 'bat' | 'jester' | 'survivor';
+  | 'bat' | 'jester' | 'elena';
 
 /** 밤에 대상을 고르는 능력의 종류 */
-export type NightKind = 'kill' | 'contact' | 'seal' | 'disguise' | 'protect' | 'investigate' | 'track' | 'reveal';
+export type NightKind = 'kill' | 'seal' | 'disguise' | 'protect' | 'investigate' | 'track' | 'reveal' | 'identify' | 'revive';
 
 export interface RoleDef {
   id: RoleId;
-  /** 캐릭터 이름 (비우면 직업명으로 표시) */
+  /** 캐릭터 이름 = 직업 이름 */
   char: string;
-  /** 직업명 */
+  /** 능력 한 줄 요약 */
   job: string;
   team: Team;
-  /** 마피아 팀원 여부 (니펠 제외, 접선 필요) */
+  /** 마피아 팀원 여부 (니펠 제외) */
   member?: boolean;
   /** 밤 능력 */
   night?: NightKind;
@@ -34,101 +32,99 @@ export interface RoleDef {
   once?: boolean;
   /** 대상으로 자기 자신을 고를 수 있는지 */
   selfTarget?: boolean;
-  /** 주장하면 마피아에게 노려지기 쉬운 핵심 직업 */
-  key?: boolean;
   desc: string;
 }
 
 export const ROLES: Record<RoleId, RoleDef> = {
   // ── 마피아 ──
   nifel: {
-    id: 'nifel', char: '니펠', job: '마피아', team: 'mafia', night: 'kill',
+    id: 'nifel', char: '니펠', job: '습격', team: 'mafia', night: 'kill',
     desc: '밤마다 다른 니펠들과 투표해서 한 명을 습격한다. 니펠끼리는 처음부터 서로를 안다.',
   },
-  sealer: {
-    id: 'sealer', char: '', job: '봉인', team: 'mafia', member: true, night: 'seal',
-    desc: '[접선 후] 밤에 한 명을 골라 그날 밤 능력을 막는다. 경찰 조사에는 시민으로 나온다.',
+  mute: {
+    id: 'mute', char: '뮤트', job: '해킹', team: 'mafia', member: true, night: 'seal',
+    desc: '밤 ①에 한 명을 해킹해 그날 밤 능력을 막는다(방 문이 잠긴다). 니펠을 해킹하면 막지 않고 접선한다.',
   },
-  disguiser: {
-    id: 'disguiser', char: '', job: '위장', team: 'mafia', member: true, night: 'disguise',
-    desc: '[접선 후] 밤에 한 명을 골라 그날 밤 경찰 조사에 시민으로 보이게 한다. 경찰 조사에는 시민으로 나온다.',
+  uros: {
+    id: 'uros', char: '우로스', job: '부활', team: 'mafia', member: true,
+    desc: '니펠도 우로스를 모른다. 니펠에게 습격당해 죽으면, 그 뒤 3번째 밤에 되살아나 니펠로 합류한다.',
   },
-  agitator: {
-    id: 'agitator', char: '', job: '선동', team: 'mafia', member: true, once: true,
-    desc: '[접선 후] 한 번, 결선 투표에서 다른 사람 한 명의 표를 원하는 쪽으로 옮긴다. 경찰 조사에는 시민으로 나온다.',
+  joan: {
+    id: 'joan', char: '죠안', job: '선동', team: 'mafia', member: true, once: true,
+    desc: '한 번, 결선 변론 때 후보 한 명의 입을 빌린다. 시민 팀이면 변론 45초 동안 그 사람 대신 채팅한다. 니펠이 죠안을 습격하면 죽지 않고 접선한다.',
   },
-  heir: {
-    id: 'heir', char: '', job: '후계', team: 'mafia', member: true,
-    desc: '[접선 후] 니펠이 모두 사라지면 니펠이 되어 습격을 이어받는다. 경찰 조사에는 시민으로 나온다.',
+  bella: {
+    id: 'bella', char: '벨라', job: '직업 탐지', team: 'mafia', member: true, night: 'identify',
+    desc: '밤마다 한 명의 직업을 알아낸다. 니펠을 알아내면 접선한다.',
   },
 
   // ── 시민 ──
   doctor: {
-    id: 'doctor', char: '힐데', job: '의사', team: 'citizen', night: 'protect', selfTarget: true, key: true,
+    id: 'doctor', char: '힐데', job: '보호', team: 'citizen', night: 'protect', selfTarget: true,
     desc: '밤에 한 명을 지킨다. 자기 자신도, 같은 사람을 연속으로도 지킬 수 있다.',
   },
   police: {
-    id: 'police', char: '', job: '경찰', team: 'citizen', night: 'investigate', key: true,
-    desc: '밤에 한 명을 조사해서 마피아인지 아닌지 알아낸다. (마피아 팀원은 시민으로 나온다)',
+    id: 'police', char: '폴랑', job: '조사', team: 'citizen', night: 'investigate',
+    desc: '밤에 한 명을 조사해서 니펠인지 아닌지 알아낸다. (니펠이 아닌 마피아 팀원은 시민으로 나온다)',
   },
   medium: {
-    id: 'medium', char: '', job: '영매', team: 'citizen',
+    id: 'medium', char: '캐시', job: '영매', team: 'citizen',
     desc: '밤마다 사라진 사람들과 채팅할 수 있다. 죽은 사람은 거짓말을 할 수도 있다.',
   },
   tracker: {
-    id: 'tracker', char: '', job: '추적', team: 'citizen', night: 'track',
-    desc: '밤에 한 명을 지켜보고, 그 사람이 누구를 찾아갔는지 알아낸다.',
+    id: 'tracker', char: '버터', job: '추적', team: 'citizen', night: 'track',
+    desc: '밤에 한 명을 지켜보고, 그 사람이 누구의 방에 갔는지 알아낸다.',
   },
   revealer: {
-    id: 'revealer', char: '', job: '공개', team: 'citizen', night: 'reveal', once: true,
-    desc: '한 번, 밤에 한 명을 골라 다음 날 아침 그 사람의 캐릭터를 모두에게 공개한다. 원하는 밤에만 쓰면 된다.',
+    id: 'revealer', char: '하이디', job: '공개', team: 'citizen', night: 'reveal', once: true,
+    desc: '한 번, 밤에 한 명을 골라 다음 날 아침 그 사람의 직업을 모두에게 공개한다.',
   },
   overturn: {
-    id: 'overturn', char: '', job: '뒤집기', team: 'citizen', once: true,
+    id: 'overturn', char: '리온', job: '판결 뒤집기', team: 'citizen', once: true,
     desc: '한 번, 결선 투표로 정해진 처형을 무효로 만든다.',
   },
   trap: {
-    id: 'trap', char: '', job: '함정', team: 'citizen',
+    id: 'trap', char: '디아나(왕년)', job: '함정', team: 'citizen',
     desc: '습격을 한 번 버티고, 습격한 니펠 한 명의 정체를 아침에 모두에게 알린다.',
   },
   avenger: {
-    id: 'avenger', char: '', job: '길동무', team: 'citizen',
-    desc: '투표로 처형당하면 한 명을 골라 함께 데려간다.',
+    id: 'avenger', char: '마리', job: '길동무', team: 'citizen',
+    desc: '투표로 처형당하면 한 명을 골라 함께 데려간다. 밤에 습격당해 죽으면 자신을 찍은 니펠 중 한 명과 함께 폭사한다.',
   },
-  peeker: {
-    id: 'peeker', char: '', job: '엿보기', team: 'citizen',
-    desc: '투표 때 누가 누구에게 표를 냈는지 볼 수 있다.',
+  spiky: {
+    id: 'spiky', char: '스피키', job: '변장', team: 'citizen', night: 'disguise', once: true,
+    desc: '한 번, 밤 ①에 한 명으로 변장해 그 직업을 알아내고, 그날 밤 ③에 그 능력을 한 번 쓴다. 이후 직업이 공개되면 그 직업으로 보인다. 니펠은 능력을 못 쓰는 대신 마피아인 걸 알게 되고, 마피아 팀원으로 변장했다면 공개 때 스피키로 보인다.',
   },
-  sturdy: {
-    id: 'sturdy', char: '', job: '튼튼', team: 'citizen',
-    desc: '습격을 한 번 버틴다.',
+  wish: {
+    id: 'wish', char: '우이', job: '소원', team: 'citizen', night: 'revive', once: true,
+    desc: '한 번, 밤에 소원을 빌어 죽은 사람 한 명을 다음 날 아침 되살린다.',
   },
 
   // ── 중립 ──
   bat: {
     id: 'bat', char: '네르', job: '박쥐', team: 'neutral',
-    desc: '3일째 아침에 마피아 팀과 시민 팀 중 하나를 골라 그 팀이 된다. 고르기 전에는 경찰 조사에 시민으로 나온다. 고르기 전에 사라지면 패배.',
+    desc: '3일째 아침에 마피아 팀과 시민 팀 중 하나를 골라 그 팀이 된다. 고르기 전에는 조사에 시민으로 나온다. 고르기 전에 사라지면 패배.',
   },
   jester: {
-    id: 'jester', char: '', job: '광대', team: 'neutral',
-    desc: '투표로 처형당하면 혼자 승리한다.',
+    id: 'jester', char: '코미', job: '광대', team: 'neutral',
+    desc: '4번째 밤이 지난 뒤 투표로 처형당하면 혼자 승리한다. 그 전에 처형당하면 그냥 사라진다.',
   },
-  survivor: {
-    id: 'survivor', char: '', job: '생존자', team: 'neutral',
-    desc: '게임이 끝날 때까지 살아남으면 승리한다. (어느 팀이 이기든 함께 승리)',
+  elena: {
+    id: 'elena', char: '엘레나', job: '드론', team: 'neutral',
+    desc: '밤마다 방에서 드론 조립을 3번 시도한다(성공할 때마다 투표권 +1, 최대 3대). 내 투표권이 다른 생존자 수보다 많아지면 즉시 혼자 승리한다.',
   },
 };
 
-export const roleName = (id: RoleId) => ROLES[id].char || ROLES[id].job;
+export const roleName = (id: RoleId) => ROLES[id]?.char || ROLES[id]?.job || '?';
 
 /** 마피아 팀원 후보 (판마다 하나) */
-export const MEMBER_POOL: RoleId[] = ['sealer', 'disguiser', 'agitator', 'heir'];
-/** 경찰·의사를 뺀 시민 후보 */
-export const CITIZEN_POOL: RoleId[] = ['medium', 'tracker', 'revealer', 'overturn', 'trap', 'avenger', 'peeker', 'sturdy'];
+export const MEMBER_POOL: RoleId[] = ['mute', 'uros', 'joan', 'bella'];
+/** 힐데·폴랑을 뺀 시민 후보 */
+export const CITIZEN_POOL: RoleId[] = ['medium', 'tracker', 'revealer', 'overturn', 'trap', 'avenger', 'spiky', 'wish'];
 /** 중립 후보 (7인 이상에서 항상 1명) */
-export const NEUTRAL_POOL: RoleId[] = ['bat', 'jester', 'survivor'];
+export const NEUTRAL_POOL: RoleId[] = ['bat', 'jester', 'elena'];
 
-/** 인원별 구성: [니펠, 마피아 팀원, 시민 무작위, 중립] (경찰·의사는 항상 1명씩) */
+/** 인원별 구성: [니펠, 마피아 팀원, 시민 무작위, 중립] (힐데·폴랑은 항상 1명씩) */
 export const COMPOSITION: Record<number, [number, number, number, number]> = {
   4: [1, 0, 1, 0],
   5: [1, 0, 2, 0],
@@ -143,13 +139,21 @@ export const COMPOSITION: Record<number, [number, number, number, number]> = {
 
 /** 첫날 밤 습격이 없는 인원 */
 export const NO_FIRST_KILL = (n: number) => n <= 5;
-
 /** 박쥐가 진영을 고르는 날 */
 export const BAT_CHOOSE_DAY = 3;
+/** 코미가 이길 수 있게 되는 밤 수 (이 밤이 지난 뒤부터) */
+export const JESTER_NIGHT = 4;
+/** 우로스가 되살아나는 밤 (죽은 뒤 n번째 밤) */
+export const UROS_REVIVE_NIGHTS = 3;
+/** 엘레나 드론 */
+export const DRONE_TRIES = 3;
+export const DRONE_MAX = 3;
+export const DRONE_PITY = 6;
+export const DRONE_MAX_CHANCE = 0.4;
 
-/** 밤 차례: ① 봉인·위장 → ② 니펠·접선 → ③ 의사·경찰·추적·공개 */
+/** 밤 차례: ① 뮤트·스피키 → ② 니펠 → ③ 나머지 능력 */
 export const NIGHT_STEP: Record<NightKind, 1 | 2 | 3> = {
-  seal: 1, disguise: 1, kill: 2, contact: 2, protect: 3, investigate: 3, track: 3, reveal: 3,
+  seal: 1, disguise: 1, kill: 2, protect: 3, investigate: 3, track: 3, reveal: 3, identify: 3, revive: 3,
 };
 /** 시간 안에 안 골라도 되는 능력 (안 고르면 안 씀). 나머지는 무작위로 정해진다 */
-export const OPTIONAL_NIGHT: NightKind[] = ['kill', 'protect', 'seal', 'disguise', 'reveal'];
+export const OPTIONAL_NIGHT: NightKind[] = ['kill', 'protect', 'seal', 'disguise', 'reveal', 'revive'];

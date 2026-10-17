@@ -57,7 +57,8 @@ export type C2S =
   | { t: 'gchat'; text: string; ch: ChatCh }
   | { t: 'note'; to: number; text: string }
   | { t: 'choice'; key: ChoiceKey; value: number | string | null }
-  | { t: 'cmove'; x: number; y: number };
+  | { t: 'cmove'; x: number; y: number }
+  | { t: 'drone' };
 
 export interface Chair { id: number; x: number; y: number; by: number | null }
 
@@ -97,7 +98,7 @@ export const STEP_SECONDS = 15;
 export type ChatCh = 'day' | 'nifel' | 'dead' | 'defense';
 export type LogCh = ChatCh | 'sys' | 'secret' | 'note' | 'event';
 export type ChoiceKey = 'bat' | 'overturn' | 'avenge' | 'agitate';
-export type Winner = 'mafia' | 'citizen' | 'jester' | 'draw';
+export type Winner = 'mafia' | 'citizen' | 'jester' | 'elena' | 'draw';
 export type Phase = 'intro' | 'night' | 'morning' | 'day' | 'vote1' | 'defense' | 'vote2' | 'verdict' | 'end';
 
 export interface GPlayer { pid: number; name: string; alive: boolean; online: boolean }
@@ -125,6 +126,12 @@ export interface GameView {
     vote: number | null | undefined;
     canVote: boolean;
     prompt: { key: ChoiceKey; options: (number | string)[]; text: string } | null;
+    /** 엘레나: 드론 수 · 오늘 밤 남은 조립 기회 */
+    drone?: { count: number; tries: number };
+    /** 죠안: 지금 대신 말하고 있는 사람 */
+    proxyFor?: number;
+    /** 죠안에게 입을 빼앗긴 상태 */
+    silenced?: boolean;
   };
   cands: number[];
   counts?: [number, number][];

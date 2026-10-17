@@ -186,6 +186,7 @@
 .n-step .on { color: #fff; font-weight: 700; }
 .n-step .on::before { content: '▶ '; color: var(--gold); }
 .n-status { font-size: 19px; color: #f3dfb4; background: rgba(232,194,122,.07); border-radius: 12px; padding: 10px; }
+.n-drone { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 17px; color: #bfe3ff; background: rgba(120,180,255,.08); border-radius: 12px; padding: 8px 10px; }
 .n-log { flex: 1; overflow-y: auto; font-size: 17px; display: flex; flex-direction: column; gap: 4px; min-height: 80px; }
 .nl.secret { color: #f3dfb4; } .nl.nifel { color: #ffb3bd; } .nl.dead { color: #a9a3b8; font-style: italic; } .nl.event { color: var(--gold); }
 .n-chat { display: flex; gap: 6px; align-items: center; font-size: 15px; }
