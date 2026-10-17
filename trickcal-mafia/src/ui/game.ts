@@ -25,6 +25,8 @@ function roleChar(role: string) {
   const name = ROLES[role as RoleId]?.char;
   return CHARACTERS.find((x) => x.name === name)?.id ?? null;
 }
+/** 게임 중 다른 사람(과 나)의 모습: 정체를 숨기는 공용 그림 */
+const ANON = './assets/ui/anon.png';
 function roleImg(role: string): string | null {
   const c = roleChar(role);
   return c ? `./assets/chars/${c}.png` : null;
@@ -160,7 +162,8 @@ export class GameUI {
       if (v.cands.includes(p.pid) && (v.phase === 'defense' || v.phase === 'vote2')) tags.push(h('span.tag.mafia', '결선'));
       this.plist.appendChild(h(`button.g-p${p.alive ? '' : '.dead'}${p.pid === this.myPid ? '.self' : ''}`,
         { onclick: () => { if (p.pid === this.myPid) return; this.memo.set(p.pid, (m + 1) % MEMO.length); this.renderPlayers(); } },
-        h('div.g-pname', p.name, p.alive ? '' : h('span.dead-mark', ' 사망')), h('div.ptags', tags)));
+        h('img.g-anon', { src: ANON, alt: '' }),
+        h('div.g-pinfo', h('div.g-pname', p.name, p.alive ? '' : h('span.dead-mark', ' 사망')), h('div.ptags', tags))));
     }
   }
 
@@ -314,11 +317,8 @@ export class GameUI {
   private renderFarm(v: GameView) {
     if (this.farm) { this.farm.sync(v); return; }
     this.corridor?.destroy(); this.corridor = null;
-    const img = (pid: number) => {
-      const p = v.players.find((q) => q.pid === pid);
-      if (p?.alive) return roleImg('medium') ?? '';
-      return `./assets/chars/${p?.char ?? 'nifel'}.png`;
-    };
+    // 정체 보호: 농장에서는 나를 포함해 모두 같은 모습
+    const img = () => ANON;
     const area = h('div.farm-area');
     const me = v.players.find((p) => p.pid === this.myPid);
     clear(this.nightEl).append(area,
@@ -330,7 +330,7 @@ export class GameUI {
         this.nightLogEl,
         v.me.chats.length ? h('div.n-chat', h('span', '농장'), this.nightChatInput()) : '',
         h('div.n-mini', h('span', '심심하면:'),
-          h('button.btn.small', { onclick: () => playCatch(this.root, (me?.char ?? 'nifel') as never, () => {}) }, '🍞 빵 받기'),
+          h('button.btn.small', { onclick: () => playCatch(this.root, (roleChar(v.me.role) ?? 'nifel') as never, () => {}) }, '🍞 빵 받기'),
           h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기'))));
     this.farm = new Farm(area, v, this.myPid, this.name, img, (x, y) => this.link.send({ t: 'fmove', x, y }));
   }
@@ -537,7 +537,7 @@ class Farm {
   private lastSent = 0;
 
   constructor(host: HTMLElement, v: GameView, private myPid: number, private name: (p: number) => string,
-    private img: (pid: number) => string, private onMove: (x: number, y: number) => void) {
+    private img: () => string, private onMove: (x: number, y: number) => void) {
     this.world.style.setProperty('--farm-bg', `url("${new URL(asset('bg/farm.png'), location.href).href}")`);
     this.wrap = h('div.farm-wrap', this.world);
     host.appendChild(this.wrap);
@@ -555,7 +555,7 @@ class Farm {
       const alive = v.players.find((p) => p.pid === pid)?.alive;
       const bubble = h('div.ch-bubble');
       const el = h(`div.ch${pid === this.myPid ? '.me' : ''}${alive ? '.ide' : '.ghost'}`,
-        h('div.ch-body', h('img', { src: this.img(pid), alt: '' })), h('div.ch-shadow'), h('div.ch-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
+        h('div.ch-body', h('img', { src: this.img(), alt: '' })), h('div.ch-shadow'), h('div.ch-name', pid === this.myPid ? '나' : this.name(pid)), bubble);
       this.world.appendChild(el);
       this.avs.set(pid, { el, bubble, x, y, tx: x, ty: y, timer: 0 });
     }

@@ -239,3 +239,9 @@
 .ch.ghost.me .ch-body img { opacity: .85; filter: grayscale(.2) brightness(1.2) drop-shadow(0 0 4px var(--gold)); }
 .ch.ide .ch-body img { filter: drop-shadow(0 0 6px rgba(255,240,180,.9)); }
 .ch.ghost .ch-shadow { opacity: .3; }
+
+/* 게임 중 공용 모습 (정체 보호) */
+.g-p { display: flex; align-items: center; gap: 8px; text-align: left; }
+.g-anon { width: 30px; height: 46px; object-fit: contain; flex: none; }
+.g-p.dead .g-anon { opacity: .35; filter: grayscale(1); }
+.g-pinfo { min-width: 0; flex: 1; }

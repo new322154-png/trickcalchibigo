@@ -27,8 +27,6 @@ export interface GameHost {
 interface GP {
   pid: number;
   name: string;
-  /** 대기실 캐릭터 (주말농장 모습) */
-  char: string;
   role: RoleId;
   alive: boolean;
   online: boolean;
@@ -95,7 +93,7 @@ export class MafiaGame {
     };
   }
 
-  constructor(private host: GameHost, seats: { pid: number; name: string; char?: string }[]) {
+  constructor(private host: GameHost, seats: { pid: number; name: string }[]) {
     const n = seats.length;
     const [nifel, members, rnd, neutrals] = COMPOSITION[n];
     const forced = (globalThis as { __MAFIA_ROLES?: RoleId[] }).__MAFIA_ROLES; // 테스트용 직업 고정
@@ -107,7 +105,7 @@ export class MafiaGame {
       ...shuffle(NEUTRAL_POOL).slice(0, neutrals),
     ]);
     seats.forEach((s, i) => this.ps.set(s.pid, {
-      pid: s.pid, name: s.name, char: s.char ?? 'nifel', role: roles[i], alive: true, online: true,
+      pid: s.pid, name: s.name, role: roles[i], alive: true, online: true,
       contacted: false, usedOnce: false, shieldUsed: false, revealed: false, notesLeft: 1,
       urosAwake: false, drones: 0, droneTries: 0, droneTotal: 0,
     }));
@@ -177,7 +175,7 @@ export class MafiaGame {
     const killer = this.isKiller(p);
     return {
       phase: this.phase, day: this.day, night: this.night, step: this.step, endsAt: this.endsAt, now: Date.now(),
-      players: this.all().map((q) => ({ pid: q.pid, name: q.name, alive: q.alive, online: q.online, char: q.char })),
+      players: this.all().map((q) => ({ pid: q.pid, name: q.name, alive: q.alive, online: q.online })),
       me: {
         pid, role: p.role, alive: p.alive, mates: this.matesOf(p),
         act: act ? { kind: act.kind, targets: act.targets, optional: act.optional, done: act.done, locked: act.locked, choice: act.choice } : null,
