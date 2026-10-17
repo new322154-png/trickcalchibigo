@@ -645,11 +645,16 @@ export class MafiaGame {
     const joan = this.alive().find((p) => p.role === 'joan' && !p.usedOnce);
     if (joan) {
       const opts = this.cands.filter((c) => c !== joan.pid);
-      if (opts.length) this.ask(joan.pid, 'agitate', opts, '선동 (한 번): 고른 후보가 시민 팀이면 변론 시간 내내 그 사람 대신 채팅한다. 쓰지 않으려면 그냥 두세요.', (v) => {
+      if (opts.length) this.ask(joan.pid, 'agitate', opts, '선동 (한 번): 고른 후보가 시민 팀이면 변론 시간 내내 그 사람 대신 채팅한다. 니펠이면 실패하지만 접선한다. 쓰지 않으려면 그냥 두세요.', (v) => {
         if (typeof v !== 'number' || !opts.includes(v) || this.phase !== 'defense') return;
         joan.usedOnce = true;
         const t = this.ps.get(v)!;
-        if (!this.isCitizenTeam(t)) { this.secret(joan.pid, `🗣 선동이 통하지 않았다. ${t.name}는 시민 팀이 아니다.`); return; }
+        if (!this.isCitizenTeam(t)) {
+          this.secret(joan.pid, `🗣 선동이 통하지 않았다. ${t.name}는 시민 팀이 아니다.`);
+          // 니펠의 입을 빌리려다 서로를 알아봄 → 접선
+          if (this.isKiller(t) && !joan.contacted) this.contact(joan, `${t.name}의 입을 빌리려다 니펠인 걸 알아봤다.`);
+          return;
+        }
         this.proxy = { joan: joan.pid, target: v };
         this.pcut(joan.pid, 'p_agitate', `${t.name} 선동!`);
         this.secret(joan.pid, `🗣 이제 ${t.name} 대신 말한다. 채팅은 ${t.name}의 이름으로 나간다.`);

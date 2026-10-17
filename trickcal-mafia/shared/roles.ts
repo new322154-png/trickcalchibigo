@@ -51,7 +51,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   },
   joan: {
     id: 'joan', char: '죠안', job: '선동', team: 'mafia', member: true, once: true,
-    desc: '한 번, 결선 변론 때 후보 한 명의 입을 빌린다. 시민 팀이면 변론 45초 동안 그 사람 대신 채팅한다. 니펠이 죠안을 습격하면 죽지 않고 접선한다.',
+    desc: '한 번, 결선 변론 때 후보 한 명의 입을 빌린다. 시민 팀이면 변론 45초 동안 그 사람 대신 채팅한다. 고른 후보가 니펠이면 선동은 실패하지만 접선한다. 니펠이 죠안을 습격해도 죽지 않고 접선한다.',
   },
   bella: {
     id: 'bella', char: '벨라', job: '직업 탐지', team: 'mafia', member: true, night: 'identify',
