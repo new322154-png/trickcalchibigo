@@ -864,7 +864,8 @@ export class MafiaGame {
         // 토론 시간 늘리기/줄이기: 한 사람이 하루 한 번, 15초씩
         if (this.phase !== 'day' || !p.alive || p.timeUsed) return;
         const d = msg.d === 1 ? 1 : -1;
-        const k = ((globalThis as { __MAFIA_SPEED?: number }).__MAFIA_SPEED ?? 1) / this.pace;
+        // 배속과 상관없이 실제 15초 (버튼에 적힌 그대로)
+        const k = (globalThis as { __MAFIA_SPEED?: number }).__MAFIA_SPEED ?? 1;
         const left = this.endsAt - Date.now();
         const next = d > 0 ? left + TIME_STEP * 1000 * k : Math.max(3000 * k, left - TIME_STEP * 1000 * k);
         p.timeUsed = true;

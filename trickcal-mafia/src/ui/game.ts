@@ -257,7 +257,7 @@ export class GameUI {
   private renderPanel() {
     const v = this.v!;
     const me = v.me;
-    const key = JSON.stringify([v.phase, v.step, me.vote, me.prompt?.key, me.notesLeft, me.alive, v.cands, me.canVote, me.proxyFor, me.silenced]);
+    const key = JSON.stringify([v.phase, v.step, me.vote, me.prompt?.key, me.notesLeft, me.alive, v.cands, me.canVote, me.proxyFor, me.silenced, me.canTime]);
     if (key === this.lastKey) return;
     this.lastKey = key;
     clear(this.panel);
