@@ -14,7 +14,16 @@ import {
 
 export interface Conn {
   send(msg: S2C): void;
+  /** 서버 쪽에서 소켓을 닫는다 (교체됨·무응답). 봇 등은 없음 */
+  close?(code: number, reason: string): void;
 }
+
+/** 대기실에서 잠깐 끊긴 사람을 기다리는 시간 (휴대폰 앱 전환 등) */
+const LOBBY_GRACE = 15_000;
+/** 게임 중 끊긴 사람을 기다리는 시간 */
+const GAME_GRACE = 30_000;
+/** 이 시간 동안 아무 메시지(핑 포함)가 없으면 끊긴 것으로 본다 */
+const SILENT_LIMIT = 35_000;
 
 interface P extends PlayerInfo {
   conn: Conn;
@@ -26,6 +35,8 @@ interface P extends PlayerInfo {
   chatTimes: number[];
   joinedAt: number;
   brain?: BotBrain;
+  /** 마지막으로 이 사람에게서 메시지를 받은 시각 */
+  lastSeen: number;
 }
 
 const now = () => Date.now();
@@ -54,15 +65,24 @@ export class RoomCore {
   join(conn: Conn, hello: C2S, bot = false): number | null {
     if (hello.t !== 'hello') return null;
     // 재접속 (게임 중 끊겼다가 30초 안에 돌아옴)
-    const back = hello.token ? [...this.players.values()].find((p) => p.token === hello.token && !p.online) : undefined;
+    // (아직 살아 있는 연결이어도 같은 토큰이면 새 소켓으로 교체: 휴대폰이 돌아와 새로 붙은 경우)
+    const back = hello.token ? [...this.players.values()].find((p) => !p.bot && p.token === hello.token) : undefined;
     if (back) {
       clearTimeout(back.dropTimer);
+      back.dropTimer = undefined;
+      // 이전 소켓은 무효: 늦게 오는 close/message 가 새 연결을 건드리지 못하게 (isCurrent 로 걸러짐)
+      const old = back.conn;
       back.conn = conn;
       back.online = true;
-      conn.send({ t: 'welcome', you: back.id, code: this.code, pub: this.pub, players: this.list() });
+      back.lastSeen = now();
+      try { old.close?.(4009, 'replaced'); } catch { /* 이미 닫힘 */ }
+      conn.send({ t: 'welcome', you: back.id, code: this.code, pub: this.pub, players: this.list(), resumed: true });
       conn.send({ t: 'token', token: back.token });
-      this.broadcast({ t: 'sys', text: `${back.nick}님이 다시 연결됐어요.` });
-      this.game?.setOnline(back.id, true);
+      if (this.autoAt) conn.send({ t: 'starting', at: this.autoAt });
+      if (this.mini) conn.send({ t: 'mini', s: this.mini, title: MINI_NAMES[this.mini.game] });
+      this.broadcast({ t: 'sys', text: `${back.nick}님이 다시 연결됐어요.` }, back.id);
+      // 게임 중이면 지금 화면 + 놓친 기록을 바로 보낸다
+      if (this.game?.ps.has(back.id)) this.game.resync(back.id);
       return back.id;
     }
     if (this.game) {
@@ -80,7 +100,7 @@ export class RoomCore {
     const p: P = {
       id, nick, char: isChar(hello.char) ? hello.char : pickOne([...CHARACTERS]).id,
       x: rnd(300, 1300), y: rnd(WALK_TOP + 60, WORLD_H - 80), host: this.players.size === 0,
-      conn, lastMoveAt: now(), moved: false, chatTimes: [], joinedAt: now(),
+      conn, lastMoveAt: now(), moved: false, chatTimes: [], joinedAt: now(), lastSeen: now(),
       token: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), online: true,
       ...(bot ? { bot: true } : {}),
     };
@@ -99,22 +119,42 @@ export class RoomCore {
 
   private status() { this.onCount(this.players.size, !!this.game); }
 
-  /** 연결이 끊김: 게임 중이면 30초 기다리고, 아니면 바로 나감 */
-  disconnect(id: number) {
+  /** 이 소켓이 지금 이 사람의 연결인지 (재접속으로 교체된 옛 소켓은 아님) */
+  isCurrent(id: number, conn: Conn) { return this.players.get(id)?.conn === conn; }
+
+  /**
+   * 연결이 끊김 (현재 연결일 때만). 게임 중이면 30초, 대기실이면 15초 기다렸다가 내보낸다.
+   * close 와 error 가 둘 다 와도 한 번만 처리된다.
+   */
+  disconnect(id: number, conn?: Conn) {
     const p = this.players.get(id);
-    if (!p) return;
-    if (this.game && this.game.ps.has(id) && !this.game.over) {
-      p.online = false;
+    if (!p || (conn && p.conn !== conn) || !p.online) return;
+    p.online = false;
+    const inGame = !!this.game && this.game.ps.has(id) && !this.game.over;
+    const grace = inGame ? GAME_GRACE : LOBBY_GRACE;
+    const mine = p.conn;
+    if (inGame) {
       this.broadcast({ t: 'sys', text: `${p.nick}님의 연결이 끊겼어요. 30초 기다릴게요…` });
-      this.game.setOnline(id, false);
-      p.dropTimer = setTimeout(() => {
-        if (p.online) return;
-        this.game?.drop(id);
-        this.leave(id);
-      }, 30_000);
-      return;
+      this.game!.setOnline(id, false);
     }
-    this.leave(id);
+    clearTimeout(p.dropTimer);
+    p.dropTimer = setTimeout(() => {
+      // 그 사이 다시 연결됐거나 다른 소켓으로 바뀌었으면 무시
+      if (p.online || p.conn !== mine || !this.players.has(id)) return;
+      if (inGame) this.game?.drop(id);
+      this.leave(id);
+    }, grace);
+  }
+
+  /** 오래 아무 말도 없는 연결 정리 (반쯤 끊긴 소켓) */
+  private sweep() {
+    const t = now();
+    for (const p of this.players.values()) {
+      if (p.bot || !p.online || t - p.lastSeen < SILENT_LIMIT) continue;
+      const c = p.conn;
+      this.disconnect(p.id, c);
+      try { c.close?.(4008, 'silent'); } catch { /* 이미 닫힘 */ }
+    }
   }
 
   leave(id: number) {
@@ -184,7 +224,10 @@ export class RoomCore {
     }
   }
 
+  private lastSweep = 0;
   private flush() {
+    const t0 = now();
+    if (t0 - this.lastSweep > 5000) { this.lastSweep = t0; this.sweep(); }
     const m: [number, number, number][] = [];
     for (const p of this.players.values()) if (p.moved) { m.push([p.id, Math.round(p.x), Math.round(p.y)]); p.moved = false; }
     if (!m.length) return;
@@ -201,6 +244,7 @@ export class RoomCore {
   handle(id: number, msg: C2S) {
     const p = this.players.get(id);
     if (!p || !msg || typeof msg !== 'object') return;
+    p.lastSeen = now();
     if (this.game) {
       if (msg.t === 'ping') p.conn.send({ t: 'pong' });
       else this.game.handle(id, msg);
@@ -299,6 +343,9 @@ export class RoomCore {
       : undefined;
     if (this.autoTimer) { clearTimeout(this.autoTimer); this.autoTimer = null; this.autoAt = null; }
     this.endMini(true);
+    // 대기실에서 끊겨 기다리던 사람은 이번 판에서 빠진다
+    for (const p of [...this.players.values()]) if (!p.online) this.leave(p.id);
+    if (this.players.size < GAME_MIN) return;
     const seats = [...this.players.values()].filter((p) => p.online).sort((a, b) => a.joinedAt - b.joinedAt).slice(0, 12);
     const letters = 'ABCDEFGHIJKL';
     const order = this.pub ? [...seats].sort(() => Math.random() - 0.5) : seats;
@@ -319,7 +366,7 @@ export class RoomCore {
     this.clearTimers();
     // 돌아오지 않은 사람 정리
     for (const p of [...this.players.values()]) if (!p.online) this.leave(p.id);
-    for (const p of this.players.values()) p.conn.send({ t: 'welcome', you: p.id, code: this.code, pub: this.pub, players: this.list() });
+    for (const p of this.players.values()) { try { p.conn.send({ t: 'welcome', you: p.id, code: this.code, pub: this.pub, players: this.list() }); } catch { /* 끊김 */ } }
     this.broadcast({ t: 'sys', text: '대기실로 돌아왔어요. 한 판 더?' });
     this.status();
     this.checkAuto();

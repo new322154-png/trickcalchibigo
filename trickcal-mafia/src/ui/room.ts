@@ -40,6 +40,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   let gameUI: GameUI | null = null;
   let startingAt: number | null = null;
   const tokKey = `tm.tok.${code}`;
+  try { sessionStorage.setItem('tm.cur', code); } catch { /* 무시 */ }
   const getTok = () => { try { return sessionStorage.getItem(tokKey) ?? undefined; } catch { return undefined; } };
 
   // ── 화면 ──
@@ -104,23 +105,16 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   };
 
   // ── 연결 ──
-  let link: RoomLink = connect(code, { t: 'hello', nick: profile.nick, char: profile.char, token: getTok() });
-  let retries = 0;
-  const wire = () => {
-    link.onMessage = (m) => { retries = 0; onMsg(m); };
-    link.onClose = (reason) => {
-      if (!alive) return;
-      // 게임 중이면 다시 연결 시도 (30초 안에 돌아오면 이어하기)
-      if (gameUI && retries < 8) {
-        retries++;
-        sys(`연결이 끊겼어요. 다시 연결하는 중… (${retries})`);
-        setTimeout(() => { if (!alive) return; link = connect(code, { t: 'hello', nick: profile.nick, char: profile.char, token: getTok() }); if (gameUI) gameUI.link = link; wire(); }, 2500);
-        return;
-      }
-      cleanup(); onExit(reason);
-    };
+  // 끊기면 net.ts 가 알아서 다시 붙는다 (같은 토큰으로 자리 이어받기)
+  const link: RoomLink = connect(code, () => ({ t: 'hello', nick: profile.nick, char: profile.char, token: getTok() }));
+  const netBadge = h('div.net-badge.hidden');
+  root.appendChild(netBadge);
+  link.onMessage = (m) => onMsg(m);
+  link.onState = (s, info) => {
+    netBadge.classList.toggle('hidden', s === 'open');
+    if (s === 'reconnecting') netBadge.textContent = `📡 다시 연결하는 중…${info && info.attempt > 1 ? ` (${info.attempt})` : ''}`;
   };
-  wire();
+  link.onClose = (reason) => { if (!alive) return; cleanup(); onExit(reason); };
 
   function leave() {
     if (gameUI && !confirm('게임 중에 나가면 30초 뒤 사망 처리돼요. 나갈까요?')) return;
@@ -128,6 +122,8 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   }
   function cleanup() {
     alive = false;
+    try { sessionStorage.removeItem('tm.cur'); } catch { /* 무시 */ }
+    netBadge.remove();
     gameUI?.destroy();
     gameUI = null;
     cancelAnimationFrame(raf);
@@ -138,7 +134,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   }
 
   function onMsg(m: S2C) {
-    if (m.t === 'g' || m.t === 'glog' || m.t === 'gcmove' || m.t === 'fmove' || m.t === 'pmove' || m.t === 'cut' || m.t === 'gend') {
+    if (m.t === 'g' || m.t === 'glog' || m.t === 'gsync' || m.t === 'gcmove' || m.t === 'fmove' || m.t === 'pmove' || m.t === 'cut' || m.t === 'gend') {
       if (!gameUI) {
         gameUI = new GameUI(root, link, me);
         input.enabled = false;
@@ -157,7 +153,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         break;
       case 'welcome':
         // 게임 중 재접속이면 게임 화면 그대로
-        if (gameUI && gameUI.v?.phase !== 'end') { me = m.you; sys('다시 연결됐어요.'); break; }
+        if (gameUI && m.resumed && gameUI.v?.phase !== 'end') { me = m.you; break; }
         // 게임이 끝났으면 대기실로
         if (gameUI) { gameUI.destroy(); gameUI = null; input.enabled = true; bgm('daily'); }
         me = m.you; pub = m.pub;

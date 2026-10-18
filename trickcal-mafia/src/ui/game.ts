@@ -97,6 +97,13 @@ export class GameUI {
   onMsg(m: S2C) {
     if (m.t === 'g') this.update(m.v);
     else if (m.t === 'glog') this.addLog(m.ch, m.from, m.text);
+    else if (m.t === 'gsync') {
+      // 재접속: 기록을 서버 것으로 다시 채움 (소리 없이)
+      this.log.replaceChildren();
+      this.quiet = true;
+      for (const [ch, from, text] of m.logs) this.addLog(ch, from, text);
+      this.quiet = false;
+    }
     else if (m.t === 'gcmove') this.corridor?.mate(m.pid, m.x, m.y);
     else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
     else if (m.t === 'pmove') this.scene.move(m.pid, m.x, m.y);
@@ -142,16 +149,19 @@ export class GameUI {
     this.renderNight();
   }
 
+  private quiet = false;
   private addLog(ch: LogCh, from: number, text: string) {
     const who = from >= 0 ? this.name(from) : '';
+    const snd = (n: string) => { if (!this.quiet) sfx(n); };
     let el: HTMLElement;
-    if (ch === 'event') { el = h('div.gl-event', text); if (/사라졌|처형/.test(text)) sfx('death'); }
-    else if (ch === 'secret') { el = h('div.gl-secret', '🔒 ', text); sfx('secret'); }
-    else if (ch === 'note') { el = h('div.gl-note', '✉ 익명 쪽지: ', text); sfx('note'); }
+    if (ch === 'event') { el = h('div.gl-event', text); if (/사라졌|처형/.test(text)) snd('death'); }
+    else if (ch === 'secret') { el = h('div.gl-secret', '🔒 ', text); snd('secret'); }
+    else if (ch === 'note') { el = h('div.gl-note', '✉ 익명 쪽지: ', text); snd('note'); }
     else if (ch === 'sys') el = h('div.gl-sys', text);
     else el = h(`div.gl-chat.ch-${ch}${from === this.myPid ? '.mine' : ''}`, ch !== 'day' ? h('span.gl-ch', CH_LABEL[ch]) : '', h('b', who), ' ', text);
     this.log.appendChild(el);
     this.log.scrollTop = this.log.scrollHeight;
+    if (this.quiet) return;
     this.corridor?.toast(ch, who, text);
     if (ch === 'dead' && from >= 0) this.farm?.say(from, text);
     if ((ch === 'day' || ch === 'defense') && from >= 0) this.scene.say(from, text);

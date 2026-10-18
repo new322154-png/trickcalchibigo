@@ -300,3 +300,7 @@
 .test-box[open] summary { margin-bottom: 4px; }
 .time-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .time-used { margin-top: 10px; font-size: 15px; }
+/* 연결 상태 알림 (다시 연결 중) */
+.net-badge { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 200; padding: 8px 18px; border-radius: 20px; background: rgba(20,22,40,.88); color: #fff; font-size: 18px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.4); pointer-events: none; animation: netPulse 1.2s ease-in-out infinite; }
+.net-badge.hidden { display: none; }
+@keyframes netPulse { 50% { opacity: .65; } }

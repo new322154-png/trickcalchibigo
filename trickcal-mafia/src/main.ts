@@ -41,7 +41,16 @@ function room(code: string, profile: Profile) {
 
 // 초대 링크 (?room=CODE): 바로 들어가지 않고 타이틀에서 한 번 묻는다
 const invite = new URLSearchParams(location.search).get('room')?.toUpperCase() ?? null;
-showBoot(stage, () => {
+// 새로고침·탭 복원: 방에 있던 중이면 (재접속 토큰이 남아 있으면) 바로 그 방으로 다시 들어가 자리를 이어받는다
+let resumeCode: string | null = null;
+try {
+  const c = sessionStorage.getItem('tm.cur');
+  if (c && /^[A-Z0-9]{5}$/.test(c) && sessionStorage.getItem(`tm.tok.${c}`)) resumeCode = c;
+} catch { /* 저장소 없음 */ }
+if (resumeCode) {
+  history.replaceState(null, '', location.pathname);
+  room(resumeCode, loadProfile());
+} else showBoot(stage, () => {
   title(); // 주소창의 ?room= 도 여기서 지운다
   if (invite && /^[A-Z0-9]{5}$/.test(invite)) askInvite(invite);
 });

@@ -207,7 +207,24 @@ export class MafiaGame {
 
   // ── 전송 ─────────────────────────────────────────
 
-  private log(to: number, ch: LogCh, text: string, from = -1) { this.host.send(to, { t: 'glog', ch, from, text }); }
+  /** 사람마다 받은 기록 (재접속 때 다시 보내 줌). 그때 볼 수 있었던 것만 들어 있다 */
+  private history = new Map<number, [LogCh, number, string][]>();
+  private log(to: number, ch: LogCh, text: string, from = -1) {
+    let hs = this.history.get(to);
+    if (!hs) this.history.set(to, (hs = []));
+    hs.push([ch, from, text]);
+    if (hs.length > 160) hs.splice(0, hs.length - 120);
+    this.host.send(to, { t: 'glog', ch, from, text });
+  }
+  /** 재접속: 놓친 기록과 지금 화면을 바로 보냄 */
+  resync(pid: number) {
+    const p = this.ps.get(pid);
+    if (!p) return;
+    p.online = true;
+    this.push(pid); // 이름 등 화면 정보가 먼저
+    this.host.send(pid, { t: 'gsync', logs: this.history.get(pid) ?? [] });
+    this.push();
+  }
   private logAll(ch: LogCh, text: string, from = -1) { for (const p of this.all()) this.log(p.pid, ch, text, from); }
   private secret(pid: number, text: string) { this.log(pid, 'secret', text); }
   /** 나만 보는 컷씬 */

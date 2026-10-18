@@ -100,16 +100,21 @@ export class Room {
       return new Response(null, { status: 101, webSocket: client });
     }
     let id: number | null = null;
-    const conn = { send: (m: S2C) => server.send(JSON.stringify(m)) };
+    // 이 소켓 하나를 뜻하는 연결 객체. 재접속으로 교체되면 core 가 더는 이 객체를 현재 연결로 보지 않는다
+    const conn = {
+      send: (m: S2C) => { try { server.send(JSON.stringify(m)); } catch { /* 이미 닫힌 소켓 */ } },
+      close: (code: number, reason: string) => { try { server.close(code, reason); } catch { /* 이미 닫힘 */ } },
+    };
     server.addEventListener('message', (ev: MessageEvent) => {
       let msg: C2S;
       try { msg = JSON.parse(String(ev.data)); } catch { return; }
       if (id === null) {
         id = core.join(conn, msg);
         if (id === null) server.close(4001, 'rejected');
-      } else core.handle(id, msg);
+      } else if (core.isCurrent(id, conn)) core.handle(id, msg);
+      // 교체된 옛 소켓의 메시지는 무시
     });
-    const bye = () => { if (id !== null) core.disconnect(id); id = null; };
+    const bye = () => { if (id !== null) core.disconnect(id, conn); id = null; };
     server.addEventListener('close', bye);
     server.addEventListener('error', bye);
     return new Response(null, { status: 101, webSocket: client });

@@ -86,7 +86,7 @@ export type MiniState =
   | { game: 'chairs'; phase: 'music' | 'sit' | 'done'; chairs: Chair[]; left: number[]; out: number[]; endsAt: number };
 
 export type S2C =
-  | { t: 'welcome'; you: number; code: string; pub: boolean; players: PlayerInfo[] }
+  | { t: 'welcome'; you: number; code: string; pub: boolean; players: PlayerInfo[]; resumed?: boolean }
   | { t: 'join'; p: PlayerInfo }
   | { t: 'leave'; id: number }
   | { t: 'host'; id: number }
@@ -103,6 +103,8 @@ export type S2C =
   // ── 마피아 본게임 ──
   | { t: 'g'; v: GameView }
   | { t: 'glog'; ch: LogCh; from: number; text: string }
+  /** 재접속 직후: 지금까지 내가 받았던 기록 (최근 것만) */
+  | { t: 'gsync'; logs: [LogCh, number, string][] }
   | { t: 'gcmove'; pid: number; x: number; y: number }
   /** 주말농장(이드 + 죽은 사람) 위치 */
   | { t: 'fmove'; pid: number; x: number; y: number }
