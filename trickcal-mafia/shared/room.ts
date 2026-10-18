@@ -72,6 +72,11 @@ export class RoomCore {
   private autoTimer: ReturnType<typeof setTimeout> | null = null;
   private autoAt: number | null = null;
 
+  /** 1분 집계 (운영 로그용): 받은 메시지 수, 보낸 메시지 수·바이트 (보내기 쪽은 서버 연결부가 센다) */
+  stats = { in: 0, out: 0, bytes: 0, since: Date.now() };
+  onStats: (s: Record<string, unknown>) => void = () => {};
+  /** 들어오는 사람에게 한 번 보여 줄 안내 (서버 재시작 등) */
+  notice: string | null = null;
   constructor(public code: string, public pub: boolean) {}
 
   get count() { return this.players.size; }
@@ -125,6 +130,7 @@ export class RoomCore {
     conn.send({ t: 'token', token: p.token });
     if (this.autoAt) conn.send({ t: 'starting', at: this.autoAt });
     if (this.mini) conn.send({ t: 'mini', s: this.mini, title: MINI_NAMES[this.mini.game] });
+    if (this.notice) conn.send({ t: 'sys', text: this.notice });
     this.broadcast({ t: 'join', p: this.info(p) }, id);
     this.broadcast({ t: 'sys', text: `${nick}님이 들어왔어요.` });
     if (!this.flushTimer) this.flushTimer = setInterval(() => this.flush(), 80);
@@ -256,6 +262,13 @@ export class RoomCore {
   private flush() {
     const t0 = now();
     if (t0 - this.lastSweep > 5000) { this.lastSweep = t0; this.sweep(); }
+    if (t0 - this.stats.since > 60_000) {
+      const s = this.stats;
+      const humans = [...this.players.values()].filter((p) => !p.bot);
+      this.onStats({ players: this.players.size, humans: humans.length, offline: humans.filter((p) => !p.online).length,
+        phase: this.game?.phase ?? (this.mini ? 'mini' : 'lobby'), inPerSec: +(s.in / 60).toFixed(1), outPerSec: +(s.out / 60).toFixed(1), kbPerSec: +(s.bytes / 60 / 1024).toFixed(1) });
+      this.stats = { in: 0, out: 0, bytes: 0, since: t0 };
+    }
     const m: [number, number, number][] = [];
     for (const p of this.players.values()) if (p.moved) { m.push([p.id, Math.round(p.x), Math.round(p.y)]); p.moved = false; }
     if (!m.length) return;
@@ -273,6 +286,7 @@ export class RoomCore {
     const p = this.players.get(id);
     if (!p || !msg || typeof msg !== 'object' || typeof msg.t !== 'string') return;
     p.lastSeen = now();
+    this.stats.in++;
     if (!p.bot && !this.allow(p, KIND[msg.t] ?? 'misc')) return;
     if (this.game) {
       if (msg.t === 'ping') p.conn.send({ t: 'pong' });
@@ -372,6 +386,7 @@ export class RoomCore {
       : undefined;
     if (this.autoTimer) { clearTimeout(this.autoTimer); this.autoTimer = null; this.autoAt = null; }
     this.endMini(true);
+    this.notice = null;
     // 대기실에서 끊겨 기다리던 사람은 이번 판에서 빠진다
     for (const p of [...this.players.values()]) if (!p.online) this.leave(p.id);
     if (this.players.size < GAME_MIN) return;

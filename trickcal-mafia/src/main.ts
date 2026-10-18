@@ -8,8 +8,10 @@ import { enterRoom } from './ui/room';
 import { showTitle } from './ui/title';
 import { loadProfile, type Profile } from './profile';
 import { bgm, setSoundMode, soundMode } from './ui/bgm';
+import { maybeDebug } from './ui/debug';
 
 const stage = mountStage();
+maybeDebug();
 
 // 소리 버튼 (오른쪽 아래): 전부 켜기 → 효과음만 → 끄기
 const ICON = { all: '🔊', sfx: '🔔', off: '🔇' } as const;

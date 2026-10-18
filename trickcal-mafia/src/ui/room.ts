@@ -10,7 +10,7 @@ import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import { connect, type RoomLink } from '../net';
 import { GameUI } from './game';
-import { AUTO_START, GAME_MIN } from '../../shared/protocol';
+import { AUTO_START, GAME_MIN, PROTOCOL } from '../../shared/protocol';
 import { ROLES, roleName, type RoleId } from '../../shared/roles';
 import { charImg, type Profile } from '../profile';
 import { bgUrl, clear, h, setCompact } from './dom';
@@ -106,7 +106,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
 
   // ── 연결 ──
   // 끊기면 net.ts 가 알아서 다시 붙는다 (같은 토큰으로 자리 이어받기)
-  const link: RoomLink = connect(code, () => ({ t: 'hello', nick: profile.nick, char: profile.char, token: getTok() }));
+  const link: RoomLink = connect(code, () => ({ t: 'hello', nick: profile.nick, char: profile.char, token: getTok(), v: PROTOCOL }));
   const netBadge = h('div.net-badge.hidden');
   root.appendChild(netBadge);
   link.onMessage = (m) => onMsg(m);
@@ -134,7 +134,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   }
 
   function onMsg(m: S2C) {
-    if (m.t === 'g' || m.t === 'glog' || m.t === 'gsync' || m.t === 'gcmove' || m.t === 'fmove' || m.t === 'pmove' || m.t === 'cut' || m.t === 'gend') {
+    if (m.t === 'g' || m.t === 'glog' || m.t === 'gsync' || m.t === 'gcmove' || m.t === 'fmove' || m.t === 'pmove' || m.t === 'gmoves' || m.t === 'cut' || m.t === 'gend') {
       if (!gameUI) {
         gameUI = new GameUI(root, link, me);
         input.enabled = false;

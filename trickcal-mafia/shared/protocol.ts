@@ -43,6 +43,12 @@ export const MINI_DESC: Record<MiniId, string> = {
   chairs: '음악이 멈추면 의자로 달려가세요! 의자를 못 차지한 한 명이 탈락.',
 };
 
+/**
+ * 메시지 형식 버전. 서버와 화면이 서로 못 알아듣게 바뀔 때만 올린다.
+ * 다르면 서버가 4011 로 닫고, 화면은 '새 버전이 나왔어요 — 새로고침' 안내를 띄운다.
+ */
+export const PROTOCOL = 2;
+
 export interface PlayerInfo {
   id: number;
   nick: string;
@@ -55,7 +61,7 @@ export interface PlayerInfo {
 }
 
 export type C2S =
-  | { t: 'hello'; nick: string; char: CharId; token?: string }
+  | { t: 'hello'; nick: string; char: CharId; token?: string; /** 프로토콜 버전 */ v?: number }
   | { t: 'move'; x: number; y: number }
   | { t: 'chat'; text: string }
   | { t: 'start_mini'; game: MiniId }
@@ -106,6 +112,8 @@ export type S2C =
   /** 재접속 직후: 지금까지 내가 받았던 기록 (최근 것만) */
   | { t: 'gsync'; logs: [LogCh, number, string][] }
   | { t: 'gcmove'; pid: number; x: number; y: number }
+  /** 광장(p)·농장(f) 이동을 0.1초마다 모아서 [pid, x, y] */
+  | { t: 'gmoves'; s: 'p' | 'f'; m: [number, number, number][] }
   /** 주말농장(이드 + 죽은 사람) 위치 */
   | { t: 'fmove'; pid: number; x: number; y: number }
   /** 낮 광장(나무 아래) 위치 — 화면 배경 기준 %(0~100) */

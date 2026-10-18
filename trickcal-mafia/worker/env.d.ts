@@ -5,10 +5,18 @@ interface DurableObjectStub {
 }
 interface DurableObjectNamespace {
   idFromName(name: string): DurableObjectId;
-  get(id: DurableObjectId): DurableObjectStub;
+  get(id: DurableObjectId, opts?: { locationHint?: string }): DurableObjectStub;
+}
+interface SqlCursor { toArray(): Record<string, string | number | null>[] }
+interface DurableObjectStorage {
+  get<T = unknown>(key: string): Promise<T | undefined>;
+  put(key: string, value: unknown): Promise<void>;
+  sql: { exec(query: string, ...bindings: unknown[]): SqlCursor };
 }
 interface DurableObjectState {
   id: DurableObjectId;
+  storage: DurableObjectStorage;
+  blockConcurrencyWhile<T>(fn: () => Promise<T>): Promise<T>;
 }
 interface CfWebSocket extends WebSocket {
   accept(): void;

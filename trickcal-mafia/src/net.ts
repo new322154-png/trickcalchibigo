@@ -38,9 +38,14 @@ const FATAL: Record<number, string> = {
   4001: '들어갈 수 없는 방이에요.',
   4004: '없는 방이에요. (서버가 다시 시작돼 판이 끝났을 수 있어요)',
   4009: '다른 탭(또는 기기)에서 이 자리로 다시 접속했어요.',
+  4011: '새 버전이 나왔어요! 새로고침(F5)해 주세요.',
+  4013: '비정상적인 메시지가 많아 연결을 끊었어요.',
 };
 
 /** hello 는 연결할 때마다 새로 만든다 (최신 재접속 토큰을 넣기 위해) */
+/** 지금 쓰는 연결 (디버그 표시용) */
+export let currentLink: RoomLink | null = null;
+
 export function connect(code: string, hello: () => C2S): RoomLink {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const url = `${proto}//${location.host}/ws/${code}`;
@@ -149,5 +154,6 @@ export function connect(code: string, hello: () => C2S): RoomLink {
   document.addEventListener('visibilitychange', onVis);
 
   open();
+  currentLink = link;
   return link;
 }

@@ -324,8 +324,35 @@ export class MafiaGame {
   }
   /** 단계 타이머 취소 (투표가 일찍 끝남 등) */
   private clearPhase() { clearTimeout(this.phaseHandle); this.phaseFn = null; this.seq++; }
+  /**
+   * 광장·농장 이동은 받는 즉시 위치만 고쳐 두고, 0.1초마다 모아서 한 번에 보낸다
+   * (12명이 걸어도 사람마다 초당 10번만 받음). 판정과 무관한 연출용이라 지연은 문제없다.
+   */
+  private movedP = new Set<number>();
+  private movedF = new Set<number>();
+  private moveTimer: ReturnType<typeof setTimeout> | undefined;
+  private queueMoves() {
+    if (this.moveTimer !== undefined) return;
+    this.moveTimer = setTimeout(() => { this.moveTimer = undefined; this.flushMoves(); }, 100);
+  }
+  private flushMoves() {
+    if (this.disposed || this.over) { this.movedP.clear(); this.movedF.clear(); return; }
+    if (this.movedP.size && plazaPhase(this.phase)) {
+      const m: [number, number, number][] = [];
+      for (const pid of this.movedP) { const pos = this.plazaPos.get(pid); if (pos && this.ps.get(pid)?.alive) m.push([pid, pos[0], pos[1]]); }
+      for (const q of this.all()) if (q.online) { const mine = m.filter(([pid]) => pid !== q.pid); if (mine.length) this.host.send(q.pid, { t: 'gmoves', s: 'p', m: mine }); }
+    }
+    if (this.movedF.size) {
+      const m: [number, number, number][] = [];
+      for (const pid of this.movedF) { const pos = this.farmPos.get(pid); const p = this.ps.get(pid); if (pos && p && this.inFarm(p)) m.push([pid, pos[0], pos[1]]); }
+      if (m.length) for (const q of this.all()) if (q.online && this.inFarm(q)) { const mine = m.filter(([pid]) => pid !== q.pid); if (mine.length) this.host.send(q.pid, { t: 'gmoves', s: 'f', m: mine }); }
+    }
+    this.movedP.clear();
+    this.movedF.clear();
+  }
+
   /** 방이 게임을 버릴 때: 남은 예약이 아무것도 하지 않게 */
-  dispose() { this.disposed = true; this.clearPhase(); }
+  dispose() { this.disposed = true; this.clearPhase(); clearTimeout(this.moveTimer); }
   /** 마감이 지났는지 (타이머 콜백이 아직 안 돌았어도 서버 시각 기준으로 판정) */
   private late() { return Date.now() >= this.endsAt; }
 
@@ -929,7 +956,8 @@ export class MafiaGame {
         if (!Number.isFinite(x) || !Number.isFinite(y)) return;
         const pos: [number, number] = [Math.max(PLAZA.x0, Math.min(PLAZA.x1, x)), Math.max(PLAZA.y0, Math.min(PLAZA.y1, y))];
         this.plazaPos.set(pid, pos);
-        for (const q of this.all()) if (q.pid !== pid && q.online) this.host.send(q.pid, { t: 'pmove', pid, x: pos[0], y: pos[1] });
+        this.movedP.add(pid);
+        this.queueMoves();
         break;
       }
       case 'fmove': {
@@ -937,7 +965,8 @@ export class MafiaGame {
         const x = Math.max(40, Math.min(FARM_W - 40, Number(msg.x))), y = Math.max(440, Math.min(FARM_H - 40, Number(msg.y)));
         if (!Number.isFinite(x) || !Number.isFinite(y)) return;
         this.farmPos.set(pid, [x, y]);
-        for (const q of this.all()) if (q.pid !== pid && this.inFarm(q) && q.online) this.host.send(q.pid, { t: 'fmove', pid, x, y });
+        this.movedF.add(pid);
+        this.queueMoves();
         break;
       }
       case 'cmove': {

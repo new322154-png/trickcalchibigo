@@ -110,6 +110,7 @@ export class GameUI {
     else if (m.t === 'gcmove') this.corridor?.mate(m.pid, m.x, m.y);
     else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
     else if (m.t === 'pmove') this.scene.move(m.pid, m.x, m.y);
+    else if (m.t === 'gmoves') { for (const [pid, x, y] of m.m) { if (m.s === 'p') this.scene.move(pid, x, y); else this.farm?.move(pid, x, y); } }
     else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
     else if (m.t === 'cut') {
       const mine = m.kind.startsWith('p_');
