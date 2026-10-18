@@ -67,8 +67,8 @@ export type C2S =
   | { t: 'time'; d: 1 | -1 }
   | { t: 'add_bot' }
   | { t: 'remove_bot' }
-  | { t: 'act'; target: number | null }
-  | { t: 'vote'; target: number | null }
+  | { t: 'act'; target: number | null; seq?: number }
+  | { t: 'vote'; target: number | null; seq?: number }
   | { t: 'gchat'; text: string; ch: ChatCh }
   | { t: 'note'; to: number; text: string }
   | { t: 'choice'; key: ChoiceKey; value: number | string | null }
@@ -145,6 +145,8 @@ export interface GameView {
   endsAt: number;
   /** 서버 시각 (시계 차이 보정용) */
   now: number;
+  /** 단계 번호 — 투표·능력 명령에 같이 보내 지난 단계의 늦은 명령을 거른다 */
+  seq?: number;
   players: GPlayer[];
   me: {
     pid: number;

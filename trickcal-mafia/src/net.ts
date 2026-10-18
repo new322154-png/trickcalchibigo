@@ -24,7 +24,8 @@ export interface RoomLink {
 
 export async function api(path: string): Promise<{ code: string }> {
   const r = await fetch(path, { method: 'POST' });
-  if (!r.ok) throw new Error('서버에 연결할 수 없어요.');
+  if (r.status === 429) throw new Error('방을 너무 자주 만들었어요. 1분 뒤에 다시 시도해 주세요.');
+  if (!r.ok) throw new Error('서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.');
   return r.json();
 }
 

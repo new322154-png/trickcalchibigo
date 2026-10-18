@@ -89,6 +89,9 @@ export class GameUI {
     this.el.remove();
   }
 
+  /** 투표·능력: 내가 보고 있는 단계 번호를 같이 보내 서버가 지난 단계의 늦은 명령을 거르게 */
+  private cmd(m: { t: 'act' | 'vote'; target: number | null }) { this.link.send({ ...m, seq: this.v?.seq }); }
+
   name = (pid: number) => (pid < 0 ? '저택' : this.v?.players.find((p) => p.pid === pid)?.name ?? '?');
   private left() { return this.v ? Math.max(0, Math.ceil((this.v.endsAt - (Date.now() + this.skew)) / 1000)) : 0; }
 
@@ -307,8 +310,8 @@ export class GameUI {
       case 'vote1': {
         head('🗳 1차 투표', '가장 많이 표를 받은 두 명이 결선에 오릅니다.');
         const ids = v.players.filter((p) => p.alive && p.pid !== this.myPid).map((p) => p.pid);
-        this.panel.append(people(ids, (id) => { sfx('vote'); this.link.send({ t: 'vote', target: id }); }, me.vote));
-        this.panel.append(h(`button.btn.wide${me.vote === null ? '.sel' : ''}`, { onclick: () => this.link.send({ t: 'vote', target: null }) }, '기권'));
+        this.panel.append(people(ids, (id) => { sfx('vote'); this.cmd({ t: 'vote', target: id }); }, me.vote));
+        this.panel.append(h(`button.btn.wide${me.vote === null ? '.sel' : ''}`, { onclick: () => this.cmd({ t: 'vote', target: null }) }, '기권'));
         if (me.vote !== undefined) this.panel.append(h('div.ph-sub', `투표함: ${me.vote === null ? '기권' : this.name(me.vote)} (바꿀 수 있어요)`));
         break;
       }
@@ -320,10 +323,10 @@ export class GameUI {
       case 'vote2': {
         if (!me.canVote) { head('🗳 결선 투표', '다른 사람들이 투표하고 있어요.'); break; }
         head('🗳 결선 투표', v.cands.length === 2 ? '둘 중 한 명을 고르세요. 동표면 처형 없이 밤.' : `${this.name(v.cands[0])}를 처형할까요?`);
-        if (v.cands.length === 2) this.panel.append(people(v.cands, (id) => { sfx('vote'); this.link.send({ t: 'vote', target: id }); }, me.vote));
+        if (v.cands.length === 2) this.panel.append(people(v.cands, (id) => { sfx('vote'); this.cmd({ t: 'vote', target: id }); }, me.vote));
         else this.panel.append(h('div.bigbtns',
-          h(`button.btn.big.mafia${me.vote === v.cands[0] ? '.sel' : ''}`, { onclick: () => this.link.send({ t: 'vote', target: v.cands[0] }) }, '처형'),
-          h(`button.btn.big${me.vote === null ? '.sel' : ''}`, { onclick: () => this.link.send({ t: 'vote', target: null }) }, '반대')));
+          h(`button.btn.big.mafia${me.vote === v.cands[0] ? '.sel' : ''}`, { onclick: () => this.cmd({ t: 'vote', target: v.cands[0] }) }, '처형'),
+          h(`button.btn.big${me.vote === null ? '.sel' : ''}`, { onclick: () => this.cmd({ t: 'vote', target: null }) }, '반대')));
         break;
       }
       case 'verdict': head('⚖ 판결', '결과를 기다리는 중…'); break;
@@ -388,7 +391,7 @@ export class GameUI {
         h('div.n-title', `🌙 ${v.night}번째 밤`, h('span.n-timer', `${this.left()}초`)),
         h('div.n-step', STEP_NAMES.slice(1).map((s, i) => h(`span${v.step === i + 1 ? '.on' : ''}`, s))),
         h('div.n-status', status),
-        act && act.optional && myTurn ? h('button.btn.small', { onclick: () => this.link.send({ t: 'act', target: null }) }, '오늘은 쓰지 않기') : '',
+        act && act.optional && myTurn ? h('button.btn.small', { onclick: () => this.cmd({ t: 'act', target: null }) }, '오늘은 쓰지 않기') : '',
         v.me.drone ? h('div.n-drone', `🛸 드론 ${v.me.drone.count}/3 · 투표권 ${1 + v.me.drone.count}`,
           v.me.drone.tries > 0 && v.me.drone.count < 3 ? h('button.btn.small.gold', { onclick: () => { sfx('click'); this.link.send({ t: 'drone' }); } }, `🔧 조립하기 (남은 기회 ${v.me.drone.tries})`) : h('span.dim', ' 오늘 밤 조립 끝')) : '',
         this.nightLogEl,
@@ -438,7 +441,7 @@ export class GameUI {
     sfx('door');
     const v = this.v!;
     this.corridor = new Corridor(this.nightEl, v, this.myPid, roleImg(v.me.role), this.name, (target) => {
-      this.link.send({ t: 'act', target });
+      this.cmd({ t: 'act', target });
       sfx('door');
     }, (x, y) => this.link.send({ t: 'cmove', x, y }), () => { this.corridor?.destroy(); this.corridor = null; this.renderNight(); });
   }

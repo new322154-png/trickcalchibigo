@@ -238,7 +238,7 @@ export class MafiaGame {
     const prompt = this.prompts.get(pid);
     const killer = this.isKiller(p);
     return {
-      phase: this.phase, day: this.day, night: this.night, step: this.step, endsAt: this.endsAt, now: Date.now(),
+      phase: this.phase, day: this.day, night: this.night, step: this.step, endsAt: this.endsAt, now: Date.now(), seq: this.seq,
       players: this.all().map((q) => ({ pid: q.pid, name: q.name, alive: q.alive, online: q.online, shown: q.revealedAs })),
       me: {
         pid, role: p.role, alive: p.alive, mates: this.matesOf(p),
@@ -297,11 +297,37 @@ export class MafiaGame {
 
   // ── 진행 ─────────────────────────────────────────
 
+  /**
+   * 단계 타이머: 게임에 단 하나. 새 단계를 시작할 때마다 번호(seq)가 바뀌고,
+   * 이전 단계의 늦은 콜백은 번호가 달라 실행되지 않는다. 다른 예약(접속 대기·봇·연출)은 건드리지 않는다.
+   */
+  private seq = 0;
+  private phaseHandle: ReturnType<typeof setTimeout> | undefined;
+  private phaseFn: (() => void) | null = null;
+  private disposed = false;
   private timer(sec: number, fn: () => void) {
     const k = ((globalThis as { __MAFIA_SPEED?: number }).__MAFIA_SPEED ?? 1) / this.pace; // 테스트용 시간 배속
-    this.endsAt = Date.now() + sec * 1000 * k;
-    this.host.later(sec * 1000 * k, fn);
+    this.seq++;
+    this.armPhase(sec * 1000 * k, fn);
   }
+  /** 지금 단계의 마감만 다시 잡는다 (토론 시간 조정) */
+  private armPhase(ms: number, fn: () => void) {
+    clearTimeout(this.phaseHandle);
+    const s = this.seq;
+    this.phaseFn = fn;
+    this.endsAt = Date.now() + ms;
+    this.phaseHandle = setTimeout(() => {
+      if (this.disposed || this.over || s !== this.seq) return;
+      this.phaseFn = null;
+      fn();
+    }, ms);
+  }
+  /** 단계 타이머 취소 (투표가 일찍 끝남 등) */
+  private clearPhase() { clearTimeout(this.phaseHandle); this.phaseFn = null; this.seq++; }
+  /** 방이 게임을 버릴 때: 남은 예약이 아무것도 하지 않게 */
+  dispose() { this.disposed = true; this.clearPhase(); }
+  /** 마감이 지났는지 (타이머 콜백이 아직 안 돌았어도 서버 시각 기준으로 판정) */
+  private late() { return Date.now() >= this.endsAt; }
 
   start() {
     this.phase = 'intro';
@@ -640,13 +666,13 @@ export class MafiaGame {
 
   private endVote1() {
     if (this.over || this.phase !== 'vote1') return;
-    this.host.clearTimers();
+    this.clearPhase();
     const tally = new Map<number, number>();
     for (const [v, t] of this.votes) if (t !== null) tally.set(t, (tally.get(t) ?? 0) + this.weight(v));
     const sorted = [...tally].sort((a, b) => b[1] - a[1]);
     this.counts = sorted;
     this.logAll('event', `1차 투표 결과 — ${sorted.map(([t, c]) => `${this.name(t)} ${c}표`).join(' · ') || '모두 기권'}`);
-    if (!sorted.length) { this.logAll('event', '처형 없이 밤이 된다.'); this.host.later(3000, () => this.startNight()); this.push(); return; }
+    if (!sorted.length) { this.logAll('event', '처형 없이 밤이 된다.'); this.timer(3, () => this.startNight()); this.push(); return; }
     const top = sorted[0][1];
     const firsts = sorted.filter(([, c]) => c === top).map(([t]) => t);
     if (firsts.length >= 2) this.cands = shuffle(firsts).slice(0, 2);
@@ -697,7 +723,7 @@ export class MafiaGame {
 
   private endVote2() {
     if (this.over || this.phase !== 'vote2') return;
-    this.host.clearTimers();
+    this.clearPhase();
     this.resolvePrompts();
     const [a, b] = this.cands;
     const sum = (f: (t: number | null) => boolean) => [...this.votes].filter(([, t]) => f(t)).reduce((n, [v]) => n + this.weight(v), 0);
@@ -813,7 +839,7 @@ export class MafiaGame {
   private finish(w: Winner): true {
     if (this.over) return true;
     this.over = true;
-    this.host.clearTimers();
+    this.clearPhase();
     this.phase = 'end';
     const winners: number[] = [];
     for (const p of this.all()) {
@@ -833,7 +859,13 @@ export class MafiaGame {
 
   handle(pid: number, msg: C2S) {
     const p = this.ps.get(pid);
-    if (!p || this.over) return;
+    if (!p || this.over || this.disposed) return;
+    // 중요한 명령: 서버 마감이 지났거나, 클라이언트가 본 단계(seq)가 지금과 다르면 받지 않는다
+    if (msg.t === 'act' || msg.t === 'vote' || msg.t === 'choice' || msg.t === 'time' || msg.t === 'drone') {
+      if (this.late()) return;
+      const s = (msg as { seq?: number }).seq;
+      if ((msg.t === 'act' || msg.t === 'vote') && s !== undefined && s !== this.seq) return;
+    }
     switch (msg.t) {
       case 'act':
         if (p.alive) this.act(p, msg.target === null ? null : Number(msg.target));
@@ -886,9 +918,7 @@ export class MafiaGame {
         const left = this.endsAt - Date.now();
         const next = d > 0 ? left + TIME_STEP * 1000 * k : Math.max(3000 * k, left - TIME_STEP * 1000 * k);
         p.timeUsed = true;
-        this.host.clearTimers();
-        this.endsAt = Date.now() + next;
-        this.host.later(next, () => this.startVote1());
+        this.armPhase(next, this.phaseFn ?? (() => this.startVote1()));
         this.logAll('sys', d > 0 ? `⏫ ${p.name}님이 토론 시간을 ${TIME_STEP}초 늘렸다.` : `⏬ ${p.name}님이 토론 시간을 ${TIME_STEP}초 줄였다.`);
         this.push();
         break;

@@ -76,14 +76,14 @@ export class BotBrain {
       this.after(this.within(v, 1200, 6000), () => {
         const a = this.v?.me.act;
         if (!a || a.done || a.locked) return;
-        if (a.optional && Math.random() < 0.15) { this.send({ t: 'act', target: null }); return; }
+        if (a.optional && Math.random() < 0.15) { this.send({ t: 'act', target: null, seq: this.v?.seq }); return; }
         let ts = a.targets.filter((t) => !this.v!.me.mates.includes(t) || a.kind === 'protect');
         if (a.kind !== 'protect') ts = ts.filter((t) => t !== this.v!.me.pid);
         if (!ts.length) ts = a.targets;
         // 니펠끼리는 동료 표를 따라가 본다
         const team = this.v?.me.teamVotes?.find(([p, t]) => p !== this.v!.me.pid && t !== null);
         const target = team && Math.random() < 0.7 ? team[1] : pick(ts);
-        this.send({ t: 'act', target });
+        this.send({ t: 'act', target, seq: this.v?.seq });
       });
     }
     // 선택지 (박쥐 편 고르기 · 리온 · 마리 · 죠안 등)
@@ -105,7 +105,7 @@ export class BotBrain {
         let opts = w.phase === 'vote1' ? w.players.filter((p) => p.alive && p.pid !== w.me.pid).map((p) => p.pid) : [...w.cands];
         const safe = opts.filter((o) => !w.me.mates.includes(o) && o !== w.me.pid);
         if (safe.length) opts = safe;
-        this.send({ t: 'vote', target: Math.random() < 0.9 && opts.length ? pick(opts) : null });
+        this.send({ t: 'vote', target: Math.random() < 0.9 && opts.length ? pick(opts) : null, seq: this.v?.seq });
       });
     }
     // 엘레나: 밤마다 드론 조립

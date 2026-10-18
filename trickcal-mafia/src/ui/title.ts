@@ -29,7 +29,7 @@ export function showTitle(root: HTMLElement, act: TitleActions) {
     sfx('click');
     busy('빈자리가 있는 방을 찾는 중…');
     try { const { code } = await api('/api/match'); act.enterRoom(code, profile); }
-    catch { busy('서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.'); }
+    catch (e) { busy(e instanceof Error ? e.message : '서버에 연결할 수 없어요.'); }
   };
 
   // 낮(밝은 홀) / 밤(불타는 홀)이 비스듬히 갈라진 화면 + 가면 쓴 케이크들의 무도회
@@ -102,7 +102,7 @@ function roomMenu(root: HTMLElement, profile: () => Profile, act: TitleActions, 
           modal.remove();
           busy('방을 만드는 중…');
           try { const { code } = await api('/api/room'); act.enterRoom(code, profile()); }
-          catch { busy('서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.'); }
+          catch (e) { busy(e instanceof Error ? e.message : '서버에 연결할 수 없어요.'); }
         },
       }, '새 방 만들기'),
       h('p.hint', '친구에게 방 코드나 초대 링크를 보내 함께하세요.'),

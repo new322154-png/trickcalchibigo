@@ -16,6 +16,11 @@ interface Env {
 }
 
 const json = (v: unknown, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'content-type': 'application/json' } });
+/** 메시지 한 개 최대 길이 (글자 수). 가장 긴 정상 메시지(쪽지·채팅)도 1KB 안팎 */
+const MAX_MSG = 4096;
+/** 방 만들기 제한: IP 하나당 1분에 6개, 전체 방 500개 */
+const CREATE_PER_MIN = 6;
+const MAX_ROOMS = 500;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newCode = () => Array.from({ length: 5 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
 
@@ -23,8 +28,9 @@ export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
     const lobby = () => env.LOBBY.get(env.LOBBY.idFromName('main'));
-    if (url.pathname === '/api/match' && req.method === 'POST') return lobby().fetch('https://lobby/match', { method: 'POST' });
-    if (url.pathname === '/api/room' && req.method === 'POST') return lobby().fetch('https://lobby/create', { method: 'POST' });
+    const ip = req.headers.get('CF-Connecting-IP') ?? 'local';
+    if (url.pathname === '/api/match' && req.method === 'POST') return lobby().fetch('https://lobby/match', { method: 'POST', headers: { 'x-ip': ip } });
+    if (url.pathname === '/api/room' && req.method === 'POST') return lobby().fetch('https://lobby/create', { method: 'POST', headers: { 'x-ip': ip } });
     const info = url.pathname.match(/^\/api\/room\/([A-Z0-9]{5})$/);
     if (info) return lobby().fetch(`https://lobby/info/${info[1]}`);
     const ws = url.pathname.match(/^\/ws\/([A-Z0-9]{5})$/);
@@ -41,6 +47,19 @@ export class Lobby {
   rooms = new Map<string, { pub: boolean; count: number; at: number; inGame?: boolean }>();
   constructor(private ctx: DurableObjectState, private env: Env) {}
 
+  private made = new Map<string, number[]>();
+  /** 같은 IP가 짧은 시간에 방을 너무 많이 만들면 거절 */
+  private canCreate(ip: string) {
+    if (this.rooms.size >= MAX_ROOMS) return false;
+    const t = Date.now();
+    const list = (this.made.get(ip) ?? []).filter((x) => t - x < 60_000);
+    if (list.length >= CREATE_PER_MIN) { this.made.set(ip, list); return false; }
+    list.push(t);
+    this.made.set(ip, list);
+    if (this.made.size > 5000) this.made.clear();
+    return true;
+  }
+
   private async create(pub: boolean) {
     let code = newCode();
     while (this.rooms.has(code)) code = newCode();
@@ -56,9 +75,14 @@ export class Lobby {
     for (const [c, r] of this.rooms) if (r.count === 0 && Date.now() - r.at > 10 * 60_000) this.rooms.delete(c);
     if (url.pathname === '/match') {
       const open = [...this.rooms].filter(([, r]) => r.pub && !r.inGame && r.count > 0 && r.count < MAX_PLAYERS).sort((a, b) => b[1].count - a[1].count);
-      return json({ code: open.length ? open[0][0] : await this.create(true) });
+      if (open.length) return json({ code: open[0][0] });
+      if (!this.canCreate(req.headers.get('x-ip') ?? '')) return json({ error: 'busy' }, 429);
+      return json({ code: await this.create(true) });
     }
-    if (url.pathname === '/create') return json({ code: await this.create(false) });
+    if (url.pathname === '/create') {
+      if (!this.canCreate(req.headers.get('x-ip') ?? '')) return json({ error: 'busy' }, 429);
+      return json({ code: await this.create(false) });
+    }
     const info = url.pathname.match(/^\/info\/(\w+)$/);
     if (info) {
       const r = this.rooms.get(info[1]);
@@ -105,10 +129,21 @@ export class Room {
       send: (m: S2C) => { try { server.send(JSON.stringify(m)); } catch { /* 이미 닫힌 소켓 */ } },
       close: (code: number, reason: string) => { try { server.close(code, reason); } catch { /* 이미 닫힘 */ } },
     };
+    // 10초 안에 hello 가 없으면 닫음
+    const helloTimer = setTimeout(() => { if (id === null) { try { server.close(4002, 'no hello'); } catch { /* 무시 */ } } }, 10_000);
+    let bad = 0;
     server.addEventListener('message', (ev: MessageEvent) => {
+      // 문자열·크기 검사를 파싱보다 먼저 (정상 메시지는 수백 바이트)
+      if (typeof ev.data !== 'string' || ev.data.length > MAX_MSG) {
+        if (++bad > 20) { try { server.close(4013, 'bad messages'); } catch { /* 무시 */ } }
+        return;
+      }
       let msg: C2S;
-      try { msg = JSON.parse(String(ev.data)); } catch { return; }
+      try { msg = JSON.parse(ev.data); } catch { return; }
+      if (!msg || typeof msg !== 'object') return;
       if (id === null) {
+        if ((msg as { t?: string }).t !== 'hello') return;
+        clearTimeout(helloTimer);
         id = core.join(conn, msg);
         if (id === null) server.close(4001, 'rejected');
       } else if (core.isCurrent(id, conn)) core.handle(id, msg);

@@ -37,9 +37,25 @@ interface P extends PlayerInfo {
   brain?: BotBrain;
   /** 마지막으로 이 사람에게서 메시지를 받은 시각 */
   lastSeen: number;
+  /** 메시지 종류별 허용량 (token bucket) */
+  buckets?: Record<string, [number, number]>;
 }
 
 const now = () => Date.now();
+
+/** 메시지 종류별 [초당 회복, 최대 몰림]. 정상 플레이보다 넉넉하게, 넘치면 조용히 버린다 */
+const LIMITS: Record<string, [number, number]> = {
+  move: [20, 40],   // 이동 (클라 약 11Hz)
+  cmd: [6, 12],     // 투표·능력·선택·시간·쪽지·방장 명령
+  chat: [1, 5],     // 채팅 (5초에 5개 정도)
+  misc: [5, 10],    // 핑 등
+};
+const KIND: Partial<Record<C2S['t'], string>> = {
+  move: 'move', pmove: 'move', fmove: 'move', cmove: 'move',
+  chat: 'chat', gchat: 'chat',
+  act: 'cmd', vote: 'cmd', choice: 'cmd', time: 'cmd', drone: 'cmd', note: 'cmd', start_game: 'cmd',
+  add_bot: 'cmd', remove_bot: 'cmd', start_mini: 'cmd', stop_mini: 'cmd', press: 'cmd',
+};
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const pickOne = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -119,6 +135,18 @@ export class RoomCore {
 
   private status() { this.onCount(this.players.size, !!this.game); }
 
+  /** token bucket: 이 종류의 메시지를 지금 받아도 되는지 */
+  private allow(p: P, kind: string) {
+    const [rate, burst] = LIMITS[kind] ?? LIMITS.misc;
+    const t = now();
+    const b = ((p.buckets ??= {})[kind] ??= [burst, t]);
+    b[0] = Math.min(burst, b[0] + ((t - b[1]) / 1000) * rate);
+    b[1] = t;
+    if (b[0] < 1) return false;
+    b[0] -= 1;
+    return true;
+  }
+
   /** 이 소켓이 지금 이 사람의 연결인지 (재접속으로 교체된 옛 소켓은 아님) */
   isCurrent(id: number, conn: Conn) { return this.players.get(id)?.conn === conn; }
 
@@ -168,7 +196,7 @@ export class RoomCore {
     // 사람이 아무도 없으면 봇도 모두 나간다
     if (!p.bot && [...this.players.values()].every((q) => q.bot)) {
       for (const b of [...this.players.values()]) { b.brain?.destroy(); this.players.delete(b.id); }
-      if (this.game) { this.game = null; this.clearTimers(); }
+      if (this.game) { this.game.dispose(); this.game = null; this.clearTimers(); }
     }
     if (p.host && this.players.size) {
       const next = [...this.players.values()].filter((q) => !q.bot).sort((a, b) => a.joinedAt - b.joinedAt)[0] ?? [...this.players.values()][0];
@@ -243,8 +271,9 @@ export class RoomCore {
 
   handle(id: number, msg: C2S) {
     const p = this.players.get(id);
-    if (!p || !msg || typeof msg !== 'object') return;
+    if (!p || !msg || typeof msg !== 'object' || typeof msg.t !== 'string') return;
     p.lastSeen = now();
+    if (!p.bot && !this.allow(p, KIND[msg.t] ?? 'misc')) return;
     if (this.game) {
       if (msg.t === 'ping') p.conn.send({ t: 'pong' });
       else this.game.handle(id, msg);
@@ -362,6 +391,7 @@ export class RoomCore {
   }
 
   private endGame() {
+    this.game?.dispose();
     this.game = null;
     this.clearTimers();
     // 돌아오지 않은 사람 정리
