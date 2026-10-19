@@ -6,9 +6,10 @@
  */
 import { PLAZA, plazaPhase, type GameView } from '../../shared/protocol';
 import { bgUrl, h } from './dom';
+import { follow } from './follow';
 import { MoveInput } from './input';
 
-interface Av { el: HTMLElement; img: HTMLImageElement; src: string; bubble: HTMLElement; timer: number; x: number; y: number; tx: number; ty: number; /** 마지막으로 그린 값 (같으면 DOM을 안 건드림) */ dk: string }
+interface Av { mv?: number; mvOn?: boolean; el: HTMLElement; img: HTMLImageElement; src: string; bubble: HTMLElement; timer: number; x: number; y: number; tx: number; ty: number; /** 마지막으로 그린 값 (같으면 DOM을 안 건드림) */ dk: string }
 
 /** 광장 걷는 속도 (배경 폭 % / 초) */
 const WALK = 16;
@@ -143,11 +144,11 @@ export class Scene {
       if (pid !== this.myPid || !this.walking) {
         const dx = a.tx - a.x, dy = a.ty - a.y;
         if (this.walking) {
-          const k = Math.min(1, dt * 10);
-          a.x += dx * k; a.y += dy * k;
-          if (Math.abs(dx) > 0.05) a.el.classList.toggle('flip', dx > 0);
-          a.el.classList.toggle('moving', Math.hypot(dx, dy) > 0.15);
-        } else { a.x = a.tx; a.y = a.ty; a.el.classList.remove('moving'); }
+          // 광장 % 단위: 0.22초에 걸쳐 따라감, 최소 3%/s ~ 최대 80%/s
+          const on = follow(a, dt, t, 0.22, 3, 80, 0.05);
+          if (Math.abs(dx) > 0.3) a.el.classList.toggle('flip', dx > 0);
+          if (on !== a.mvOn) { a.mvOn = on; a.el.classList.toggle('moving', on); }
+        } else { a.x = a.tx; a.y = a.ty; if (a.mvOn) { a.mvOn = false; a.el.classList.remove('moving'); } }
       }
       // 원근: 아래(앞)로 올수록 조금 크게. 위치는 transform 으로만 (레이아웃 재계산 없음)
       const size = 12 + (a.y - 50) * 0.18 + (a.el.classList.contains('onstage') ? 3 : 0);

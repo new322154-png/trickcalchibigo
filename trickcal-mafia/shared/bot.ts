@@ -32,6 +32,8 @@ export class BotBrain {
     this.timers.clear();
     if (this.walk) clearInterval(this.walk);
     this.walk = null;
+    if (this.farmWalk) clearInterval(this.farmWalk);
+    this.farmWalk = null;
   }
 
   /** 한 판이 끝남: 하던 일만 멈추고 다음 판을 기다린다 */
@@ -40,6 +42,8 @@ export class BotBrain {
     this.timers.clear();
     if (this.walk) clearInterval(this.walk);
     this.walk = null;
+    if (this.farmWalk) clearInterval(this.farmWalk);
+    this.farmWalk = null;
     this.v = null;
     this.doneKey = '';
     this.planned.clear();
@@ -114,10 +118,12 @@ export class BotBrain {
       this.after(this.within(v, 800, 2500), () => this.send({ t: 'drone' }));
     }
     // 주말농장에선 조금 돌아다님
-    if (me.farm && !this.planned.has('farm')) {
-      this.planned.add('farm');
-      for (let i = 0; i < 4; i++) this.after(rnd(500, 12000), () => { if (this.v?.me.farm) this.send({ t: 'fmove', x: rnd(200, 1400), y: rnd(480, 820) }); });
-    }
+    // 주말농장: 사람처럼 한 걸음씩 걸어 다님 (순간이동 X)
+    if (me.farm && !this.farmWalk) {
+      const mine = me.farm.find(([p]) => p === me.pid);
+      if (mine) { this.fpos = [mine[1], mine[2]]; this.fgoal = [...this.fpos]; }
+      this.farmWalk = setInterval(() => this.farmStep(), 200);
+    } else if (!me.farm && this.farmWalk) { clearInterval(this.farmWalk); this.farmWalk = null; }
   }
 
   private onPhase(v: GameView) {
@@ -146,6 +152,23 @@ export class BotBrain {
     // 가끔 토론 시간 조절 (주로 단축)
     if (v.phase === 'day' && me.canTime && Math.random() < 0.15) this.after(this.within(v, 5000, 40000), () => { if (this.v?.phase === 'day' && this.v.me.canTime) this.send({ t: 'time', d: Math.random() < 0.7 ? -1 : 1 }); });
     if (v.phase === 'defense' && me.chats.includes('defense')) this.after(rnd(1500, 8000), () => { if (this.v?.phase === 'defense') chat(pick(DEFENSE), 'defense'); });
+  }
+
+  private farmWalk: ReturnType<typeof setInterval> | null = null;
+  private fpos: [number, number] = [800, 650];
+  private fgoal: [number, number] = [800, 650];
+  /** 농장 한 걸음 (사람 속도 약 360px/s 보다 조금 느리게) */
+  private farmStep() {
+    if (!this.v?.me.farm) return;
+    const [x, y] = this.fpos, [gx, gy] = this.fgoal;
+    const d = Math.hypot(gx - x, gy - y);
+    if (d < 8) {
+      if (Math.random() < 0.15) this.fgoal = [rnd(200, 1400), rnd(480, 820)];
+      return;
+    }
+    const s = Math.min(d, 55);
+    this.fpos = [x + ((gx - x) / d) * s, y + ((gy - y) / d) * s];
+    this.send({ t: 'fmove', x: Math.round(this.fpos[0]), y: Math.round(this.fpos[1]) });
   }
 
   private step() {

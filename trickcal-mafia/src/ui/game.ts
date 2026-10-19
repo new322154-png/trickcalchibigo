@@ -9,6 +9,7 @@ import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import type { RoomLink } from '../net';
 import { asset, bgUrl, clear, h } from './dom';
+import { follow } from './follow';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
 import { playCut, preloadCuts } from './cut';
@@ -670,7 +671,7 @@ class Farm {
   private world = h('div.farm-world');
   private wrap: HTMLElement;
   private input = new MoveInput();
-  private avs = new Map<number, { el: HTMLElement; bubble: HTMLElement; x: number; y: number; tx: number; ty: number; timer: number }>();
+  private avs = new Map<number, { el: HTMLElement; bubble: HTMLElement; x: number; y: number; tx: number; ty: number; timer: number; mv?: number; mvOn?: boolean }>();
   private raf = 0;
   private last = performance.now();
   private lastFit = -1e9;
@@ -732,11 +733,11 @@ class Farm {
     }
     for (const [pid, a] of this.avs) {
       if (pid !== this.myPid) {
-        const dx = a.tx - a.x, dy = a.ty - a.y;
-        const k = Math.min(1, dt * 12);
-        a.x += dx * k; a.y += dy * k;
-        if (Math.abs(dx) > 0.5) a.el.classList.toggle('flip', dx > 0);
-        a.el.classList.toggle('moving', Math.hypot(dx, dy) > 2);
+        const dx = a.tx - a.x;
+        // 농장 px 단위: 0.2초에 걸쳐 따라감
+        const on = follow(a, dt, t, 0.2, 60, 2000, 1);
+        if (Math.abs(dx) > 4) a.el.classList.toggle('flip', dx > 0);
+        if (on !== a.mvOn) { a.mvOn = on; a.el.classList.toggle('moving', on); }
       }
       const tf = `translate3d(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px, 0)`;
       if (a.el.style.transform !== tf) { a.el.style.transform = tf; a.el.style.zIndex = String(Math.round(a.y)); }

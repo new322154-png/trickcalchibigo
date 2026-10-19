@@ -220,6 +220,7 @@
 .c-back { position: absolute; right: 20px; top: 16px; z-index: 6; }
 .c-toast { position: absolute; right: 20px; top: 70px; z-index: 6; width: 420px; display: flex; flex-direction: column; gap: 6px; font-size: 17px; }
 .c-toast div { background: linear-gradient(135deg, rgba(20,24,58,.85), rgba(8,10,28,.8)); border: 1px solid var(--gold2); border-radius: 10px; padding: 6px 10px; color: #f3dfb4; }
+.ch.mate { transition: transform .13s linear; }
 .ch.mate .ch-body { opacity: .85; }
 .ch.mate .n-sil { color: #ff9aa9; }
 #stage.compact .g-cols { grid-template-columns: 220px 1fr 330px; }
