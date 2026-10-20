@@ -111,7 +111,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   },
   elena: {
     id: 'elena', char: '엘레나', job: '드론', team: 'neutral',
-    desc: '밤마다 방에서 드론 조립을 3번 시도한다(성공할 때마다 투표권 +1, 최대 3대). 내 투표권이 다른 생존자 수보다 많아지면 즉시 혼자 승리한다.',
+    desc: '밤마다 방에서 드론 조립을 3번 시도한다(성공할 때마다 투표권 +1, 최대 3대). 대수가 늘수록 조립이 어려워지고, 누적 9번째 시도마다 한 대는 반드시 완성된다. 내 투표권이 다른 생존자 수보다 많아지면 즉시 혼자 승리한다.',
   },
 };
 
@@ -148,8 +148,10 @@ export const UROS_REVIVE_NIGHTS = 3;
 /** 엘레나 드론 */
 export const DRONE_TRIES = 3;
 export const DRONE_MAX = 3;
-export const DRONE_PITY = 6;
-export const DRONE_MAX_CHANCE = 0.4;
+/** 누적 시도 9번째마다 확정 성공 (3번째 밤마다 한 번) */
+export const DRONE_PITY = 9;
+/** 한 번 시도의 최대 확률 (0~이 값 사이 무작위). 갈수록 어려워진다: 1호기 40% → 2호기 20% → 3호기 10% */
+export const DRONE_MAX_CHANCE = [0.4, 0.2, 0.1];
 
 /** 밤 차례: ① 뮤트·스피키 → ② 니펠 → ③ 나머지 능력 */
 export const NIGHT_STEP: Record<NightKind, 1 | 2 | 3> = {

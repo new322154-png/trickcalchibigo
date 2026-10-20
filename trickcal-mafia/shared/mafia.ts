@@ -577,7 +577,7 @@ export class MafiaGame {
     if (p.droneTries <= 0 || p.drones >= DRONE_MAX) { p.droneTries = 0; return; }
     p.droneTries--;
     p.droneTotal++;
-    const ok = p.droneTotal % DRONE_PITY === 0 || Math.random() < Math.random() * DRONE_MAX_CHANCE;
+    const ok = p.droneTotal % DRONE_PITY === 0 || Math.random() < Math.random() * DRONE_MAX_CHANCE[Math.min(p.drones, DRONE_MAX_CHANCE.length - 1)];
     if (ok) {
       p.drones++;
       this.morning.drone = true;
