@@ -251,28 +251,55 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
           h('button.btn.small', { disabled: n >= MAX_PLAYERS, title: '빈자리를 봇으로 채워 혼자서도 시험해 볼 수 있어요', onclick: () => link.send({ t: 'add_bot' }) }, '🤖 봇 추가'),
           h('button.btn.small', { disabled: ![...avatars.values()].some((a) => a.info.bot), onclick: () => link.send({ t: 'remove_bot' }) }, '봇 빼기')),
         soloTest(),
-        h('button.btn.gold.wide', { disabled: n < GAME_MIN || !!mini, onclick: () => link.send({ t: 'start_game', ...(isSolo() && (testRole || testSpeed > 1) ? { test: { role: testRole || undefined, speed: testSpeed } } : {}) }) }, n < GAME_MIN ? `게임 시작 (${GAME_MIN}명부터)` : `게임 시작 (${n}명)`),
+        h('button.btn.gold.wide', { disabled: n < GAME_MIN || !!mini, onclick: () => link.send({ t: 'start_game', ...(isSolo() && testReq() ? { test: testReq() } : {}) }) }, n < GAME_MIN ? `게임 시작 (${GAME_MIN}명부터)` : `게임 시작 (${n}명)`),
       );
     } else hostBar.append(h('div.dim', '방장이 미니게임이나 게임을 시작할 수 있어요.'));
   }
 
   // ── 테스트 설정 (방장 혼자 + 봇일 때만) ──
-  let testRole = '';
+  // 방장 + (부계정 1명) + 봇일 때: 사람마다 직업 지정, 봇 행동 끄기, 니펠 독점 습격 (직업 소개 영상 촬영용)
+  const testRoles = new Map<number, string>();
   let testSpeed = 1;
   let testOpen = false;
+  const tb = { vote: true, act: true, chat: true, god: false };
   function isSolo() {
     const all = [...avatars.values()];
-    return !pub && all.length > 1 && all.every((a) => a.info.id === me || a.info.bot);
+    const humans = all.filter((a) => !a.info.bot);
+    return !pub && all.some((a) => a.info.bot) && humans.length <= 2 && !!avatars.get(me)?.info.host;
+  }
+  function testReq() {
+    const roles: Record<string, string> = {};
+    for (const [pid, r] of testRoles) if (r && avatars.has(pid) && !avatars.get(pid)!.info.bot) roles[pid] = r;
+    const changed = Object.keys(roles).length || testSpeed > 1 || !tb.vote || !tb.act || !tb.chat || tb.god;
+    return changed ? { roles, speed: testSpeed, godKill: tb.god, botVote: tb.vote, botAct: tb.act, botChat: tb.chat } : undefined;
+  }
+  function roleSelect(pid: number, label: string) {
+    const sel = h('select.test-sel', { onchange: (e: Event) => { testRoles.set(pid, (e.target as HTMLSelectElement).value); refresh(); } },
+      h('option', { value: '' }, `${label}: 무작위`),
+      ...(['mafia', 'citizen', 'neutral'] as const).map((team) => h('optgroup', { label: { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[team] },
+        ...Object.values(ROLES).filter((r) => r.team === team).map((r) => h('option', { value: r.id }, `${label}: ${roleName(r.id as RoleId)} · ${r.job}`)))));
+    (sel as HTMLSelectElement).value = testRoles.get(pid) ?? '';
+    return sel;
   }
   function soloTest() {
     if (!isSolo()) return '';
-    const sel = h('select.test-sel', { onchange: (e: Event) => { testRole = (e.target as HTMLSelectElement).value; refresh(); } },
-      h('option', { value: '' }, '내 직업: 무작위'),
-      ...(['mafia', 'citizen', 'neutral'] as const).map((team) => h('optgroup', { label: { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[team] },
-        ...Object.values(ROLES).filter((r) => r.team === team).map((r) => h('option', { value: r.id }, `${roleName(r.id as RoleId)} · ${r.job}`)))));
-    (sel as HTMLSelectElement).value = testRole;
+    const humans = [...avatars.values()].filter((a) => !a.info.bot).sort((a, b) => (a.info.id === me ? -1 : b.info.id === me ? 1 : 0));
     const sp = h('div.test-speed', ...[1, 2, 4].map((k) => h(`button.btn.small${k === testSpeed ? '.on' : ''}`, { onclick: () => { testSpeed = k; refresh(); } }, `${k}배속`)));
-    const box = h('details.test-box', h('summary', `🧪 테스트 설정 — ${testRole ? roleName(testRole as RoleId) : '직업 무작위'} · ${testSpeed}배속`), sel, sp) as HTMLDetailsElement;
+    const chk = (key: keyof typeof tb, text: string) => {
+      const c = h('input', { type: 'checkbox' }) as HTMLInputElement;
+      c.checked = tb[key];
+      c.onchange = () => { tb[key] = c.checked; refresh(); };
+      return h('label.test-chk', c, ' ', text);
+    };
+    const film = h('button.btn.small.wide', { onclick: () => { tb.vote = false; tb.act = false; tb.chat = false; tb.god = true; refresh(); } }, '🎬 촬영 모드 (봇 전부 끄기 + 니펠 독점 습격)');
+    const sum = [...testRoles.values()].filter(Boolean).length;
+    const box = h('details.test-box',
+      h('summary', `🧪 테스트 설정 — 직업 지정 ${sum}명 · ${testSpeed}배속${tb.god ? ' · 독점 습격' : ''}`),
+      ...humans.map((a) => roleSelect(a.info.id, a.info.id === me ? '나' : a.info.nick)),
+      sp, film,
+      h('div.test-chks', chk('vote', '봇 투표'), chk('act', '봇 능력·선택'), chk('chat', '봇 채팅')),
+      chk('god', '사람 니펠 독점 습격 (다른 니펠 무시, 보호·반격 등 전부 무시하고 처형)'),
+    ) as HTMLDetailsElement;
     box.open = testOpen;
     box.addEventListener('toggle', () => { testOpen = box.open; });
     return box;

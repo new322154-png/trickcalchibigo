@@ -4,7 +4,7 @@
  * 판정은 모두 서버가 한다.
  */
 import { QUIZ } from './quiz';
-import { MafiaGame } from './mafia';
+import { MafiaGame, type GameTest } from './mafia';
 import { BotBrain } from './bot';
 import { ROLES, type RoleId } from './roles';
 import {
@@ -42,6 +42,9 @@ interface P extends PlayerInfo {
 }
 
 const now = () => Date.now();
+
+/** 방장이 보내는 테스트·촬영 설정 */
+export interface TestReq { roles?: Record<string, string>; speed?: number; godKill?: boolean; botVote?: boolean; botAct?: boolean; botChat?: boolean }
 
 /** 메시지 종류별 [초당 회복, 최대 몰림]. 정상 플레이보다 넉넉하게, 넘치면 조용히 버린다 */
 const LIMITS: Record<string, [number, number]> = {
@@ -373,17 +376,27 @@ export class RoomCore {
     }
   }
 
-  /** 혼자서 봇들과 하는 판인지 (테스트 설정을 쓸 수 있음) */
-  soloWithBots(hostId: number) {
-    return !this.pub && [...this.players.values()].every((p) => p.id === hostId || p.bot) && this.players.size > 1;
+  /** 테스트 설정을 쓸 수 있는 방: 비공개, 봇이 있고, 사람은 방장 포함 2명까지 (영상 촬영용 부계정) */
+  testAllowed(hostId: number) {
+    const ps = [...this.players.values()];
+    const humans = ps.filter((p) => !p.bot);
+    return !this.pub && ps.some((p) => p.bot) && humans.length <= 2 && humans.some((p) => p.id === hostId && p.host);
   }
 
-  private startGame(by?: number, test?: { role?: string; speed?: number }) {
+  private startGame(by?: number, test?: TestReq) {
     if (this.game) return;
-    // 테스트 설정은 방장 혼자 + 봇일 때만 (사람끼리 하는 판에서 직업 고르기 방지)
-    const t = by !== undefined && test && this.soloWithBots(by)
-      ? { pid: by, role: test.role && test.role in ROLES ? (test.role as RoleId) : undefined, speed: Math.max(1, Math.min(8, Number(test.speed) || 1)) }
-      : undefined;
+    // 테스트 설정은 방장 + (부계정 1명) + 봇일 때만 (사람끼리 하는 판에서 직업 고르기 방지)
+    let t: GameTest | undefined;
+    if (by !== undefined && test && this.testAllowed(by)) {
+      const roles: [number, RoleId][] = [];
+      for (const [k, r] of Object.entries(test.roles ?? {})) {
+        const p = this.players.get(Number(k));
+        if (p && !p.bot && typeof r === 'string' && r in ROLES) roles.push([p.id, r as RoleId]);
+      }
+      const bots = [...this.players.values()].filter((p) => p.bot);
+      for (const b of bots) if (b.brain) b.brain.opts = { vote: test.botVote !== false, act: test.botAct !== false, chat: test.botChat !== false };
+      t = { roles, speed: Math.max(1, Math.min(8, Number(test.speed) || 1)), godKill: !!test.godKill, quiet: test.botAct === false ? bots.map((b) => b.id) : [] };
+    } else for (const p of this.players.values()) if (p.brain) p.brain.opts = { vote: true, act: true, chat: true };
     if (this.autoTimer) { clearTimeout(this.autoTimer); this.autoTimer = null; this.autoAt = null; }
     this.endMini(true);
     this.notice = null;

@@ -21,18 +21,31 @@ import {
 const TIME_STEP = 15;
 
 /** 테스트 모드: 고른 직업을 그 자리에 넣는다. 이미 있으면 맞바꾸고, 없으면 같은 갈래의 직업과 바꿔 인원 구성을 지킨다 */
-function placeRole(roles: RoleId[], at: number, want: RoleId) {
+function placeRole(roles: RoleId[], at: number, want: RoleId, locked: Set<number> = new Set()) {
   if (at < 0) return;
-  const has = roles.indexOf(want);
+  locked.add(at);
+  const free = (i: number) => i === at || !locked.has(i);
+  const has = roles.findIndex((r, i) => r === want && free(i));
   if (has >= 0) { [roles[at], roles[has]] = [roles[has], roles[at]]; return; }
   const group = (r: RoleId) => (MEMBER_POOL.includes(r) ? 'm' : CITIZEN_POOL.includes(r) ? 'c' : NEUTRAL_POOL.includes(r) ? 'n' : r);
-  // 같은 갈래 → 시민 무작위 → 아무거나(니펠 제외) 순서로 바꿀 자리를 찾는다
-  let swap = roles.findIndex((r) => group(r) === group(want));
-  if (swap < 0) swap = roles.findIndex((r) => group(r) === 'c');
-  if (swap < 0) swap = roles.findIndex((r) => r !== 'nifel');
+  // 같은 갈래 → 시민 무작위 → 아무거나(니펠 제외) 순서로 바꿀 자리를 찾는다 (이미 정해 준 사람 자리는 건드리지 않음)
+  let swap = roles.findIndex((r, i) => free(i) && group(r) === group(want));
+  if (swap < 0) swap = roles.findIndex((r, i) => free(i) && group(r) === 'c');
+  if (swap < 0) swap = roles.findIndex((r, i) => free(i) && r !== 'nifel');
   if (swap < 0) return;
   roles[swap] = want;
   [roles[at], roles[swap]] = [roles[swap], roles[at]];
+}
+
+/** 테스트·촬영 설정 (방장 + 사람 최대 2명 + 봇일 때만) */
+export interface GameTest {
+  /** 사람마다 고른 직업 */
+  roles?: [number, RoleId][];
+  speed?: number;
+  /** 사람 니펠의 습격만 유효 + 무엇으로도 못 막음 */
+  godKill?: boolean;
+  /** 시간이 지나도 능력을 무작위로 쓰지 않을 사람 (능력 끈 봇) */
+  quiet?: number[];
 }
 
 export interface GameHost {
@@ -102,7 +115,7 @@ export class MafiaGame {
   private proxy: { joan: number; target: number } | null = null;
   private prompts = new Map<number, Prompt>();
   private quietDays = 0;
-  private pendingKill: { target: number; executor: number; voters: number[] } | null = null;
+  private pendingKill: { target: number; executor: number; voters: number[]; god?: boolean } | null = null;
   private overturned = false;
   private stage: number[] = [];
   /** 낮 광장 위치 (%) */
@@ -122,7 +135,12 @@ export class MafiaGame {
   private pace = 1;
   private testNote = '';
 
-  constructor(private host: GameHost, seats: { pid: number; name: string }[], test?: { pid: number; role?: RoleId; speed?: number }) {
+  /** 촬영·테스트: 이 사람(니펠)의 습격만 유효하고, 어떤 능력으로도 막을 수 없다 */
+  private godKillers = new Set<number>();
+  /** 촬영·테스트: 시간이 지나도 능력을 무작위로 쓰지 않는 사람 (능력 끈 봇) */
+  private noAuto = new Set<number>();
+
+  constructor(private host: GameHost, seats: { pid: number; name: string }[], test?: GameTest) {
     const n = seats.length;
     const [nifel, members, rnd, neutrals] = COMPOSITION[n];
     const forced = (globalThis as { __MAFIA_ROLES?: RoleId[] }).__MAFIA_ROLES; // 테스트용 직업 고정
@@ -135,14 +153,18 @@ export class MafiaGame {
     ]);
     if (test) {
       if (test.speed && test.speed >= 1 && test.speed <= 8) this.pace = test.speed;
-      if (test.role && test.role in ROLES) placeRole(roles, seats.findIndex((s) => s.pid === test.pid), test.role);
-      this.testNote = `🧪 테스트 모드${test.role ? ` · 내 직업 ${roleName(test.role)}` : ''}${this.pace > 1 ? ` · ${this.pace}배속` : ''}`;
+      const locked = new Set<number>();
+      for (const [pid, role] of test.roles ?? []) if (role in ROLES) placeRole(roles, seats.findIndex((s) => s.pid === pid), role, locked);
+      for (const pid of test.quiet ?? []) this.noAuto.add(pid);
+      const notes = (test.roles ?? []).map(([pid, r]) => `${seats.find((s) => s.pid === pid)?.name ?? '?'}=${roleName(r)}`);
+      this.testNote = `🧪 테스트 모드${notes.length ? ` · ${notes.join(', ')}` : ''}${this.pace > 1 ? ` · ${this.pace}배속` : ''}${test.godKill ? ' · 니펠 독점 습격' : ''}`;
     }
     seats.forEach((s, i) => this.ps.set(s.pid, {
       pid: s.pid, name: s.name, role: roles[i], alive: true, online: true,
       contacted: false, usedOnce: false, shieldUsed: false, revealed: false, notesLeft: 1,
       urosAwake: false, drones: 0, droneTries: 0, droneTotal: 0,
     }));
+    if (test?.godKill) for (const [pid] of test.roles ?? []) if (this.ps.get(pid)?.role === 'nifel') this.godKillers.add(pid);
   }
 
   // ── 조회 ─────────────────────────────────────────
@@ -482,7 +504,7 @@ export class MafiaGame {
     if (this.over) return;
     // 시간 안에 못 고른 사람: 필수 능력은 무작위
     for (const [pid, a] of this.acts) {
-      if (a.locked || a.kind === 'kill') continue;
+      if (a.locked || a.kind === 'kill' || this.noAuto.has(pid)) continue;
       if (!a.done && !a.optional) {
         const p = this.ps.get(pid)!;
         this.secret(pid, '시간이 다 되어 대상이 무작위로 정해졌다.');
@@ -504,7 +526,9 @@ export class MafiaGame {
     if (step === 2) {
       const noKill = this.night === 1 && NO_FIRST_KILL(this.ps.size);
       const tally = new Map<number, number>();
-      for (const t of this.killVotes.values()) if (t !== null) tally.set(t, (tally.get(t) ?? 0) + 1);
+      // 독점 습격자가 있으면 그 사람의 표만 센다
+      const god = this.godKillers.size > 0;
+      for (const [v, t] of this.killVotes) if (t !== null && (!god || this.godKillers.has(v))) tally.set(t, (tally.get(t) ?? 0) + 1);
       this.pendingKill = null;
       if (tally.size && !noKill) {
         const max = Math.max(...tally.values());
@@ -513,7 +537,11 @@ export class MafiaGame {
         const executor = rand(voters);
         this.visits.set(executor, target);
         const t = this.ps.get(target)!;
-        if (t.role === 'joan' && !t.contacted) {
+        if (god) {
+          // 아무것도 통하지 않는 습격 (보호·반격·접선·폭사·부활 무시)
+          this.pendingKill = { target, executor, voters, god: true };
+          for (const v of this.killVotes.keys()) this.secret(v, `오늘 밤 습격 대상: ${this.name(target)}`);
+        } else if (t.role === 'joan' && !t.contacted) {
           for (const v of this.killVotes.keys()) this.secret(v, `${t.name}를 습격하러 갔더니… 같은 편이었다! 습격은 멈췄다.`);
           this.contact(t, '니펠이 당신을 습격하러 왔다가 서로를 알아봤다.');
         } else {
@@ -551,7 +579,8 @@ export class MafiaGame {
     const k = this.pendingKill;
     if (k) {
       const t = this.ps.get(k.target)!;
-      if (protectedSet.has(t.pid)) m.saved.push(t.pid);
+      if (k.god) m.deaths.push(t.pid);
+      else if (protectedSet.has(t.pid)) m.saved.push(t.pid);
       else if (t.role === 'trap' && !t.shieldUsed) {
         t.shieldUsed = true;
         m.counters.push([t.pid, k.executor]);

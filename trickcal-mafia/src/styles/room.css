@@ -305,3 +305,6 @@
 .net-badge { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 200; padding: 8px 18px; border-radius: 20px; background: rgba(20,22,40,.88); color: #fff; font-size: 18px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.4); pointer-events: none; animation: netPulse 1.2s ease-in-out infinite; }
 .net-badge.hidden { display: none; }
 @keyframes netPulse { 50% { opacity: .65; } }
+.test-chks { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.test-chk { font-size: 14px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.test-chk input { width: 16px; height: 16px; }

@@ -13,6 +13,8 @@ const SUS = ['{n} 좀 수상한데', '{n} 아까부터 조용하네', '{n} 찍�
 const DEFENSE = ['진짜 아니야!', '나 시민이라고', '나 찍으면 후회한다', '…할 말 없음'];
 
 export class BotBrain {
+  /** 촬영·테스트용: 투표 / 능력·선택 / 채팅을 할지 */
+  opts = { vote: true, act: true, chat: true };
   private v: GameView | null = null;
   private timers = new Set<ReturnType<typeof setTimeout>>();
   private walk: ReturnType<typeof setInterval> | null = null;
@@ -75,7 +77,7 @@ export class BotBrain {
     if (prev?.phase !== v.phase) this.onPhase(v);
 
     // 밤 능력
-    if (me.act && !me.act.done && !me.act.locked && !this.planned.has('act')) {
+    if (this.opts.act && me.act && !me.act.done && !me.act.locked && !this.planned.has('act')) {
       this.planned.add('act');
       this.after(this.within(v, 1200, 6000), () => {
         const a = this.v?.me.act;
@@ -91,7 +93,7 @@ export class BotBrain {
       });
     }
     // 선택지 (박쥐 편 고르기 · 리온 · 마리 · 죠안 등)
-    if (me.prompt && !this.planned.has('prompt:' + me.prompt.key)) {
+    if (this.opts.act && me.prompt && !this.planned.has('prompt:' + me.prompt.key)) {
       this.planned.add('prompt:' + me.prompt.key);
       this.after(this.within(v, 1500, 4000), () => {
         const p = this.v?.me.prompt;
@@ -101,7 +103,7 @@ export class BotBrain {
       });
     }
     // 투표
-    if (me.canVote && me.vote === undefined && !this.planned.has('vote')) {
+    if (this.opts.vote && me.canVote && me.vote === undefined && !this.planned.has('vote')) {
       this.planned.add('vote');
       this.after(this.within(v, 1500, 9000), () => {
         const w = this.v;
@@ -113,7 +115,7 @@ export class BotBrain {
       });
     }
     // 엘레나: 밤마다 드론 조립
-    if (me.drone && me.drone.tries > 0 && me.drone.count < 3 && v.phase === 'night' && !this.planned.has('drone' + me.drone.tries)) {
+    if (this.opts.act && me.drone && me.drone.tries > 0 && me.drone.count < 3 && v.phase === 'night' && !this.planned.has('drone' + me.drone.tries)) {
       this.planned.add('drone' + me.drone.tries);
       this.after(this.within(v, 800, 2500), () => this.send({ t: 'drone' }));
     }
@@ -139,7 +141,7 @@ export class BotBrain {
     // 말하기
     if (!me.alive) return;
     const chat = (text: string, ch = me.chats[0]) => { if (ch) this.send({ t: 'gchat', text, ch }); };
-    if (v.phase === 'day' && me.chats.includes('day')) {
+    if (this.opts.chat && v.phase === 'day' && me.chats.includes('day')) {
       const n = 1 + Math.floor(Math.random() * 2);
       for (let i = 0; i < n; i++) this.after(rnd(2000, 30000), () => {
         if (this.v?.phase !== 'day' || Date.now() - this.saidAt < 6000) return;
@@ -150,8 +152,8 @@ export class BotBrain {
       });
     }
     // 가끔 토론 시간 조절 (주로 단축)
-    if (v.phase === 'day' && me.canTime && Math.random() < 0.15) this.after(this.within(v, 5000, 40000), () => { if (this.v?.phase === 'day' && this.v.me.canTime) this.send({ t: 'time', d: Math.random() < 0.7 ? -1 : 1 }); });
-    if (v.phase === 'defense' && me.chats.includes('defense')) this.after(rnd(1500, 8000), () => { if (this.v?.phase === 'defense') chat(pick(DEFENSE), 'defense'); });
+    if (this.opts.vote && v.phase === 'day' && me.canTime && Math.random() < 0.15) this.after(this.within(v, 5000, 40000), () => { if (this.v?.phase === 'day' && this.v.me.canTime) this.send({ t: 'time', d: Math.random() < 0.7 ? -1 : 1 }); });
+    if (this.opts.chat && v.phase === 'defense' && me.chats.includes('defense')) this.after(rnd(1500, 8000), () => { if (this.v?.phase === 'defense') chat(pick(DEFENSE), 'defense'); });
   }
 
   private farmWalk: ReturnType<typeof setInterval> | null = null;

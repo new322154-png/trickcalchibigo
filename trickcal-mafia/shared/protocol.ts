@@ -69,7 +69,7 @@ export type C2S =
   | { t: 'press' }
   | { t: 'ping' }
   // ── 마피아 본게임 ──
-  | { t: 'start_game'; test?: { role?: string; speed?: number } }
+  | { t: 'start_game'; test?: { roles?: Record<string, string>; speed?: number; godKill?: boolean; botVote?: boolean; botAct?: boolean; botChat?: boolean } }
   | { t: 'time'; d: 1 | -1 }
   | { t: 'add_bot' }
   | { t: 'remove_bot' }
