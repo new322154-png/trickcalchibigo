@@ -1,3 +1,6 @@
+/* 제목·귀여운 글꼴: 직접 내보냄 (SIL Open Font License, assets/fonts/OFL-*.txt) */
+@font-face { font-family: 'Black Han Sans'; src: url('/assets/fonts/BlackHanSans-Regular.woff') format('woff'); font-display: swap; }
+@font-face { font-family: 'Jua'; src: url('/assets/fonts/Jua-Regular.woff') format('woff'); font-display: swap; }
 
 :root {
   --bg: #0d0a14;
