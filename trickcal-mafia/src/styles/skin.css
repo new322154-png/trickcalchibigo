@@ -23,15 +23,19 @@
   --k-r2: 12px;            /* 버튼 · 칸 */
   --k-font: 'Jua', 'Noto Sans KR', sans-serif;
 }
-/* 밤 · 재판: 자두색 종이 */
-.t-night, .t-trial {
-  --k-paper: #2e2546;
-  --k-paper2: #3b3158;
-  --k-ink: #140e24;
-  --k-ink2: #b6a9d6;
-  --k-text: #fff3dc;
+/* 밤 · 재판도 같은 크림 종이 (화면마다 밝고 어두운 판이 섞이지 않게) */
+:root, .t-day, .t-night, .t-trial, .room, .tt { --k-text: #3a2a22; }
+/* 옛 변수도 크림 종이로: 이 변수를 쓰는 모든 창·칸이 같은 색이 된다 */
+:root, .t-day, .t-night, .t-trial, .room.t-day .r-side {
+  --panel: #fffaf0; --panel2: #f4e9d4; --line: #3a2a22; --text: #3a2a22; --dim: #7a6556; --gold: #c46a12; --gold2: #d99a1e; --info: #1f6e4f;
+  --glass: #fffaf0; --glass2: #f4e9d4; --gline: #3a2a22;
 }
-.t-day, .room, .tt { --k-text: #3a2a22; }
+/* 글꼴: 설명문까지 전부 주아 (굵게는 가짜 굵기 대신 그대로) */
+body, button, input, textarea, select, .end-screen, .tt-btn small, .pt-day small, .game-screen .g-title small, .end-mvp small, .eb-cd, .mc-text small {
+  font-family: 'Jua', 'Noto Sans KR', sans-serif;
+}
+* { font-synthesis: none; }
+b, strong, h1, h2, h3 { font-weight: 400; }
 
 /* ── 버튼 ───────────────────────────── */
 .btn, .game-screen .btn, .room.t-day .r-top .btn, .room.t-day .r-side .btn, .sh-side .btn:not(.gold) {
@@ -127,8 +131,7 @@
   border: 3px solid var(--k-ink) !important; border-radius: var(--k-r) !important; box-shadow: 0 5px 0 var(--k-ink) !important;
 }
 .game-screen { --ink: var(--k-text); --ink-dim: var(--k-ink2); --line: color-mix(in srgb, var(--k-ink2) 30%, transparent); --glass2: var(--k-paper2); }
-.t-day.game-screen { --accent: #c46a12; }
-.t-night.game-screen, .t-trial.game-screen { --accent: #ffd257; }
+.game-screen { --accent: #c46a12; --accent2: #d99a1e; }
 
 /* 단계 제목: 몇째 날 + 큰 글씨 */
 .phase-title { filter: none; align-items: center; }
@@ -303,3 +306,54 @@
 .mini-card b { color: #3a2a22; font-weight: 400; }
 #stage.mobile .mini-card { padding: 10px; }
 #stage.mobile .mini-card .mc-icon { font-size: 40px; }
+
+/* ═══ 밤 · 재판 · 복도 · 미니게임도 밝은 종이로 ═══ */
+.t-night .pt-main b, .t-trial .pt-main b { color: #fff; }
+.t-trial .gl-chat.mine b, .t-night .gl-chat.mine b, .game-screen .gl-chat.mine b { color: #2f6fb8; }
+.game-screen .gl-chat b, .t-day .gl-chat b { color: #c46a12; }
+.n-step span { color: #7a6556; }
+.n-step .on, .n-step .on::before { color: #c46a12 !important; }
+.n-timer { color: #c46a12 !important; }
+.n-drone { color: #1f5f9e; background: #e3efff; }
+.n-chat span { color: #c2304a; }
+.n-mini { color: #7a6556; }
+.n-door-shut { background: #fffaf0; color: #3a2a22; border: 2.5px solid #3a2a22; border-radius: 14px; box-shadow: 0 4px 0 #3a2a22; }
+.c-hud { background: #fffaf0 !important; color: #3a2a22; border: 2.5px solid #3a2a22 !important; border-radius: 14px !important; box-shadow: 0 4px 0 #3a2a22; }
+.c-hud b { color: #3a2a22; }
+.c-toast div { background: #fffaf0; color: #3a2a22; border: 2px solid #3a2a22; box-shadow: 0 3px 0 #3a2a22; }
+.c-back { background: #fffaf0 !important; color: #3a2a22 !important; border: 2.5px solid #3a2a22 !important; border-radius: 12px !important; box-shadow: 0 3px 0 #3a2a22; }
+.mg-overlay { background: rgba(40, 24, 18, .55); }
+.mg-box { background: #fffaf0; color: #3a2a22; border: 3px solid #3a2a22; box-shadow: 0 6px 0 #3a2a22; }
+.mg-score { color: #c46a12; }
+.mg-help { color: #7a6556; }
+.mg-canvas { border: 2.5px solid #3a2a22; }
+.mm-card { background: #f4e9d4; border: 2.5px solid #3a2a22; box-shadow: 0 3px 0 #3a2a22; }
+.mm-back { color: #d4a64a; }
+.mm-card.done { border-color: #3aa57a; }
+.mm-done { background: rgba(255,250,240,.94); color: #3a2a22; }
+.react-panel { border: 3px solid #3a2a22; box-shadow: 0 5px 0 #3a2a22; color: #3a2a22; }
+.react-panel.ready, .react-panel.result { background: #fffaf0; }
+.react-panel.wait { background: #ffe1e6; }
+.react-panel.go { background: #bdf0d5; }
+.profile-chip img { background: #f4e9d4; }
+.char-pick { background: #fff; border: 2px solid #c9b79c; }
+.txt-in, .role-sel, .seg { background: #fff; color: #3a2a22; border: 2px solid #c9b79c; }
+.seg.on { border-color: #3a2a22; background: #fff0c7; color: #3a2a22; }
+.bubble { background: #fffaf0; color: #3a2a22; border: 2px solid #3a2a22; }
+.f-say.mine .bubble { background: #fff0c7; border-color: #3a2a22; }
+.tt-tag { background: #3a2a22; border-radius: 999px; }
+.net-badge { background: #fffaf0; color: #3a2a22; }
+.rule-flow { color: #3a2a22; }
+.rule-flow b { color: #c46a12; }
+.rule-role .job { color: #7a6556; }
+.tag { background: #f4e9d4; color: #7a6556; }
+.tag.claim { background: #efe4ff; color: #4a3f73; }
+.rule-role { border-bottom: 2px dashed rgba(212,166,74,.55); }
+.rule-role p { color: #3a2a22; }
+.rule-role b { color: #c46a12; }
+.rules h3 { color: #3a2a22; }
+.f-secret, .gl-secret { color: #5a3f8a; }
+.nl.secret { color: #5a3f8a; } .nl.nifel { color: #c2304a; } .nl.dead { color: #7a6556; } .nl.event { color: #3a2a22; }
+.n-log { color: #3a2a22; }
+.game-screen .ph-sub, .game-screen .dim { color: #7a6556; }
+#stage.mobile .n-title { font-size: 16px !important; white-space: nowrap; gap: 6px; }

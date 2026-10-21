@@ -106,13 +106,13 @@ export function playCatch(host: HTMLElement, char: CharId, onClose: () => void) 
 
   function draw() {
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#2b1f45'); g.addColorStop(1, '#120d1e');
+    g.addColorStop(0, '#dff1ff'); g.addColorStop(1, '#fff3d6');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#3a2c22'; ctx.fillRect(0, H - 40, W, 40);
     for (const it of items) drawItem(it);
     // 캐릭터
     ctx.save();
-    ctx.beginPath(); ctx.ellipse(px, H - 42, 46, 10, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(px, H - 42, 46, 10, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(58,42,34,.25)'; ctx.fill();
     if (img.complete && img.naturalHeight) {
       // 원래 비율 그대로 (높이 기준)
       const ch = 120, cw = Math.min(170, (ch * img.naturalWidth) / img.naturalHeight);
@@ -122,10 +122,10 @@ export function playCatch(host: HTMLElement, char: CharId, onClose: () => void) 
     ctx.restore();
     scoreEl.textContent = `점수 ${score} · ${'❤'.repeat(Math.max(0, lives))} · 최고 ${Math.max(best, Number(safeGet('tm.best.catch') ?? 0))}`;
     if (over) {
-      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#f6e7c4'; ctx.font = '900 72px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,250,240,.86)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#3a2a22'; ctx.font = '84px Jua, sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(`${score}점!`, W / 2, H / 2 - 20);
-      ctx.font = '500 30px sans-serif'; ctx.fillStyle = '#d5cce6';
+      ctx.font = '32px Jua, sans-serif'; ctx.fillStyle = '#7a6556';
       ctx.fillText('화면을 누르거나 스페이스로 다시 하기', W / 2, H / 2 + 40);
     }
   }
