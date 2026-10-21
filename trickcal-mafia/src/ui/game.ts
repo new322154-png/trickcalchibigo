@@ -77,6 +77,8 @@ export class GameUI {
   private batPick: BatPick | null = null;
   private batAsked = false;
   private phaseTotal = 1;
+  /** 구경하다가 농장으로 돌아가는 버튼 */
+  private backFarm = h('button.btn.gold.small.back-farm.hidden', { onclick: () => { this.spectate = false; this.lastKey = ''; if (this.v) this.update(this.v); } }, '🌾 주말농장으로');
   private emotes: EmoteBar;
   private emoToggle!: HTMLElement;
   /** 게임 끝 화면 (최고의 플레이어 투표 결과를 채워 넣는다) */
@@ -98,6 +100,7 @@ export class GameUI {
     // 휴대폰에서만 보이는 버튼: 플레이어 목록 열고 닫기
     const tog = h('button.plist-toggle', { onclick: () => { this.el.classList.toggle('plist-open'); } }, '👥');
     this.el.appendChild(tog);
+    this.el.appendChild(this.backFarm);
     this.el.style.setProperty('--anon', `url("${new URL(ANON, location.href).href}")`);
     this.emotes = emoteBar((e) => this.link.send({ t: 'emote', e }));
     this.emotes.el.classList.add('g-emotes');
@@ -178,6 +181,7 @@ export class GameUI {
     this.v = v;
     if (first) { this.showRoleCard(); preloadCuts(v.me.role); }
     if (prevPhase !== v.phase) this.music(v.phase);
+    if (v.phase === 'night') this.spectate = false; // 밤이 되면 구경 끝, 농장으로
     if (prevPhase !== v.phase || prevStep !== v.step) {
       if (v.phase === 'night' && prevPhase !== 'night') sfx('night');
       if (v.phase === 'morning') sfx('morning');
@@ -343,7 +347,7 @@ export class GameUI {
       if (pr.key === 'agitate' || pr.key === 'avenge') this.panel.append(h('button.btn.wide', { onclick: () => this.link.send({ t: 'choice', key: pr.key, value: null }) }, '쓰지 않는다'));
       return;
     }
-    if (!me.alive) { head('👻 관전 중', '죽은 사람끼리 채팅할 수 있어요. 밤에는 주말농장에서 다른 죽은 사람들, 그리고 이드를 만나요. 니펠의 밤 대화도 엿들을 수 있어요.'); return; }
+    if (!me.alive) { head('👻 구경 중', '광장을 구경하고 있어요. 채팅은 죽은 사람끼리만 돼요. 위쪽 🌾 버튼을 누르면 주말농장으로 돌아가요.'); return; }
     switch (v.phase) {
       case 'intro': head('게임 시작!', '직업을 확인하세요. 곧 첫 밤이 찾아옵니다.'); break;
       case 'night': head('🌙 밤', '자기 방에 있어요.'); break;
@@ -409,17 +413,24 @@ export class GameUI {
 
   private nightLogEl = h('div.n-log');
   private nightLog(ch: LogCh, who: string, text: string) {
-    if (this.v?.phase !== 'night') return;
-    if (ch === 'secret' || ch === 'event' || ch === 'nifel' || ch === 'dead') {
-      this.nightLogEl.appendChild(h(`div.nl.${ch}`, who ? h('b', who + ' ') : '', text));
+    if (this.v?.phase !== 'night' && !this.farm) return;
+    // 낮의 농장에서는 광장 대화도 같이 들린다 (구경하러 가지 않아도 흐름을 따라가게)
+    const dayTalk = (ch === 'day' || ch === 'defense') && this.v?.phase !== 'night';
+    if (ch === 'secret' || ch === 'event' || ch === 'nifel' || ch === 'dead' || dayTalk) {
+      this.nightLogEl.appendChild(h(`div.nl.${ch}`, dayTalk ? h('span.nl-ch', '광장 ') : '', who ? h('b', who + ' ') : '', text));
       this.nightLogEl.scrollTop = this.nightLogEl.scrollHeight;
     }
   }
 
+  /** 죽은 사람이 농장 대신 광장·결선을 구경하는 중 (낮에만) */
+  private spectate = false;
   private renderNight() {
     const v = this.v!;
-    const farm = !!v.me.farm;
-    const night = v.phase === 'night' && (v.me.alive || farm);
+    const dayFarm = !!v.me.farm && v.phase !== 'night' && v.phase !== 'end';
+    const farm = !!v.me.farm && !(dayFarm && this.spectate);
+    const night = (v.phase === 'night' && (v.me.alive || farm)) || (dayFarm && !this.spectate);
+    this.el.classList.toggle('spectating', dayFarm && this.spectate);
+    this.backFarm.classList.toggle('hidden', !(dayFarm && this.spectate));
     this.nightEl.classList.toggle('hidden', !night);
     if (!night) { this.corridor?.destroy(); this.corridor = null; this.farm?.destroy(); this.farm = null; clear(this.nightEl); this.nightLogEl = h('div.n-log'); return; }
     if (farm) { this.renderFarm(v); return; }
@@ -454,8 +465,14 @@ export class GameUI {
     );
   }
 
-  /** 밤의 주말농장 (이드 + 죽은 사람) */
+  /** 주말농장 (죽은 사람은 늘, 밤에는 이드도) */
+  private farmTitle = h('div.n-title');
+  private farmSpec = h('div.n-spec');
   private renderFarm(v: GameView) {
+    const night = v.phase === 'night';
+    const where = v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict' ? '결선' : '광장';
+    this.farmTitle.replaceChildren(`🌾 주말농장 · ${night ? `${v.night}번째 밤` : `${Math.max(1, v.day)}일째 낮`}`, h('span.n-timer', `${this.left()}초`));
+    this.farmSpec.replaceChildren(night || v.phase === 'end' ? '' : h('button.btn.small.wide', { onclick: () => { this.spectate = true; this.lastKey = ''; this.update(this.v!); } }, `👀 ${where} 구경하러 가기`));
     if (this.farm) { this.farm.sync(v); return; }
     this.corridor?.destroy(); this.corridor = null;
     // 정체 보호: 나는 내 직업 캐릭터, 이드(와 이드로 변장한 스피키)는 이드, 나머지는 공용 모습.
@@ -467,10 +484,11 @@ export class GameUI {
     const me = v.players.find((p) => p.pid === this.myPid);
     clear(this.nightEl).append(area,
       h('div.n-side',
-        h('div.n-title', `🌾 주말농장 · ${v.night}번째 밤`, h('span.n-timer', `${this.left()}초`)),
+        this.farmTitle,
+        this.farmSpec,
         h('div.n-status', me?.alive
           ? '이드는 밤마다 주말농장에서 사라진 사람들을 만나요. 니펠의 대화는 들을 수 없지만, 죽은 사람들이 전해 줄 수 있어요.'
-          : '죽은 사람들이 모이는 주말농장이에요. 니펠의 밤 대화를 엿들을 수 있어요. 이드가 오면 전해 줄 수도, 속일 수도 있어요.'),
+          : '죽은 사람들은 낮에도 밤에도 여기 모여요. 낮에는 광장 대화가 들리고, 밤에는 니펠의 대화를 엿들을 수 있어요. 이드가 오면 전해 줄 수도, 속일 수도 있어요.'),
         this.nightLogEl,
         v.me.chats.length ? h('div.n-chat', h('span', '농장'), this.nightChatInput()) : '',
         h('div.n-mini', h('span', '심심하면:'),
@@ -480,7 +498,7 @@ export class GameUI {
   }
 
   private nightChatInput() {
-    const inp = h('input.chat-in', { placeholder: '밤 채팅', maxLength: 120 }) as HTMLInputElement;
+    const inp = h('input.chat-in', { placeholder: this.farm || this.v?.me.farm ? '농장 채팅' : '밤 채팅', maxLength: 120 }) as HTMLInputElement;
     inp.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' || !inp.value.trim()) return;
       this.link.send({ t: 'gchat', text: inp.value.trim(), ch: this.v!.me.chats[0] });

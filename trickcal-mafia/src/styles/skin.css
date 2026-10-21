@@ -357,3 +357,85 @@ b, strong, h1, h2, h3 { font-weight: 400; }
 .n-log { color: #3a2a22; }
 .game-screen .ph-sub, .game-screen .dim { color: #7a6556; }
 #stage.mobile .n-title { font-size: 16px !important; white-space: nowrap; gap: 6px; }
+/* 죽은 사람: 광장 구경 중 → 농장으로 돌아가는 버튼 */
+.back-farm { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); z-index: 47; }
+.back-farm.hidden { display: none; }
+.n-spec:empty { display: none; }
+.nl-ch { color: #c46a12; }
+
+/* ═══════ 휴대폰 전용 규격 (무대 높이 430 ≈ 실제 화면 1배) ═══════
+ * PC를 줄인 화면이 아니라 휴대폰용 크기로 따로 잡는다.
+ * 기준: 본문 14~15px, 작은 글씨 12px 이상, 누르는 곳 40px 이상 (애플 44pt · 안드로이드 48dp 권장에 가깝게) */
+/* 첫 화면(휴대폰 홈): 화면 높이에 맞게 */
+#stage.mobile .ph { transform: translate(-50%, -50%) scale(.41); animation: phInM 1s cubic-bezier(.2,.8,.2,1); }
+@keyframes phInM { from { transform: translate(-50%, -44%) scale(.41) rotate(-2deg); opacity: 0 } to { transform: translate(-50%, -50%) scale(.41); opacity: 1 } }
+/* 타이틀 */
+#stage.mobile .tt-logo { top: 2%; transform: translateX(-50%) scale(.4); transform-origin: 50% 0; }
+#stage.mobile .tt-menu { top: 37%; width: 290px; gap: 7px; }
+#stage.mobile .tt-btn { padding: 4px 16px 6px; border-radius: 16px; box-shadow: 0 4px 0 #3a2a22; }
+#stage.mobile .tt-btn b { font-size: 21px; }
+#stage.mobile .tt-btn small { font-size: 12px; }
+#stage.mobile .tt-btn.main, #stage.mobile .tt-btn.main:hover { box-shadow: 0 4px 0 #3a2a22, inset 0 -4px 0 var(--k-butter-d); }
+#stage.mobile .tt-rule { font-size: 13px; padding: 6px 16px; margin-top: 2px; }
+#stage.mobile .tt-guest > img { height: calc(150px * var(--k)); }
+#stage.mobile .tt-reveal { height: calc(120px * var(--k)) !important; }
+#stage.mobile .tt-tag { bottom: calc(130px * var(--k)); font-size: 13px; padding: 2px 10px; }
+#stage.mobile .tt .profile-chip { right: 10px; top: 8px; font-size: 14px; padding: 3px 12px 3px 3px; gap: 6px; border-radius: 12px; }
+#stage.mobile .tt .profile-chip img { width: 32px; height: 32px; }
+#stage.mobile .tt .profile-chip small { font-size: 11px; }
+#stage.mobile .fan-notice { font-size: 11px; bottom: 6px; }
+/* 대기실 옆판 */
+#stage.mobile .room.t-day .r-side { width: 270px; top: 50px; overflow-y: auto; }
+#stage.mobile .host-bar { padding: 8px 10px; gap: 5px; }
+#stage.mobile .wait-msg { font-size: 14px !important; }
+#stage.mobile .host-label { font-size: 13px; }
+#stage.mobile .mini-btns { gap: 5px; }
+#stage.mobile .mini-btns .btn, #stage.mobile .bot-btns .btn { font-size: 13px; padding: 6px 4px; box-shadow: 0 2px 0 #3a2a22; border-width: 2px; }
+#stage.mobile .host-bar .btn.gold.wide { font-size: 16px; padding: 8px; }
+#stage.mobile .test-box { font-size: 12px; }
+#stage.mobile .r-plist { padding: 6px 10px; max-height: 96px; }
+#stage.mobile .rp { font-size: 13px; }
+#stage.mobile .chat-log { font-size: 14px; padding: 6px 10px; min-height: 70px; }
+#stage.mobile .room .chat-row { padding: 6px 8px; }
+#stage.mobile .room .chat-in { font-size: 14px; padding: 6px 8px; }
+#stage.mobile .room .emote-bar { bottom: 6px; padding: 3px 4px; }
+#stage.mobile .room .eb-btn { width: 34px; height: 34px; }
+#stage.mobile .room .eb-btn img.emo { width: 22px; height: 22px; }
+/* 게임 글씨: 실제 크기로 읽히게 조금씩 키움 */
+#stage.mobile .game-screen .g-log { font-size: 14px; }
+#stage.mobile .game-screen .gl-event { font-size: 14px; }
+#stage.mobile .game-screen .ph-sub { font-size: 13px; }
+#stage.mobile .game-screen .pbtn { min-height: 40px; font-size: 15px; }
+#stage.mobile .game-screen .g-panel .btn { font-size: 14px; padding: 8px; min-height: 38px; }
+#stage.mobile .g-night .n-side { font-size: 14px; }
+#stage.mobile .n-status { font-size: 14px !important; }
+#stage.mobile .n-log { font-size: 13px; }
+/* 끝 화면 */
+#stage.mobile .end-title { left: 20px; top: 14px; }
+#stage.mobile .end-title b { font-size: 44px; -webkit-text-stroke: 6px #3a2a22; text-shadow: 0 4px 0 #3a2a22; }
+#stage.mobile .end-me { font-size: 18px; margin-top: 6px; padding: 0 16px; }
+#stage.mobile .end-photo { left: 30%; bottom: 22%; }
+#stage.mobile .end-champ { left: calc(var(--x) * 92px); }
+#stage.mobile .end-champ img { height: calc(150px - var(--ax) * 10px); }
+#stage.mobile .end-label { padding: 1px 8px; }
+#stage.mobile .end-label b { font-size: 14px; }
+#stage.mobile .end-label small { font-size: 11px; }
+#stage.mobile .end-mvp-btn { font-size: 13px; padding: 2px 10px; margin-top: 4px; }
+#stage.mobile .end-champ img.end-star { height: 40px; width: 40px; top: -44px; }
+#stage.mobile .end-losers { left: 10px; bottom: 8px; }
+#stage.mobile .end-loser img { height: 54px; }
+#stage.mobile .end-loser small { font-size: 10px; }
+#stage.mobile .end-list { width: 300px; right: 10px; top: 10px; bottom: 54px; padding: 8px 10px; gap: 3px; border-radius: 16px; }
+#stage.mobile .end-list-head b { font-size: 16px; }
+#stage.mobile .end-row { gap: 8px; padding: 2px 6px; }
+#stage.mobile .end-face { width: 30px; height: 40px; }
+#stage.mobile .end-who b { font-size: 14px; }
+#stage.mobile .end-who small, #stage.mobile .end-state { font-size: 11px; }
+#stage.mobile .end-foot { right: 10px; bottom: 8px; gap: 8px; font-size: 12px; }
+#stage.mobile .end-foot .btn { font-size: 13px; padding: 5px 10px; }
+#stage.mobile .end-mvp { left: 20px; top: 120px; font-size: 15px; padding: 6px 12px; }
+#stage.mobile .end-mvp b { font-size: 18px; }
+/* 컷씬 제목 */
+#stage.mobile .cut2-title b { font-size: 64px; }
+#stage.mobile .cut2-title span { font-size: 18px; }
+#stage.mobile .va-msg b { font-size: 46px; }

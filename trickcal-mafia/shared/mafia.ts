@@ -179,11 +179,14 @@ export class MafiaGame {
   private isCitizenTeam(p: GP) { return ROLES[p.role].team === 'citizen' || (p.role === 'bat' && p.batSide === 'citizen'); }
   private inNifelChat(p: GP) { return this.isKiller(p) || (!!ROLES[p.role].member && p.contacted); }
   private matesOf(p: GP) { return this.inNifelChat(p) ? this.all().filter((q) => q.pid !== p.pid && this.inNifelChat(q)).map((q) => q.pid) : []; }
-  /** 밤의 주말농장: 죽은 사람 + 해킹당하지 않은 이드 (이드로 변장한 스피키 포함) */
+  /**
+   * 주말농장: 죽은 사람은 낮이든 밤이든 늘 여기 있다 (광장·결선은 원하면 화면만 바꿔 구경).
+   * 밤에는 해킹당하지 않은 이드(이드로 변장한 스피키 포함)도 찾아온다.
+   */
   private inFarm(p: GP) {
-    if (this.phase !== 'night' || this.over) return false;
+    if (this.over) return false;
     if (!p.alive) return p.diedHow !== 'leave';
-    return this.isIde(p) && !this.sealed.has(p.pid);
+    return this.phase === 'night' && this.isIde(p) && !this.sealed.has(p.pid);
   }
   /** 이드 (또는 오늘 밤 이드로 변장한 스피키) — 농장에서 이드 모습으로 보인다 */
   private isIde(p: GP) { return p.alive && (p.role === 'medium' || (p.role === 'spiky' && p.copyRole === 'medium')); }
@@ -406,7 +409,9 @@ export class MafiaGame {
     if (this.over) return;
     this.night++;
     this.phase = 'night';
-    this.sealed.clear(); this.killVotes.clear(); this.visits.clear(); this.farmPos.clear(); this.killCut.clear();
+    this.sealed.clear(); this.killVotes.clear(); this.visits.clear(); this.killCut.clear();
+    // 이드 자리는 밤마다 새로 (죽은 사람 자리는 낮부터 이어진다)
+    for (const q of this.all()) if (q.alive) this.farmPos.delete(q.pid);
     this.morning = this.emptyMorning();
     for (const p of this.all()) { p.copyRole = undefined; if (p.role === 'elena') p.droneTries = DRONE_TRIES; }
     this.logAll('event', `🌙 ${this.night}번째 밤이 찾아왔다. 모두 자기 방으로…`);

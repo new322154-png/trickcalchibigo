@@ -80,10 +80,12 @@ export function setCompact(on: boolean) {
 function fitStage() {
   const vw = document.documentElement.clientWidth || window.innerWidth;
   const vh = document.documentElement.clientHeight || window.innerHeight;
-  // 휴대폰 가로: 높이 540 무대를 화면 비율 그대로 (양옆 검은 띠 없이)
-  const phone = compactWanted && isPhone() && vw > vh;
+  // 휴대폰 가로: 타이틀부터 게임까지 모두 휴대폰 배치.
+  // 무대 높이 430 ≈ 실제 화면 높이(보통 360~430px)라 거의 1배로 보인다 → 글자·버튼이 실제 크기 그대로 (PC 화면을 줄여 보이는 게 아님)
+  const phone = isPhone() && vw > vh;
   stage.classList.toggle('mobile', phone);
-  const [w, hh] = phone ? [Math.round(Math.max(900, Math.min(1260, (540 * vw) / vh))), 540] : compact ? [1280, 720] : [1920, 1080];
+  const MH = 430;
+  const [w, hh] = phone ? [Math.round(Math.max(720, Math.min(1040, (MH * vw) / vh))), MH] : compact ? [1280, 720] : [1920, 1080];
   const k = Math.min(vw / w, vh / hh);
   stage.style.width = w + 'px';
   stage.style.height = hh + 'px';
