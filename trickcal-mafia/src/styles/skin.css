@@ -242,3 +242,64 @@
 /* 컷씬의 작은 영문 머리글은 뺀다 (한국어 제목만) */
 .cut2-title small, .va-msg small { display: none; }
 .va-msg b, .cut2-title b { word-break: keep-all; }
+
+/* 쪽지 받는 사람 고르기 버튼 (게임 화면 밖에 붙어도 같은 모양) */
+.notecard .pbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.notecard .pbtn { background: #fff; color: #3a2a22; border: 2.5px solid #3a2a22; border-radius: 12px; box-shadow: 0 3px 0 #3a2a22; font-family: var(--k-font); font-size: 20px; padding: 8px 14px; min-height: 0; text-align: left; cursor: pointer; }
+.notecard .pbtn.sel { background: #ffe1e6; border-color: var(--k-cherry); }
+
+/* ═══ 휴대폰 가로 (높이 540 무대): 창이 화면 밖으로 잘리지 않게 ═══ */
+#stage.mobile .overlay { padding: 8px 12px; }
+#stage.mobile .overlay > .card { max-height: 100%; max-width: 100%; overflow-y: auto; padding: 14px 20px 16px; border-radius: 16px; border-width: 2.5px; box-shadow: 0 4px 0 #3a2a22; }
+#stage.mobile .card h2 { font-size: 22px; margin: 0 0 8px; }
+#stage.mobile .card h3 { font-size: 16px; margin: 10px 0 4px; }
+#stage.mobile .card .hint, #stage.mobile .card p { font-size: 13px; margin: 4px 0; }
+#stage.mobile .card .btn { font-size: 15px; padding: 7px 14px; box-shadow: 0 3px 0 #3a2a22; }
+#stage.mobile .card .btn.gold { box-shadow: 0 3px 0 #3a2a22, inset 0 -3px 0 var(--k-butter-d); }
+#stage.mobile .card .btn.wide { margin-top: 8px; }
+#stage.mobile .card .row { margin: 8px 0; gap: 10px; font-size: 15px; }
+#stage.mobile .card .row.end { margin-top: 10px; }
+#stage.mobile .card input, #stage.mobile .card textarea { font-size: 15px; padding: 6px 10px; }
+#stage.mobile .roommenu, #stage.mobile .minimenu, #stage.mobile .profile { width: 480px; }
+#stage.mobile .rules { width: 92%; max-height: 100%; }
+#stage.mobile .rules .close { right: 12px; top: 10px; }
+#stage.mobile .rules h3 { font-size: 17px; margin: 12px 0 4px; }
+#stage.mobile .rule-flow { font-size: 13px; line-height: 1.55; padding-left: 18px; }
+#stage.mobile .rule-win { font-size: 13px; }
+/* 역할 카드: 그림 왼쪽, 글 오른쪽 */
+#stage.mobile .rolecard { width: 620px; display: grid; grid-template-columns: 170px 1fr; column-gap: 18px; align-items: center; text-align: left; padding: 14px 20px 14px; }
+#stage.mobile .rolecard .rc-img { grid-column: 1; grid-row: 1 / span 6; height: 200px; max-width: 170px; margin: 0; justify-self: center; }
+#stage.mobile .rolecard > :not(.rc-img) { grid-column: 2; }
+#stage.mobile .rc-team { font-size: 15px; margin: 0; }
+#stage.mobile .rc-name { font-size: 46px; margin: 0; line-height: 1.1; }
+#stage.mobile .rc-job { font-size: 16px; }
+#stage.mobile .rc-desc { font-size: 14px; line-height: 1.5; margin: 6px 0; }
+#stage.mobile .rc-mates { font-size: 14px; margin: 0 0 4px; }
+#stage.mobile .rolecard .btn.wide { margin-top: 4px; }
+/* 쪽지 */
+#stage.mobile .notecard { width: 560px; }
+#stage.mobile .notecard .pbtns { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+#stage.mobile .notecard .pbtn { font-size: 14px; padding: 5px 8px; box-shadow: 0 2px 0 #3a2a22; border-width: 2px; }
+/* 미니게임 (빵 받기 · 짝 맞추기): 화면 높이에 맞춰 줄임 */
+#stage.mobile .mg-overlay { padding: 6px; }
+#stage.mobile .mg-box { padding: 8px 10px; gap: 6px; border-radius: 16px; max-height: 100%; max-width: 100%; }
+#stage.mobile .mg-head { font-size: 17px; gap: 10px; }
+#stage.mobile .mg-score { font-size: 14px; }
+#stage.mobile .mg-head .btn { font-size: 13px; padding: 5px 10px; }
+#stage.mobile .mg-canvas { height: 440px; width: auto; aspect-ratio: 1200 / 760; }
+#stage.mobile .mg-help { font-size: 12px; }
+/* 신고 · 공유 */
+#stage.mobile .rp-card { width: 520px; gap: 6px; }
+#stage.mobile .rp-text { min-height: 80px; font-size: 14px; }
+#stage.mobile .sh-img { height: 440px; }
+#stage.mobile .sh-side { gap: 6px; }
+#stage.mobile .sh-side h3 { font-size: 20px; }
+#stage.mobile .mm-grid { grid-template-columns: repeat(8, 96px); gap: 8px; }
+#stage.mobile .mm-back { font-size: 34px; }
+#stage.mobile .mm-done { font-size: 20px; gap: 10px; }
+/* 혼자 놀기 고르는 카드 */
+.mini-card { background: #fff !important; color: #3a2a22 !important; border: 2.5px solid #3a2a22 !important; border-radius: 16px !important; box-shadow: 0 4px 0 #3a2a22 !important; font-family: var(--k-font); }
+.mini-card:hover { background: #fff6dc !important; }
+.mini-card b { color: #3a2a22; font-weight: 400; }
+#stage.mobile .mini-card { padding: 10px; }
+#stage.mobile .mini-card .mc-icon { font-size: 40px; }
