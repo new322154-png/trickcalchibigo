@@ -48,7 +48,7 @@ function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
 }
 
 export async function drawCard(c: CardInfo): Promise<HTMLCanvasElement> {
-  await Promise.all([document.fonts.load('80px "Black Han Sans"'), document.fonts.load('40px Jua'), document.fonts.load('30px Jua')]).catch(() => {});
+  await Promise.all([document.fonts.load('800 80px Pretendard'), document.fonts.load('600 30px Pretendard'), document.fonts.load('700 26px Cinzel')]).catch(() => {});
   // 세로 길이는 사람 수에 맞춰 (4명씩 한 줄)
   const rows = Math.ceil(Math.min(12, c.players.length) / 4);
   const H = 820 + rows * 126 + 110;
@@ -66,27 +66,27 @@ export async function drawCard(c: CardInfo): Promise<HTMLCanvasElement> {
   const pImgs = imgs.slice(1);
 
   // 배경
-  ctx.fillStyle = '#fffaf0'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#1d1840'; ctx.fillRect(0, 0, W, H);
   if (bg) { ctx.globalAlpha = 0.9; cover(ctx, bg, 0, 0, W, 760); ctx.globalAlpha = 1; }
   let g = ctx.createLinearGradient(0, 0, 0, 780);
-  g.addColorStop(0, 'rgba(58,42,34,.35)'); g.addColorStop(0.5, 'rgba(58,42,34,0)'); g.addColorStop(1, '#fffaf0');
+  g.addColorStop(0, 'rgba(20,16,50,.45)'); g.addColorStop(0.5, 'rgba(20,16,50,.1)'); g.addColorStop(1, '#1d1840');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, 780);
 
   // 제목
   ctx.textBaseline = 'alphabetic';
-  ctx.lineJoin = 'round'; ctx.strokeStyle = '#3a2a22';
-  ctx.font = '28px Jua, sans-serif'; ctx.lineWidth = 7;
-  ctx.strokeText('트릭컬 마피아', 60, 86); ctx.fillStyle = '#ffd257'; ctx.fillText('트릭컬 마피아', 60, 86);
-  ctx.font = '104px Jua, sans-serif'; ctx.lineWidth = 16;
+  ctx.lineJoin = 'round'; ctx.strokeStyle = '#14102e';
+  ctx.font = '800 28px Pretendard, sans-serif'; ctx.lineWidth = 7;
+  ctx.font = '700 26px Cinzel, serif'; ctx.strokeText('TRICKCAL MAFIA', 60, 86); ctx.fillStyle = '#f0c36d'; ctx.fillText('TRICKCAL MAFIA', 60, 86);
+  ctx.font = '800 104px Pretendard, sans-serif'; ctx.lineWidth = 16;
   ctx.strokeText(c.title, 56, 196); ctx.fillStyle = '#fff'; ctx.fillText(c.title, 56, 196);
   // 내 결과
-  ctx.font = '40px Jua, sans-serif';
+  ctx.font = '800 40px Pretendard, sans-serif';
   const res = c.won ? '승리!' : '패배…';
   const rw = ctx.measureText(res).width + 52;
-  ctx.fillStyle = c.won ? '#ffd257' : '#e4ddd3';
+  ctx.fillStyle = c.won ? '#f0c36d' : '#3a3366';
   round(ctx, 60, 222, rw, 58, 29); ctx.fill(); ctx.lineWidth = 4; ctx.stroke();
-  ctx.fillStyle = '#3a2a22'; ctx.fillText(res, 86, 266);
-  ctx.font = '30px Jua, sans-serif'; ctx.lineWidth = 7;
+  ctx.fillStyle = c.won ? '#2a1f3f' : '#f3f1fb'; ctx.fillText(res, 86, 266);
+  ctx.font = '800 30px Pretendard, sans-serif'; ctx.lineWidth = 7;
   ctx.strokeText(`${c.day}일째에 끝남`, 60 + rw + 24, 264); ctx.fillStyle = '#fff'; ctx.fillText(`${c.day}일째에 끝남`, 60 + rw + 24, 264);
 
   // 내 캐릭터 (크게)
@@ -101,15 +101,15 @@ export async function drawCard(c: CardInfo): Promise<HTMLCanvasElement> {
       ctx.restore();
     }
     // 이름표
-    ctx.font = '46px Jua, sans-serif';
+    ctx.font = '800 46px Pretendard, sans-serif';
     const role = `${m.role}`;
     const bw = Math.max(ctx.measureText(role).width, 220) + 60;
     const bx = 795 - bw / 2, by = 690;
-    ctx.fillStyle = TEAM[m.team] ?? '#888'; round(ctx, bx, by, bw, 104, 18); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#3a2a22'; ctx.stroke();
+    ctx.fillStyle = TEAM[m.team] ?? '#888'; round(ctx, bx, by, bw, 104, 18); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#14102e'; ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
     ctx.fillText(role, 795, by + 52);
-    ctx.font = '24px Jua, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.9)';
-    ctx.fillText(fit(ctx, `${m.name} · ${m.job}`, bw - 30), 795, by + 88);
+    ctx.font = '800 24px Pretendard, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.fillText(fit(ctx, m.name, bw - 30), 795, by + 88);
     ctx.textAlign = 'left';
     if (m.mvp && star) { ctx.drawImage(star, bx + bw - 44, by - 40, 76, 76); }
   }
@@ -117,25 +117,25 @@ export async function drawCard(c: CardInfo): Promise<HTMLCanvasElement> {
   // 최고의 플레이어
   let y = 330;
   if (c.mvp.length) {
-    ctx.fillStyle = '#fffaf0'; round(ctx, 56, y, 470, 120, 20); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#3a2a22'; ctx.stroke();
+    ctx.fillStyle = '#262050'; round(ctx, 56, y, 470, 120, 20); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#14102e'; ctx.stroke();
     if (star) ctx.drawImage(star, 74, y + 22, 76, 76);
-    ctx.fillStyle = '#7a6556'; ctx.font = '22px Jua, sans-serif'; ctx.fillText('최고의 플레이어', 166, y + 46);
-    ctx.fillStyle = '#c46a12'; ctx.font = '38px Jua, sans-serif'; ctx.fillText(fit(ctx, c.mvp.join(', '), 340), 166, y + 94);
+    ctx.fillStyle = '#b9b4d8'; ctx.font = '800 22px Pretendard, sans-serif'; ctx.fillText('최고의 플레이어', 166, y + 46);
+    ctx.fillStyle = '#f0c36d'; ctx.font = '800 38px Pretendard, sans-serif'; ctx.fillText(fit(ctx, c.mvp.join(', '), 340), 166, y + 94);
     y += 150;
   }
   // 생존 · 승리 요약
   const winN = c.players.filter((p) => p.won).length;
-  ctx.font = '30px Jua, sans-serif'; ctx.lineWidth = 7; ctx.strokeStyle = '#3a2a22'; ctx.strokeText(`${c.players.length}명 참가 · 승리 ${winN}명 · 생존 ${c.players.filter((p) => p.alive).length}명`, 60, y + 30); ctx.fillStyle = '#fff';
-  ctx.fillText(`${c.players.length}명 참가 · 승리 ${winN}명 · 생존 ${c.players.filter((p) => p.alive).length}명`, 60, y + 30);
+  ctx.font = '800 30px Pretendard, sans-serif'; ctx.lineWidth = 7; ctx.strokeStyle = '#14102e'; ctx.strokeText(`${c.players.length}명 참가    승리 ${winN}명    생존 ${c.players.filter((p) => p.alive).length}명`, 60, y + 30); ctx.fillStyle = '#fff';
+  ctx.fillText(`${c.players.length}명 참가    승리 ${winN}명    생존 ${c.players.filter((p) => p.alive).length}명`, 60, y + 30);
 
   // 모두의 정체
   const top = 820;
-  ctx.fillStyle = '#3a2a22'; ctx.font = '28px Jua, sans-serif'; ctx.fillText('가면 아래 정체', 60, top - 18);
+  ctx.fillStyle = '#f3f1fb'; ctx.font = '800 28px Pretendard, sans-serif'; ctx.fillText('가면 아래 정체', 60, top - 18);
   const cols = 4, gap = 14, cw = (W - 120 - gap * (cols - 1)) / cols, ch = 112;
   c.players.slice(0, 12).forEach((p, i) => {
     const x = 60 + (i % cols) * (cw + gap), yy = top + Math.floor(i / cols) * (ch + gap);
-    ctx.fillStyle = p.self ? '#fff0c7' : '#f4e9d4';
-    round(ctx, x, yy, cw, ch, 14); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#3a2a22'; ctx.stroke();
+    ctx.fillStyle = p.self ? 'rgba(240,195,109,.18)' : 'rgba(255,255,255,.07)';
+    round(ctx, x, yy, cw, ch, 14); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#14102e'; ctx.stroke();
     ctx.fillStyle = TEAM[p.team] ?? '#888'; ctx.fillRect(x + 3, yy + 14, 7, ch - 28);
     const im = pImgs[i];
     if (im) {
@@ -143,20 +143,20 @@ export async function drawCard(c: CardInfo): Promise<HTMLCanvasElement> {
       contain(ctx, im, x + 12, yy + 6, 78, ch - 12);
       ctx.restore();
     }
-    ctx.fillStyle = '#3a2a22'; ctx.font = '28px Jua, sans-serif';
+    ctx.fillStyle = '#f3f1fb'; ctx.font = '800 28px Pretendard, sans-serif';
     ctx.fillText(fit(ctx, p.role, cw - 106), x + 96, yy + 44);
-    ctx.fillStyle = '#7a6556'; ctx.font = '19px Jua, sans-serif';
+    ctx.fillStyle = '#b9b4d8'; ctx.font = '800 19px Pretendard, sans-serif';
     ctx.fillText(fit(ctx, p.name, cw - 106), x + 96, yy + 74);
-    ctx.font = '16px Jua, sans-serif';
-    ctx.fillStyle = p.alive ? '#2f8a5f' : '#9a8f86';
+    ctx.font = '800 16px Pretendard, sans-serif';
+    ctx.fillStyle = p.alive ? '#7fdcaf' : '#8a85a8';
     ctx.fillText(p.alive ? '생존' : '사망', x + 96, yy + 98);
-    if (p.won) { ctx.fillStyle = '#c46a12'; ctx.fillText('WIN', x + 150, yy + 98); }
+    if (p.won) { ctx.fillStyle = '#f0c36d'; ctx.fillText('WIN', x + 150, yy + 98); }
     if (p.mvp && star) ctx.drawImage(star, x + cw - 40, yy + 8, 32, 32);
   });
 
   // 아래
-  ctx.fillStyle = '#7a6556'; ctx.font = '22px Jua, sans-serif';
-  ctx.fillText(`${location.host} · ${new Date().toLocaleDateString('ko-KR')}`, 60, H - 40);
+  ctx.fillStyle = '#b9b4d8'; ctx.font = '800 22px Pretendard, sans-serif';
+  ctx.fillText(location.host, 60, H - 40); ctx.fillText(new Date().toLocaleDateString('ko-KR'), 60 + ctx.measureText(location.host).width + 24, H - 40);
   ctx.textAlign = 'right'; ctx.fillText('비공식 팬게임', W - 60, H - 40); ctx.textAlign = 'left';
   return cv;
 }

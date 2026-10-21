@@ -54,8 +54,8 @@ export function openReport() {
   } }, '보내기');
   const modal = h('div.overlay.rp-modal', { onclick: (e: Event) => { if (e.target === modal) modal.remove(); } },
     h('div.card.rp-card',
-      h('h2', '🐞 버그 · 불편 제보'),
-      h('p.hint', '지금 방 · 게임 단계 · 내 직업 · 연결 상태 · 최근 기록이 같이 전송돼요. 다른 사람에게는 보이지 않아요.'),
+      h('h2', '🐞 버그 제보'),
+      h('p.hint', '지금 방, 게임 단계, 내 직업, 연결 상태, 최근 기록이 같이 전송돼요. 다른 사람에게는 보이지 않아요.'),
       kindRow, ta, msg,
       h('div.rp-btns', h('button.btn', { onclick: () => modal.remove() }, '취소'), send)));
   ta.addEventListener('keydown', (e) => e.stopPropagation());
@@ -65,6 +65,6 @@ export function openReport() {
 
 /** 오른쪽 아래 🐞 버튼 (소리 버튼 옆) */
 export function reportButton() {
-  const b = h('button.report-btn', { title: '버그 · 불편 제보', 'aria-label': '버그 제보', onclick: () => openReport() }, '🐞');
+  const b = h('button.report-btn', { title: '버그 제보', 'aria-label': '버그 제보', onclick: () => openReport() }, '🐞');
   document.getElementById('app')!.appendChild(b);
 }

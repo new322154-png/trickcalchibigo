@@ -60,7 +60,6 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   worldWrap.appendChild(banner);
   // 감정표현 (10초에 한 번)
   const emotes = emoteBar((e) => link.send({ t: 'emote', e }));
-  worldWrap.appendChild(emotes.el);
   // 잠수 경고 · 강퇴 투표 표시
   const afkEl = h('div.afk-warn.hidden');
   const kvEl = h('div.kv-banner.hidden');
@@ -87,16 +86,52 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   // 지난 판 결과 공유 (게임이 끝나 대기실로 돌아온 뒤)
   let lastCard: CardInfo | null = null;
   const lastBtn = h('button.btn.small.hidden', { onclick: () => { if (lastCard) void shareCard(root, lastCard); } }, '📸 지난 판 결과');
+  // ── 화면 배치 ──
+  // 위: 방 코드 · 인원 | 플레이어 · 방 설정 · 혼자 놀기 · 제보 · 나가기 (+ 방장은 시작 버튼)
+  // 가운데 위: 안내 한 줄 (✕로 숨김)
+  // 아래 가운데: 이모티콘 바 + 채팅창 (− 입력창만 / 보통 / + 화면 가득)
+  // 방 설정 · 플레이어 목록은 버튼으로 여닫는 팝업
+  const statusText = h('span');
+  let statusHidden = '';
+  const statusEl = h('div.r-status', h('i.r-status-ico', '⏳'), statusText,
+    h('button.r-x', { title: '안내 숨기기', onclick: () => { statusHidden = statusText.textContent ?? ''; statusEl.classList.add('hidden'); } }, '✕'));
+  const startBtn = h('button.btn.gold.r-start.hidden') as HTMLButtonElement;
+  const pop = (cls: string, title: string, en: string, body: HTMLElement) => {
+    const el = h(`div.r-pop.${cls}.hidden`,
+      h('div.r-pop-head', h('div.r-pop-title', h('small.en', en), h('b', title)), h('button.r-x', { onclick: () => el.classList.add('hidden') }, '✕')),
+      body);
+    return el;
+  };
+  const setPop = pop('settings', '방 설정', 'ROOM', hostBar);
+  const plPop = pop('players', '플레이어', 'PLAYERS', plist);
+  const toggle = (el: HTMLElement) => { const open = el.classList.contains('hidden'); for (const p of [setPop, plPop]) p.classList.add('hidden'); el.classList.toggle('hidden', !open); };
+  const plBtn = h('button.btn.small.r-pl-btn', { onclick: () => toggle(plPop) }, '👥 ', h('span.r-pl-n', '1'));
+  const setBtn = h('button.btn.small', { onclick: () => toggle(setPop) }, '⚙ 방 설정');
+  // 채팅창 크기: min(입력창만) · mid · max(화면 가득)
+  const SIZES = ['min', 'mid', 'max'] as const;
+  let chatSize: (typeof SIZES)[number] = 'mid';
+  try { const v = localStorage.getItem('tm.chat.lobby'); if (v === 'min' || v === 'mid' || v === 'max') chatSize = v; } catch { /* 저장 안 됨 */ }
+  const dock = h('div.r-dock');
+  const sizeBtn = (d: -1 | 1) => h(`button.r-size`, { title: d < 0 ? '채팅창 줄이기' : '채팅창 키우기', onclick: () => {
+    chatSize = SIZES[Math.max(0, Math.min(2, SIZES.indexOf(chatSize) + d))];
+    try { localStorage.setItem('tm.chat.lobby', chatSize); } catch { /* 무시 */ }
+    dock.dataset.size = chatSize; chatLog.scrollTop = chatLog.scrollHeight;
+  } }, d < 0 ? '−' : '+');
+  dock.dataset.size = chatSize;
+  dock.append(emotes.el,
+    h('div.r-chat',
+      h('div.r-chat-head', h('small.en', 'CHAT'), h('div.spacer'), sizeBtn(-1), sizeBtn(1)),
+      chatLog,
+      h('div.chat-row', chatIn, h('button.btn.small.gold', { onclick: sendChat }, '전송'))));
   const screen = h('div.room.t-day',
     h('div.r-top',
       codeEl, countEl, h('div.spacer'),
-      lastBtn,
+      lastBtn, plBtn, setBtn,
       h('button.btn.small', { onclick: () => playSolo() }, '🎮 혼자 놀기'),
-      h('button.btn.small.top-report', { title: '버그 · 불편 제보', onclick: () => openReport() }, '🐞'),
+      h('button.btn.small.top-report', { title: '버그 제보', onclick: () => openReport() }, '🐞'),
       h('button.btn.small', { onclick: () => leave() }, '나가기')),
-    h('div.r-cols',
-      worldWrap,
-      h('div.r-side', hostBar, plist, chatLog, h('div.chat-row', chatIn, h('button.btn.small.gold', { onclick: sendChat }, '전송')))),
+    h('div.r-cols', worldWrap),
+    statusEl, startBtn, setPop, plPop, dock,
   );
   clear(root).appendChild(screen);
 
@@ -268,7 +303,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     kvEl.replaceChildren(
       h('div.kv-title', mine ? `🗳 나에 대한 강퇴 투표가 열렸어요 (${by}님)` : `🗳 ${target}님 강퇴 투표 (${by}님이 열었어요)`),
       h('div.kv-bar', h('i', { style: `width:${Math.min(100, (v.yes / v.need) * 100)}%` })),
-      h('div.kv-row', h('span', `찬성 ${v.yes} / 필요 ${v.need} · 반대 ${v.no}`), h('div.spacer'), sec,
+      h('div.kv-row', h('span', `찬성 ${v.yes} / 필요 ${v.need}, 반대 ${v.no}`), h('div.spacer'), sec,
         mine ? '' : h(`button.btn.small${myKv === true ? '.on' : ''}`, { onclick: () => vote(true) }, '찬성'),
         mine ? '' : h(`button.btn.small${myKv === false ? '.on' : ''}`, { onclick: () => vote(false) }, '반대')));
     kvEl.classList.remove('hidden');
@@ -311,9 +346,20 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         canKick ? h('button.rp-kick', { title: kv?.target === a.info.id ? '강퇴 찬성' : '강퇴 투표 열기', onclick: () => askKick(a.info.id) }, '🚫') : ''));
       a.el.querySelector('.ch-name')!.textContent = (a.info.host ? '👑 ' : a.info.bot ? '🤖 ' : '') + a.info.nick;
     }
+    plBtn.querySelector('.r-pl-n')!.textContent = String(n);
     clear(hostBar);
-    const waiting = startingAt ? `곧 게임이 시작됩니다!` : n < GAME_MIN ? `${GAME_MIN}명 이상 모이면 게임을 시작할 수 있어요 (${n}/${GAME_MIN})` : pub ? `${AUTO_START}명이 모이면 자동으로 시작해요 (${n}/${AUTO_START})` : '방장이 게임을 시작할 수 있어요';
-    hostBar.append(h('div.wait-msg', pub && !startingAt ? `매칭 중… ${waiting}` : waiting));
+    const waiting = startingAt ? `곧 게임이 시작돼요!` : n < GAME_MIN ? `${GAME_MIN}명 이상 모이면 시작할 수 있어요 (${n}/${GAME_MIN})` : pub ? `${AUTO_START}명이 모이면 자동으로 시작해요 (${n}/${AUTO_START})` : amHost ? '준비되면 게임을 시작하세요' : '방장이 게임을 시작하기를 기다리는 중';
+    const st = pub && !startingAt ? `매칭 중. ${waiting}` : waiting;
+    statusText.textContent = st;
+    // 내용이 바뀌면 다시 보인다 (숨긴 안내와 같은 말이면 계속 숨김)
+    statusEl.classList.toggle('hidden', statusHidden === st);
+    statusEl.classList.toggle('hot', !!startingAt);
+    // 방장: 시작 버튼은 위쪽에 늘 보이게
+    startBtn.classList.toggle('hidden', !amHost);
+    startBtn.disabled = n < GAME_MIN || !!mini;
+    startBtn.replaceChildren(h('small.en', 'START'), h('b', n < GAME_MIN ? `${GAME_MIN}명부터` : `게임 시작 ${n}명`));
+    startBtn.onclick = () => link.send({ t: 'start_game', ...(isSolo() && testReq() ? { test: testReq() } : {}) });
+    setBtn.textContent = amHost ? '⚙ 방 설정' : '⚙ 방 정보';
     if (amHost) {
       hostBar.append(
         h('div.host-label', '👑 다 같이 미니게임'),
@@ -324,9 +370,8 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
           h('button.btn.small', { disabled: n >= MAX_PLAYERS, title: '빈자리를 봇으로 채워 혼자서도 시험해 볼 수 있어요', onclick: () => link.send({ t: 'add_bot' }) }, '🤖 봇 추가'),
           h('button.btn.small', { disabled: ![...avatars.values()].some((a) => a.info.bot), onclick: () => link.send({ t: 'remove_bot' }) }, '봇 빼기')),
         soloTest(),
-        h('button.btn.gold.wide', { disabled: n < GAME_MIN || !!mini, onclick: () => link.send({ t: 'start_game', ...(isSolo() && testReq() ? { test: testReq() } : {}) }) }, n < GAME_MIN ? `게임 시작 (${GAME_MIN}명부터)` : `게임 시작 (${n}명)`),
       );
-    } else hostBar.append(h('div.dim', '방장이 미니게임이나 게임을 시작할 수 있어요.'));
+    } else hostBar.append(h('div.dim', pub ? '빠른 매칭 방이에요. 사람이 모이면 자동으로 시작해요.' : '방장이 미니게임과 게임을 시작할 수 있어요.'));
   }
 
   // ── 테스트 설정 (방장 혼자 + 봇일 때만) ──
@@ -350,7 +395,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     const sel = h('select.test-sel', { onchange: (e: Event) => { testRoles.set(pid, (e.target as HTMLSelectElement).value); refresh(); } },
       h('option', { value: '' }, `${label}: 무작위`),
       ...(['mafia', 'citizen', 'neutral'] as const).map((team) => h('optgroup', { label: { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[team] },
-        ...Object.values(ROLES).filter((r) => r.team === team).map((r) => h('option', { value: r.id }, `${label}: ${roleName(r.id as RoleId)} · ${r.job}`)))));
+        ...Object.values(ROLES).filter((r) => r.team === team).map((r) => h('option', { value: r.id }, `${label}: ${roleName(r.id as RoleId)} (${r.job})`)))));
     (sel as HTMLSelectElement).value = testRoles.get(pid) ?? '';
     return sel;
   }
@@ -396,7 +441,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
       const subEl = h('div.mb-sub', sub);
       banner.replaceChildren(h('div.mb-title', title), subEl);
       if (endsAt) {
-        const upd = () => { const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)); subEl.textContent = `${sub}${sub ? ' · ' : ''}${left}초`; };
+        const upd = () => { const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)); subEl.textContent = `${sub}${sub ? ', ' : ''}${left}초`; };
         upd();
         bannerTimer = window.setInterval(upd, 250);
       }
@@ -406,7 +451,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         pressBtn.classList.remove('hidden');
         const fouled = (s.fouls ?? []).includes(me);
         const panel = h(`div.react-panel.${s.phase}`);
-        const score = Object.entries(s.scores).map(([id, v]) => `${nick(Number(id))} ${v}`).join(' · ');
+        const score = Object.entries(s.scores).map(([id, v]) => `${nick(Number(id))} ${v}`).join(', ');
         if (s.phase === 'ready') panel.append(h('b', `${s.round}라운드`), h('span', '준비…'));
         if (s.phase === 'wait') { panel.append(h('b', fouled ? '실격!' : '기다려…'), h('span', fouled ? '너무 빨랐어요' : '초록색이 되면 누르세요')); }
         if (s.phase === 'go') { panel.append(h('b', fouled ? '실격' : '지금!'), h('span', '누르세요!')); if (!fouled) sfx('vote'); }
@@ -435,7 +480,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
           if (c.by !== null) avatars.get(c.by)?.el.classList.add('seated');
         }
         for (const id of s.out) avatars.get(id)?.el.classList.add('out');
-        if (s.phase === 'music') showBanner('♪ 돌아다니세요…', `남은 사람 ${s.left.length}명 · 의자 ${s.chairs.length}개`);
+        if (s.phase === 'music') showBanner('♪ 돌아다니세요…', `남은 사람 ${s.left.length}명, 의자 ${s.chairs.length}개`);
         if (s.phase === 'sit') { showBanner('앉아!!', '빈 의자로 달려가세요', s.endsAt); sfx('gavel'); }
         if (s.phase === 'done') showBanner('의자 뺏기 끝!', `우승: ${s.left.map(nick).join(', ')}`);
         break;

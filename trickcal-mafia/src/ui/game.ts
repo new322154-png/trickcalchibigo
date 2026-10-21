@@ -25,7 +25,7 @@ import { EMOTES } from '../../shared/protocol';
 const CW = 2700, CH = 900, WALL = 374, FLOOR0 = 398, FLOOR1 = 676;
 /** 배경 속 기둥 위치 (문은 기둥 사이 칸에 들어간다) */
 const PILLARS = [99, 621, 1144, 1678, 2195, 2672];
-const STEP_NAMES = ['', '① 뮤트 · 스피키', '② 니펠', '③ 그 밖의 능력'];
+const STEP_NAMES = ['', '① 뮤트, 스피키', '② 니펠', '③ 그 밖의 능력'];
 const ACT_LABEL: Record<string, string> = {
   kill: '습격', seal: '해킹', disguise: '변장', protect: '치유하기', investigate: '조사', track: '지켜보기', reveal: '직업 공개', identify: '직업 알아내기', revive: '소원 빌기',
 };
@@ -77,6 +77,20 @@ export class GameUI {
   private batPick: BatPick | null = null;
   private batAsked = false;
   private phaseTotal = 1;
+  /** 대화창 크기: − 입력창만 · 보통 · + 크게 (PC·휴대폰 모두, 기기에 기억) */
+  private dlg: 'min' | 'mid' | 'max' = (() => { try { const v = localStorage.getItem('tm.chat.game'); return v === 'min' || v === 'max' ? v : 'mid'; } catch { return 'mid'; } })();
+  private dlgSize = h('div.dlg-size',
+    h('button', { title: '대화창 줄이기', onclick: () => this.setDlg(-1) }, '−'),
+    h('button', { title: '대화창 키우기', onclick: () => this.setDlg(1) }, '+'));
+  private setDlg(d: -1 | 1) {
+    const S = ['min', 'mid', 'max'] as const;
+    this.dlg = S[Math.max(0, Math.min(2, S.indexOf(this.dlg) + d))];
+    try { localStorage.setItem('tm.chat.game', this.dlg); } catch { /* 무시 */ }
+    this.el.dataset.dlg = this.dlg;
+    this.log.scrollTop = this.log.scrollHeight;
+  }
+  /** 오른쪽 안내판 접기 (단계가 바뀌거나 할 일이 생기면 다시 펼침) */
+  private panelTab = h('button.panel-tab', { title: '안내판 접기 / 펴기', onclick: () => this.el.classList.toggle('panel-min') }, h('small.en', 'INFO'), h('i', '▸'));
   /** 구경하다가 농장으로 돌아가는 버튼 */
   private backFarm = h('button.btn.gold.small.back-farm.hidden', { onclick: () => { this.spectate = false; this.lastKey = ''; if (this.v) this.update(this.v); } }, '🌾 주말농장으로');
   private emotes: EmoteBar;
@@ -93,8 +107,8 @@ export class GameUI {
       this.top,
       h('div.g-cols',
         this.plist,
-        h('div.g-center', h('div.g-dialog', h('div.g-dialog-head', h('b', '대화')), this.log, this.chatRow)),
-        this.panel),
+        h('div.g-center', h('div.g-dialog', h('div.g-dialog-head', h('small.en', 'LOG'), h('b', '대화')), this.dlgSize, this.log, this.chatRow)),
+        h('div.g-right', this.panelTab, this.panel)),
       this.nightEl);
     if (isTouch()) this.el.appendChild(this.scene.joy);
     // 휴대폰에서만 보이는 버튼: 플레이어 목록 열고 닫기
@@ -110,6 +124,7 @@ export class GameUI {
     this.emoToggle = h('button.emote-toggle.hidden', { title: '감정표현', onclick: () => this.el.classList.toggle('emo-open') }, '😀');
     this.el.appendChild(this.emoToggle);
     this.emotes.el.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('.eb-btn')) this.el.classList.remove('emo-open'); });
+    this.el.dataset.dlg = this.dlg;
     root.appendChild(this.el);
     setReportCtx('game', () => {
       const v = this.v;
@@ -180,7 +195,7 @@ export class GameUI {
     this.skew = v.now - Date.now();
     this.v = v;
     if (first) { this.showRoleCard(); preloadCuts(v.me.role); }
-    if (prevPhase !== v.phase) this.music(v.phase);
+    if (prevPhase !== v.phase) { this.music(v.phase); this.el.classList.remove('panel-min'); }
     if (v.phase === 'night') this.spectate = false; // 밤이 되면 구경 끝, 농장으로
     if (prevPhase !== v.phase || prevStep !== v.step) {
       if (v.phase === 'night' && prevPhase !== 'night') sfx('night');
@@ -236,12 +251,11 @@ export class GameUI {
     const myImg = roleImg(role);
     clear(this.top).append(
       h('div.phase-title',
-        v.phase === 'night'
-          ? h('div.pt-day', String(v.night), h('small', '번째 밤'))
-          : h('div.pt-day', String(Math.max(1, v.day)), h('small', '일째')),
-        h('div.pt-main', h('b', phaseName[v.phase]), sub ? h('small', sub) : '', this.timerEl)),
+        h('div.pt-main',
+          h('small.en.pt-en', v.phase === 'night' ? `NIGHT ${String(v.night).padStart(2, '0')}` : `DAY ${String(Math.max(1, v.day)).padStart(2, '0')}`),
+          h('b', phaseName[v.phase]), sub ? h('small.pt-sub', sub) : '', this.timerEl)),
       h('div.spacer'),
-      h('button.btn.small.top-report.g-report', { title: '버그 · 불편 제보', onclick: () => openReport() }, '🐞'),
+      h('button.btn.small.top-report.g-report', { title: '버그 제보', onclick: () => openReport() }, '🐞'),
       h(`button.me-chip.${ROLES[role as RoleId]?.team ?? ''}`, { onclick: () => this.showRoleCard() },
         myImg ? h('img.mc-img', { src: myImg, alt: '' }) : '',
         h('div.mc-text', h('small', v.me.alive ? this.name(this.myPid) : `${this.name(this.myPid)} (사망)`), h('b', roleName(role as RoleId)))),
@@ -288,7 +302,7 @@ export class GameUI {
       if (p.pid === this.myPid) tags.push(h('span.tag.me', '나'));
       if (p.shown) tags.push(h(`span.tag.reveal.${ROLES[p.shown as RoleId]?.team ?? ''}`, `정체: ${roleName(p.shown as RoleId)}`));
       const mr = v.me.mateRoles?.find(([q]) => q === p.pid)?.[1];
-      if (v.me.mates.includes(p.pid)) tags.push(h('span.tag.mafia', mr && !p.shown ? `동료 · ${roleName(mr as RoleId)}` : '동료'));
+      if (v.me.mates.includes(p.pid)) tags.push(h('span.tag.mafia', mr && !p.shown ? `동료 ${roleName(mr as RoleId)}` : '동료'));
       if (m) tags.push(h(`span.tag.memo.m${m}`, MEMO[m]));
       if (!p.online && p.alive) tags.push(h('span.tag', '연결 끊김'));
       const cnt = v.counts?.find(([pid]) => pid === p.pid)?.[1];
@@ -329,7 +343,8 @@ export class GameUI {
     if (key === this.lastKey) return;
     this.lastKey = key;
     clear(this.panel);
-    const head = (t: string, s?: string) => this.panel.append(h('div.ph-head', h('div.ph-title', t), s ? h('div.ph-sub', s) : ''));
+    const PH_EN: Record<string, string> = { intro: 'PROLOGUE', night: 'NIGHT', morning: 'MORNING', day: 'DISCUSSION', vote1: 'VOTE', defense: 'FINAL DEFENSE', vote2: 'FINAL VOTE', verdict: 'VERDICT', end: 'GAME OVER' };
+    const head = (t: string, s?: string) => this.panel.append(h('div.ph-head', h('small.en', me.prompt ? 'CHOICE' : !me.alive ? 'SPECTATOR' : PH_EN[v.phase] ?? ''), h('div.ph-title', t), s ? h('div.ph-sub', s) : ''));
     const people = (ids: number[], on: (pid: number) => void, selected?: number | null) =>
       h('div.pbtns', ids.map((id) => h(`button.pbtn${selected === id ? '.sel' : ''}`, { onclick: () => on(id) }, this.name(id))));
 
@@ -341,6 +356,7 @@ export class GameUI {
     if (me.prompt) {
       const pr = me.prompt;
       this.panel.classList.add('urgent');
+      this.el.classList.remove('panel-min');
       head('⚡ 선택', pr.text);
       const label = (o: number | string) => typeof o === 'number' ? this.name(o) : ({ mafia: '마피아 팀', citizen: '시민 팀', yes: '뒤집는다', no: '그대로 둔다' } as Record<string, string>)[o] ?? o;
       this.panel.append(h('div.pbtns', pr.options.map((o) => h('button.pbtn', { onclick: () => { sfx('click'); this.link.send({ t: 'choice', key: pr.key, value: o }); } }, label(o)))));
@@ -451,17 +467,17 @@ export class GameUI {
         h('div.n-me', img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?')),
         h('div.n-door', myTurn ? h('button.btn.gold.big', { onclick: () => this.goCorridor() }, '🚪 문 열고 나가기') : act?.locked ? h('div.n-door-shut', '🔒 문이 잠겼다') : '')),
       h('div.n-side',
-        h('div.n-title', `🌙 ${v.night}번째 밤`, h('span.n-timer', `${this.left()}초`)),
+        h('div.n-title', h('div.n-tt', h('small.en', 'MY ROOM'), h('b', `🌙 ${v.night}번째 밤`)), h('span.n-timer', `${this.left()}초`)),
         h('div.n-step', STEP_NAMES.slice(1).map((s, i) => h(`span${v.step === i + 1 ? '.on' : ''}`, s))),
         h('div.n-status', status),
         act && act.optional && myTurn ? h('button.btn.small', { onclick: () => this.cmd({ t: 'act', target: null }) }, '오늘은 쓰지 않기') : '',
-        v.me.drone ? h('div.n-drone', `🛸 드론 ${v.me.drone.count}/3 · 투표권 ${1 + v.me.drone.count}`,
+        v.me.drone ? h('div.n-drone', `🛸 드론 ${v.me.drone.count}/3, 투표권 ${1 + v.me.drone.count}`,
           v.me.drone.tries > 0 && v.me.drone.count < 3 ? h('button.btn.small.gold', { onclick: () => { sfx('click'); this.link.send({ t: 'drone' }); } }, `🔧 조립하기 (남은 기회 ${v.me.drone.tries})`) : h('span.dim', ' 오늘 밤 조립 끝')) : '',
         this.nightLogEl,
         v.me.chats.length ? h('div.n-chat', h('span', CH_LABEL[v.me.chats[0]]), this.nightChatInput()) : '',
-        h('div.n-mini', h('span', '기다리는 동안:'),
+        h('div.n-mini', h('small.en', 'WHILE WAITING'), h('div.n-mini-row',
           h('button.btn.small', { onclick: () => playCatch(this.root, roleChar(v.me.role) ?? 'nifel', () => {}) }, '🍞 빵 받기'),
-          h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기'))),
+          h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기')))),
     );
   }
 
@@ -471,7 +487,7 @@ export class GameUI {
   private renderFarm(v: GameView) {
     const night = v.phase === 'night';
     const where = v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict' ? '결선' : '광장';
-    this.farmTitle.replaceChildren(`🌾 주말농장 · ${night ? `${v.night}번째 밤` : `${Math.max(1, v.day)}일째 낮`}`, h('span.n-timer', `${this.left()}초`));
+    this.farmTitle.replaceChildren(h('div.n-tt', h('small.en', 'WEEKEND FARM'), h('b', `🌾 주말농장`), h('small.n-when', night ? `${v.night}번째 밤` : `${Math.max(1, v.day)}일째 낮`)), h('span.n-timer', `${this.left()}초`));
     this.farmSpec.replaceChildren(night || v.phase === 'end' ? '' : h('button.btn.small.wide', { onclick: () => { this.spectate = true; this.lastKey = ''; this.update(this.v!); } }, `👀 ${where} 구경하러 가기`));
     if (this.farm) { this.farm.sync(v); return; }
     this.corridor?.destroy(); this.corridor = null;
@@ -491,9 +507,9 @@ export class GameUI {
           : '죽은 사람들은 낮에도 밤에도 여기 모여요. 낮에는 광장 대화가 들리고, 밤에는 니펠의 대화를 엿들을 수 있어요. 이드가 오면 전해 줄 수도, 속일 수도 있어요.'),
         this.nightLogEl,
         v.me.chats.length ? h('div.n-chat', h('span', '농장'), this.nightChatInput()) : '',
-        h('div.n-mini', h('span', '심심하면:'),
+        h('div.n-mini', h('small.en', 'WHILE WAITING'), h('div.n-mini-row',
           h('button.btn.small', { onclick: () => playCatch(this.root, (roleChar(v.me.role) ?? 'nifel') as never, () => {}) }, '🍞 빵 받기'),
-          h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기'))));
+          h('button.btn.small', { onclick: () => playMatch(this.root, () => {}) }, '🃏 짝 맞추기')))));
     this.farm = new Farm(area, v, this.myPid, this.name, img, (x, y) => this.link.send({ t: 'fmove', x, y }));
   }
 
@@ -525,7 +541,7 @@ export class GameUI {
     const img = roleImg(role);
     const ov = h('div.overlay', { onclick: (e: Event) => e.target === ov && ov.remove() },
       h(`div.card.rolecard.${def.team}`,
-        h('div.rc-team', { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[def.team]),
+        h('div.rc-team', h('small.en', { mafia: 'MAFIA', citizen: 'CITIZENS', neutral: 'NEUTRAL' }[def.team]), { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[def.team]),
         img ? h('img.rc-img', { src: img, alt: '' }) : '',
         h('div.rc-name', roleName(role)),
         h('div.rc-job', def.job),
@@ -543,7 +559,7 @@ export class GameUI {
     bgm(won ? 'title' : 'rain');
     this.emotes.enable(false);
     this.emoToggle.classList.add('hidden');
-    const [title, , bg] = END_T[winner] ?? END_T.draw;
+    const [title, en, bg] = END_T[winner] ?? END_T.draw;
     this.endInfo = { winner, roles, winners, day, mvp: [] };
     const champs = roles.filter((r) => winners.includes(r.pid));
     const others = roles.filter((r) => !winners.includes(r.pid));
@@ -574,19 +590,19 @@ export class GameUI {
       return h('div.end-loser', { style: `--i:${i}` }, img ? h('img', { src: img, alt: '' }) : '', h('small', roleName(r.role as RoleId)));
     }));
     // 정체 공개표: 케이크 가면이 하나씩 벗겨진다
-    const list = h('div.end-list', h('div.end-list-head', h('b', '가면 아래 정체')),
+    const list = h('div.end-list', h('div.end-list-head', h('small.en', 'UNMASKED'), h('b', '가면 아래 정체')),
       ...roles.map((r, i) => {
         const img = roleImg(r.role);
         const team = ROLES[r.role as RoleId]?.team ?? '';
         return h(`div.end-row.${team}${r.pid === this.myPid ? '.self' : ''}${winners.includes(r.pid) ? '.won' : ''}`, { style: `--i:${i}` },
           h('div.end-face', h('img.mask', { src: maskImg(r.pid), alt: '' }), img ? h('img.real', { src: img, alt: '' }) : ''),
-          h('div.end-who', h('b', this.name(r.pid)), h('small', `${roleName(r.role as RoleId)} · ${ROLES[r.role as RoleId]?.job ?? ''}`)),
+          h('div.end-who', h('b', roleName(r.role as RoleId)), h('small', this.name(r.pid))),
           h('div.end-state', r.alive ? '생존' : '사망', winners.includes(r.pid) ? h('i', 'WIN') : ''));
       }));
     const status = h('span.end-status');
     const ov = h(`div.end-screen.w-${winner}`, { style: `--bg: ${bgUrl(bg)}` },
       h('div.end-bg'),
-      h('div.end-title', h('b', title), h(`div.end-me.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…')),
+      h('div.end-title', h('small.en', en), h('b', title), h(`div.end-me.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…')),
       photo, losers, list,
       h('div.end-foot', status,
         h('button.btn.small.share', { onclick: () => this.share() }, '📸 결과 공유'),
@@ -599,7 +615,7 @@ export class GameUI {
       if (!ov.isConnected) { clearInterval(t); return; }
       if (ov.dataset.done) return;
       const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-      status.textContent = mvpAt ? `⭐ 최고의 플레이어 투표 ${left}초${ov.dataset.voted ? ` · ${ov.dataset.voted}` : ''}` : `${left}초 뒤 대기실로 돌아갑니다`;
+      status.textContent = mvpAt ? `⭐ 최고의 플레이어 투표 ${left}초${ov.dataset.voted ? ` (${ov.dataset.voted})` : ''}` : `${left}초 뒤 대기실로 돌아갑니다`;
     };
     const t = window.setInterval(upd, 250);
     upd();
@@ -720,7 +736,7 @@ class Corridor {
     const tv = v.me.teamVotes ?? [];
     this.info.replaceChildren(
       h('b', `${ACT_LABEL[k] ?? ''}할 사람의 방 문 앞으로 가세요`),
-      h('div', isTouch() ? '방향패드로 이동 · 문 앞에서 버튼' : 'WASD/방향키로 이동 · 문 앞에서 E 또는 스페이스'),
+      h('div', isTouch() ? '방향패드로 이동, 문 앞에서 버튼' : 'WASD/방향키로 이동, 문 앞에서 E 또는 스페이스'),
       k === 'kill' && tv.length ? h('div.c-votes', '니펠 투표: ', tv.map(([p, t]) => `${p === this.myPid ? '나' : this.name(p)}→${t === null ? '?' : this.name(t)}`).join(', ')) : '',
     );
     for (const d of this.doors) d.el.classList.toggle('chosen', act?.choice === d.pid);

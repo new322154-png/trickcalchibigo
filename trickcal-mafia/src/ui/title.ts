@@ -42,10 +42,10 @@ export function showTitle(root: HTMLElement, act: TitleActions) {
     chip,
     logo(),
     h('div.tt-menu',
-      h('button.tt-btn.main', { onclick: quick }, h('b', '빠른 매칭'), h('small', '모르는 사람들과 바로 한 판')),
-      h('button.tt-btn', { onclick: () => { sfx('click'); roomMenu(root, () => profile, act, busy); } }, h('b', '친구랑 하기'), h('small', '방을 만들거나 코드로 들어가요')),
-      h('button.tt-btn', { onclick: () => { sfx('click'); miniMenu(root, () => profile); } }, h('b', '미니게임'), h('small', '혼자 잠깐 놀기')),
-      h('button.tt-rule', { onclick: () => { sfx('click'); showRules(root); } }, '규칙 · 직업 보기'),
+      h('button.tt-btn.main', { onclick: quick }, h('small.en', 'QUICK MATCH'), h('b', '빠른 매칭')),
+      h('button.tt-btn', { onclick: () => { sfx('click'); roomMenu(root, () => profile, act, busy); } }, h('small.en', 'PRIVATE ROOM'), h('b', '친구랑 하기')),
+      h('button.tt-btn', { onclick: () => { sfx('click'); miniMenu(root, () => profile); } }, h('small.en', 'MINI GAMES'), h('b', '미니게임')),
+      h('button.tt-rule', { onclick: () => { sfx('click'); showRules(root); } }, '규칙과 직업'),
       status),
     h('div.fan-notice', '본 게임은 트릭컬 리바이브의 비공식 팬게임입니다.'),
   );
@@ -149,7 +149,13 @@ function editProfile(root: HTMLElement, cur: Profile, onSave: (p: Profile) => vo
 
 export function showRules(root: HTMLElement) {
   const team = (t: string) => Object.values(ROLES).filter((r) => r.team === t);
-  const roleRow = (r: (typeof ROLES)[RoleId]) => h('div.rule-role', h('b', roleName(r.id)), h('span.job', r.job), h('p', r.desc));
+  // 직업마다 동그란 캐릭터 얼굴 (처음 보는 사람도 누가 누군지 알아보게)
+  const face = (r: (typeof ROLES)[RoleId]) => {
+    const c = CHARACTERS.find((x) => x.name === r.char)?.id;
+    return h(`div.rr-face.${r.team}`, c ? h('img', { src: charImg(c), alt: '' }) : '');
+  };
+  const roleRow = (r: (typeof ROLES)[RoleId]) => h(`div.rule-role.${r.team}`, face(r),
+    h('div.rr-name', h('b', roleName(r.id)), h('span.job', r.job)), h('p', r.desc));
   const modal = h('div.overlay', { onclick: (e: Event) => e.target === modal && modal.remove() },
     h('div.card.rules',
       h('button.btn.close', { onclick: () => modal.remove() }, '닫기'),
@@ -160,10 +166,10 @@ export function showRules(root: HTMLElement) {
         h('li', h('b', '낮 토론'), ' — 채팅으로 자유롭게 토론한다. 하루 한 번 익명 쪽지를 보낼 수 있다.'),
         h('li', h('b', '1차 투표 → 결선 대결'), ' — 가장 많이 표를 받은 두 명이 변론하고, 나머지가 둘 중 한 명을 고른다. 동표면 처형 없이 밤.'),
       ),
-      h('p.rule-win', '시민 팀: 니펠을 모두 찾아내면 승리 · 마피아 팀: 살아 있는 마피아 팀이 나머지 이상이 되면 승리 · 중립: 각자의 조건'),
-      h('h3.mafia', '마피아 팀'), team('mafia').map(roleRow),
-      h('h3.citizen', '시민 팀'), team('citizen').map(roleRow),
-      h('h3.neutral', '중립'), team('neutral').map(roleRow),
+      h('p.rule-win', '시민 팀은 니펠을 모두 찾아내면 승리. 마피아 팀은 살아 있는 마피아 팀이 나머지 이상이 되면 승리. 중립은 각자의 조건으로 승리.'),
+      h('h3.mafia', h('small.en', 'MAFIA'), '마피아 팀'), team('mafia').map(roleRow),
+      h('h3.citizen', h('small.en', 'CITIZENS'), '시민 팀'), team('citizen').map(roleRow),
+      h('h3.neutral', h('small.en', 'NEUTRAL'), '중립'), team('neutral').map(roleRow),
     ),
   );
   root.appendChild(modal);

@@ -255,7 +255,7 @@ export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') =
     img = h('img', { src: asset('chars/ner.webp'), alt: '' }) as HTMLImageElement;
     ner = h('div.bt-ner', h('div.bt-ner-in', img, h('i.bt-sweat', '💦')));
     timeEl = h('div.bp-time', '');
-    hint = h('div.bp-hint', '네르를 데려갈 쪽으로 움직이세요!', h('small', '← → 키 · 드래그 · 팀을 눌러도 돼요'));
+    hint = h('div.bp-hint', '네르를 데려갈 쪽으로 움직이세요!', h('small', '← → 키, 드래그, 팀 누르기 모두 돼요'));
     const stage = h('div.st-b',
       h('div.cut2-bg'),
       h('div.bt-team.m', { onclick: () => { if (live && !sent) goal = 0.25; } }, h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '마피아 팀')),
