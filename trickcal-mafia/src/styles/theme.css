@@ -667,3 +667,41 @@
 .bp-time { position: absolute; right: 4%; top: 6%; width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; font-family: 'Black Han Sans', 'Jua', sans-serif; font-size: 40px; color: #fff; background: rgba(181,123,255,.25); box-shadow: inset 0 0 0 4px #b57bff; opacity: 0; animation: stIn .4s 1.7s forwards; pointer-events: none; }
 .bp-time.hurry { box-shadow: inset 0 0 0 4px #ff3355; color: #ffd0d8; opacity: 1; animation: pulseR .5s infinite alternate; }
 @keyframes pulseR { to { transform: scale(1.08); } }
+
+/* 결과 공유 카드 */
+.sh-modal { z-index: 300; }
+.sh-wait { color: #fff; font-family: 'Jua', sans-serif; font-size: 28px; }
+.sh-card { display: flex; gap: 22px; align-items: center; max-height: 92%; }
+.sh-img { height: min(620px, 88vh); max-height: 100%; width: auto; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.sh-side { width: 300px; background: #fbf8f2; border: 2px solid #e2dccf; border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 10px; color: #2b2f3a; }
+.sh-side .btn:not(.gold) { background: #fff; color: #2b2f3a; border-color: #d8d2c4; }
+.sh-side .hint { color: #5a6072; }
+.sh-side h3 { margin: 0; font-family: 'Jua', sans-serif; font-weight: 400; font-size: 30px; }
+.sh-side .hint { font-size: 14px; margin: 0 0 6px; }
+.sh-side a.btn { text-align: center; text-decoration: none; }
+.sh-msg { min-height: 1.2em; font-size: 14px; color: #2f78bd; word-break: break-all; }
+#stage.mobile .sh-card { gap: 12px; }
+#stage.mobile .sh-img { height: 480px; }
+#stage.mobile .sh-side { width: 260px; padding: 16px; }
+/* 최고의 플레이어 투표 */
+.end-mvp-btn { margin-top: 6px; font-family: 'Jua', sans-serif; font-size: 18px; padding: 4px 14px; border-radius: 16px; border: 2px solid #ffd38a; background: rgba(20,22,40,.8); color: #ffd38a; cursor: pointer; pointer-events: auto; }
+.end-mvp-btn:hover { background: #ffd38a; color: #2b1a05; }
+.end-mvp-btn.on { background: #ffb648; border-color: #ffb648; color: #2b1a05; }
+.end-mvp-btn:disabled { opacity: .5; cursor: default; }
+.end-champ .end-star { position: absolute; top: -86px; left: 50%; transform: translateX(-50%) scale(0); width: 72px; height: 72px; animation: starIn .6s cubic-bezier(.2,1.8,.4,1) forwards; filter: drop-shadow(0 0 16px #ffd38a); z-index: 3; }
+@keyframes starIn { to { transform: translateX(-50%) scale(1); } }
+.end-champ.mvp img:not(.end-star) { filter: drop-shadow(0 0 18px #ffd38a) drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
+.end-mvp { position: absolute; left: 60px; top: 300px; z-index: 4; background: rgba(20,22,40,.82); border: 2px solid #ffd38a; color: #fff; border-radius: 14px; padding: 10px 18px; font-family: 'Jua', sans-serif; font-size: 22px; display: flex; align-items: center; gap: 10px; animation: fadein .4s; }
+.end-mvp small { font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: #c7cde0; }
+.end-mvp b { color: #ffd38a; font-weight: 400; font-size: 26px; }
+.end-foot .btn.share { background: #ffb648; color: #2b1a05; }
+.game-screen .g-top .g-report { pointer-events: auto; margin-top: 12px; opacity: .8; }
+/* 감정표현: 휴대폰에서는 👥 아래 😀 버튼 → 옆으로 펼쳐짐 */
+.emote-toggle { display: none; }
+#stage.mobile .emote-toggle:not(.hidden) { display: flex; align-items: center; justify-content: center; position: absolute; left: 12px; top: 118px; z-index: 47; width: 44px; height: 44px; border-radius: 50%; border: 0; font-size: 24px; background: var(--glass); box-shadow: 0 3px 10px rgba(0,0,0,.3); padding: 0; }
+#stage.mobile .game-screen.emo-open .emote-toggle { background: var(--accent); }
+#stage.mobile .game-screen .g-emotes { position: absolute; left: 64px; top: 116px; z-index: 48; display: none; background: rgba(14,16,32,.75); padding: 4px 6px; border-radius: 26px; }
+#stage.mobile .game-screen.emo-open .g-emotes:not(.hidden) { display: flex; }
+#stage.mobile .game-screen .g-emotes .eb-btn { width: 40px; height: 40px; }
+#stage.mobile .game-screen .g-emotes .eb-btn img.emo { width: 28px; height: 28px; }
+#stage.mobile .game-screen.t-night .emote-toggle, #stage.mobile .game-screen.in-corridor .emote-toggle { display: none; }

@@ -17,6 +17,9 @@ import { bgUrl, clear, h, setCompact } from './dom';
 import { MoveInput, isTouch } from './input';
 import { bgm, bgmPush } from './bgm';
 import { sfx } from './sfx';
+import { emoteBar, popEmote } from './emote';
+import { openReport, setReportCtx } from './report';
+import { shareCard, type CardInfo } from './share';
 
 interface Avatar {
   info: PlayerInfo;
@@ -55,6 +58,16 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   worldWrap.appendChild(pressBtn);
   const banner = h('div.mini-banner.hidden');
   worldWrap.appendChild(banner);
+  // 감정표현 (10초에 한 번)
+  const emotes = emoteBar((e) => link.send({ t: 'emote', e }));
+  worldWrap.appendChild(emotes.el);
+  // 잠수 경고 · 강퇴 투표 표시
+  const afkEl = h('div.afk-warn.hidden');
+  const kvEl = h('div.kv-banner.hidden');
+  worldWrap.append(afkEl, kvEl);
+  let afkTimer = 0, kvTimer = 0;
+  let kv: Extract<S2C, { t: 'kickvote' }>['v'] = null;
+  let myKv: boolean | null = null;
 
   const codeEl = h('div.room-code');
   const countEl = h('div.room-count');
@@ -71,10 +84,15 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   };
   chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } else if (e.key === 'Escape') chatIn.blur(); });
 
+  // 지난 판 결과 공유 (게임이 끝나 대기실로 돌아온 뒤)
+  let lastCard: CardInfo | null = null;
+  const lastBtn = h('button.btn.small.hidden', { onclick: () => { if (lastCard) void shareCard(root, lastCard); } }, '📸 지난 판 결과');
   const screen = h('div.room.t-day',
     h('div.r-top',
       codeEl, countEl, h('div.spacer'),
+      lastBtn,
       h('button.btn.small', { onclick: () => playSolo() }, '🎮 혼자 놀기'),
+      h('button.btn.small.top-report', { title: '버그 · 불편 제보', onclick: () => openReport() }, '🐞'),
       h('button.btn.small', { onclick: () => leave() }, '나가기')),
     h('div.r-cols',
       worldWrap,
@@ -115,6 +133,8 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     if (s === 'reconnecting') netBadge.textContent = `📡 다시 연결하는 중…${info && info.attempt > 1 ? ` (${info.attempt})` : ''}`;
   };
   link.onClose = (reason) => { if (!alive) return; cleanup(); onExit(reason); };
+  setReportCtx('room', () => ({ code, pub, me, players: avatars.size, host: avatars.get(me)?.info.host, mini: mini?.game ?? null, inGame: !!gameUI,
+    lobbyLog: [...chatLog.children].slice(-15).map((e) => e.textContent) }));
 
   function leave() {
     if (gameUI && !confirm('게임 중에 나가면 30초 뒤 사망 처리돼요. 나갈까요?')) return;
@@ -124,6 +144,9 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     alive = false;
     try { sessionStorage.removeItem('tm.cur'); } catch { /* 무시 */ }
     netBadge.remove();
+    setReportCtx('room', null);
+    emotes.destroy();
+    clearInterval(afkTimer); clearInterval(kvTimer);
     gameUI?.destroy();
     gameUI = null;
     cancelAnimationFrame(raf);
@@ -143,6 +166,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
       gameUI.onMsg(m);
       return;
     }
+    if ((m.t === 'emote' || m.t === 'mvp') && gameUI) { gameUI.onMsg(m); return; }
     switch (m.t) {
       case 'token':
         try { sessionStorage.setItem(tokKey, m.token); } catch { /* 무시 */ }
@@ -154,9 +178,10 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
       case 'welcome':
         // 게임 중 재접속이면 게임 화면 그대로
         if (gameUI && m.resumed && gameUI.v?.phase !== 'end') { me = m.you; break; }
-        // 게임이 끝났으면 대기실로
-        if (gameUI) { gameUI.destroy(); gameUI = null; input.enabled = true; bgm('daily'); }
+        // 게임이 끝났으면 대기실로 (지난 판 결과 카드는 남겨 둔다)
+        if (gameUI) { lastCard = gameUI.cardInfo() ?? lastCard; gameUI.destroy(); gameUI = null; input.enabled = true; bgm('daily'); }
         me = m.you; pub = m.pub;
+        lastBtn.classList.toggle('hidden', !lastCard);
         for (const a of avatars.values()) a.el.remove();
         avatars.clear();
         for (const p of m.players) addAvatar(p);
@@ -203,7 +228,53 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
       case 'sys': sys(m.text); break;
       case 'error': sys('⚠ ' + m.text); sfx('wrong'); break;
       case 'mini': setMini(m.s); break;
+      case 'emote': { const a = avatars.get(m.id); if (a) popEmote(a.el, m.e); break; }
+      case 'afk': showAfk(m.at); break;
+      case 'kickvote': kv = m.v; if (!kv) myKv = null; showKick(); refresh(); break;
     }
+  }
+
+  // ── 잠수 경고: 남은 초를 보여 주고, 움직이거나 버튼을 누르면 취소 ──
+  function showAfk(at: number | null) {
+    clearInterval(afkTimer);
+    if (!at) { afkEl.classList.add('hidden'); return; }
+    sfx('wrong');
+    const sec = h('b');
+    afkEl.replaceChildren(h('span', '😴 잠수 중이에요! 방이 꽉 차서 곧 나가게 돼요'), sec,
+      h('button.btn.small.gold', { onclick: () => { const a = avatars.get(me); link.send({ t: 'move', x: Math.round(a?.x ?? 800), y: Math.round(a?.y ?? 600) }); } }, '여기 있어요!'));
+    afkEl.classList.remove('hidden');
+    const upd = () => { sec.textContent = String(Math.max(0, Math.ceil((at - Date.now()) / 1000))); };
+    upd();
+    afkTimer = window.setInterval(upd, 250);
+  }
+
+  // ── 강퇴 투표 ──
+  function askKick(id: number) {
+    const nick = avatars.get(id)?.info.nick ?? '?';
+    if (kv && kv.target === id) { link.send({ t: 'kickvote', yes: true }); myKv = true; showKick(); return; }
+    if (!confirm(`${nick}님 강퇴 투표를 열까요?\n30초 동안 과반이 찬성하면 방에서 나가고, 10분 동안 다시 못 들어와요.`)) return;
+    link.send({ t: 'kick', target: id });
+  }
+  function showKick() {
+    clearInterval(kvTimer);
+    if (!kv) { kvEl.classList.add('hidden'); return; }
+    const v = kv;
+    const target = avatars.get(v.target)?.info.nick ?? '?';
+    const by = avatars.get(v.by)?.info.nick ?? '?';
+    const mine = v.target === me;
+    if (v.voted.includes(me) && myKv === null) myKv = true;
+    const sec = h('span');
+    const vote = (yes: boolean) => { myKv = yes; link.send({ t: 'kickvote', yes }); showKick(); };
+    kvEl.replaceChildren(
+      h('div.kv-title', mine ? `🗳 나에 대한 강퇴 투표가 열렸어요 (${by}님)` : `🗳 ${target}님 강퇴 투표 (${by}님이 열었어요)`),
+      h('div.kv-bar', h('i', { style: `width:${Math.min(100, (v.yes / v.need) * 100)}%` })),
+      h('div.kv-row', h('span', `찬성 ${v.yes} / 필요 ${v.need} · 반대 ${v.no}`), h('div.spacer'), sec,
+        mine ? '' : h(`button.btn.small${myKv === true ? '.on' : ''}`, { onclick: () => vote(true) }, '찬성'),
+        mine ? '' : h(`button.btn.small${myKv === false ? '.on' : ''}`, { onclick: () => vote(false) }, '반대')));
+    kvEl.classList.remove('hidden');
+    const upd = () => { sec.textContent = `${Math.max(0, Math.ceil((v.endsAt - Date.now()) / 1000))}초`; };
+    upd();
+    kvTimer = window.setInterval(upd, 250);
   }
 
   function sys(text: string) {
@@ -235,7 +306,9 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     const amHost = avatars.get(me)?.info.host;
     clear(plist);
     for (const a of avatars.values()) {
-      plist.appendChild(h(`div.rp${a.info.id === me ? '.self' : ''}`, h('img', { src: charImg(a.info.char), alt: '' }), h('span', a.info.nick), a.info.host ? h('span.tag.me', '방장') : '', a.info.bot ? h('span.tag.bot', '🤖 봇') : ''));
+      const canKick = a.info.id !== me && !a.info.bot && !gameUI;
+      plist.appendChild(h(`div.rp${a.info.id === me ? '.self' : ''}`, h('img', { src: charImg(a.info.char), alt: '' }), h('span', a.info.nick), a.info.host ? h('span.tag.me', '방장') : '', a.info.bot ? h('span.tag.bot', '🤖 봇') : '',
+        canKick ? h('button.rp-kick', { title: kv?.target === a.info.id ? '강퇴 찬성' : '강퇴 투표 열기', onclick: () => askKick(a.info.id) }, '🚫') : ''));
       a.el.querySelector('.ch-name')!.textContent = (a.info.host ? '👑 ' : a.info.bot ? '🤖 ' : '') + a.info.nick;
     }
     clear(hostBar);

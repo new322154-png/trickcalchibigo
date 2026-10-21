@@ -8,6 +8,7 @@ import { PLAZA, plazaPhase, type GameView } from '../../shared/protocol';
 import { bgUrl, h } from './dom';
 import { follow } from './follow';
 import { MoveInput } from './input';
+import { floatEmote, popEmote } from './emote';
 
 interface Av { mv?: number; mvOn?: boolean; el: HTMLElement; img: HTMLImageElement; src: string; bubble: HTMLElement; timer: number; x: number; y: number; tx: number; ty: number; /** 마지막으로 그린 값 (같으면 DOM을 안 건드림) */ dk: string }
 
@@ -109,6 +110,13 @@ export class Scene {
   move(pid: number, x: number, y: number) {
     const av = this.avs.get(pid);
     if (av && pid !== this.myPid) { av.tx = x; av.ty = y; }
+  }
+
+  /** 감정표현: 그 사람 머리 위에 뿅. 재판장에서는 관객 반응처럼 아래에서 떠오르는 것도 같이 */
+  emote(pid: number, e: string) {
+    const av = this.avs.get(pid);
+    if (av) popEmote(av.el, e);
+    if (this.mode === 'trial') floatEmote(this.box, e);
   }
 
   say(pid: number, text: string) {

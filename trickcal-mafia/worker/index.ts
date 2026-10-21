@@ -4,6 +4,8 @@
  *   POST /api/room          방 만들기 → { code }
  *   GET  /api/room/:code    방이 있는지 → { ok, count }
  *   GET  /ws/:code          방 웹소켓
+ *   POST /api/report        버그 제보 (Lobby 의 SQLite 에 최근 1000개 + 실시간 로그)
+ *   GET  /api/reports?key=  제보 목록 (환경 변수 REPORT_KEY 를 설정했을 때만)
  * 방마다 Durable Object(Room) 하나, 방 목록은 Lobby 하나가 관리한다.
  */
 import { RoomCore } from '../shared/room';
@@ -13,6 +15,8 @@ interface Env {
   ASSETS: { fetch(req: Request): Promise<Response> };
   ROOM: DurableObjectNamespace;
   LOBBY: DurableObjectNamespace;
+  /** 제보 목록을 볼 때 쓰는 비밀 열쇠 (Cloudflare 대시보드 → 설정 → 변수 및 비밀) */
+  REPORT_KEY?: string;
 }
 
 const json = (v: unknown, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'content-type': 'application/json' } });
@@ -31,6 +35,15 @@ export default {
     const ip = req.headers.get('CF-Connecting-IP') ?? 'local';
     if (url.pathname === '/api/match' && req.method === 'POST') return lobby().fetch('https://lobby/match', { method: 'POST', headers: { 'x-ip': ip } });
     if (url.pathname === '/api/room' && req.method === 'POST') return lobby().fetch('https://lobby/create', { method: 'POST', headers: { 'x-ip': ip } });
+    if (url.pathname === '/api/report' && req.method === 'POST') {
+      const body = await req.text();
+      if (body.length > 20_000) return json({ error: 'too big' }, 413);
+      return lobby().fetch('https://lobby/report', { method: 'POST', headers: { 'x-ip': ip, 'x-ua': req.headers.get('user-agent') ?? '' }, body });
+    }
+    if (url.pathname === '/api/reports' && req.method === 'GET') {
+      if (!env.REPORT_KEY || url.searchParams.get('key') !== env.REPORT_KEY) return json({ error: 'forbidden' }, 403);
+      return lobby().fetch(`https://lobby/reports?${url.searchParams}`);
+    }
     const info = url.pathname.match(/^\/api\/room\/([A-Z0-9]{5})$/);
     if (info) return lobby().fetch(`https://lobby/info/${info[1]}`);
     const ws = url.pathname.match(/^\/ws\/([A-Z0-9]{5})$/);
@@ -49,6 +62,7 @@ export class Lobby {
     // 방 목록은 SQLite 에도 적어 둔다 (Lobby 가 쉬다가 다시 깨어나도 목록이 남게)
     ctx.blockConcurrencyWhile(async () => {
       this.sql('CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, pub INTEGER, count INTEGER, in_game INTEGER, at INTEGER)');
+      this.sql('CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, kind TEXT, text TEXT, ctx TEXT, ua TEXT)');
       for (const r of this.sql('SELECT code, pub, count, in_game, at FROM rooms')) {
         this.rooms.set(String(r.code), { pub: !!r.pub, count: Number(r.count), at: Number(r.at), inGame: !!r.in_game });
       }
@@ -62,6 +76,7 @@ export class Lobby {
   }
 
   private made = new Map<string, number[]>();
+  private reported = new Map<string, number[]>();
   /** 같은 IP가 짧은 시간에 방을 너무 많이 만들면 거절 */
   private canCreate(ip: string) {
     if (this.rooms.size >= MAX_ROOMS) return false;
@@ -104,6 +119,32 @@ export class Lobby {
     if (info) {
       const r = this.rooms.get(info[1]);
       return json({ ok: !!r, count: r?.count ?? 0, full: (r?.count ?? 0) >= MAX_PLAYERS });
+    }
+    if (url.pathname === '/report' && req.method === 'POST') {
+      // 같은 곳에서 10분에 5개까지
+      const ip = req.headers.get('x-ip') ?? '';
+      const t = Date.now();
+      const list = (this.reported.get(ip) ?? []).filter((x) => t - x < 10 * 60_000);
+      if (list.length >= 5) return json({ error: 'busy' }, 429);
+      list.push(t); this.reported.set(ip, list);
+      if (this.reported.size > 5000) this.reported.clear();
+      let r: { kind?: string; text?: string; ctx?: unknown };
+      try { r = await req.json(); } catch { return json({ error: 'bad' }, 400); }
+      const kind = String(r.kind ?? 'bug').slice(0, 20), text = String(r.text ?? '').slice(0, 1000), ctx = JSON.stringify(r.ctx ?? {}).slice(0, 16_000);
+      if (!text.trim()) return json({ error: 'empty' }, 400);
+      this.sql('INSERT INTO reports (at, kind, text, ctx, ua) VALUES (?, ?, ?, ?, ?)', t, kind, text, ctx, (req.headers.get('x-ua') ?? '').slice(0, 300));
+      this.sql('DELETE FROM reports WHERE id <= (SELECT MAX(id) - 1000 FROM reports)');
+      console.log(JSON.stringify({ report: kind, text, ctx: r.ctx }));
+      return json({ ok: true });
+    }
+    if (url.pathname === '/reports') {
+      const rows = this.sql('SELECT id, at, kind, text, ctx, ua FROM reports ORDER BY id DESC LIMIT ?', Math.min(500, Number(url.searchParams.get('n')) || 100));
+      if (url.searchParams.get('format') === 'json') return json(rows);
+      const esc = (v: unknown) => String(v ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
+      const html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>버그 제보</title>
+<style>body{font-family:sans-serif;max-width:900px;margin:20px auto;padding:0 12px;background:#14161f;color:#e8e8f0}article{border:1px solid #333a50;border-radius:8px;padding:10px 14px;margin:10px 0;background:#1c1f2c}b{color:#ffd38a}pre{white-space:pre-wrap;font-size:12px;color:#a9b0c8;max-height:300px;overflow:auto}small{color:#8890b0}</style>
+<h1>버그 제보 (${rows.length})</h1>${rows.map((x) => `<article><small>#${x.id} · ${new Date(Number(x.at)).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} · ${esc(x.kind)}</small><p><b>${esc(x.text)}</b></p><details><summary>상황 보기</summary><pre>${esc(JSON.stringify(JSON.parse(String(x.ctx || '{}')), null, 2))}</pre><small>${esc(x.ua)}</small></details></article>`).join('')}`;
+      return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
     }
     if (url.pathname === '/update' && req.method === 'POST') {
       const { code, count, inGame } = (await req.json()) as { code: string; count: number; inGame: boolean };
@@ -170,6 +211,7 @@ export class Room {
         try { server.send(s); } catch { /* 이미 닫힌 소켓 */ }
       },
       close: (code: number, reason: string) => { try { server.close(code, reason); } catch { /* 이미 닫힘 */ } },
+      ip: req.headers.get('CF-Connecting-IP') ?? undefined,
     };
     // 10초 안에 hello 가 없으면 닫음
     const helloTimer = setTimeout(() => { if (id === null) { try { server.close(4002, 'no hello'); } catch { /* 무시 */ } } }, 10_000);

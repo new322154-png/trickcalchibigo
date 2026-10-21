@@ -94,6 +94,8 @@ function shuffle<T>(arr: T[]): T[] {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
+/** 게임 끝 최고의 플레이어 투표 시간 */
+const MVP_MS = 15_000;
 const label = (r: RoleId) => `${roleName(r)}(${ROLES[r].job})`;
 
 export class MafiaGame {
@@ -906,9 +908,50 @@ export class MafiaGame {
     const title = { mafia: '마피아 팀 승리!', citizen: '시민 팀 승리!', jester: '코미 승리!', elena: '엘레나 승리!', draw: '무승부' }[w];
     this.logAll('event', `🏆 ${title}`);
     const roles = this.all().map((p) => ({ pid: p.pid, role: p.role, alive: p.alive }));
-    for (const p of this.all()) this.host.send(p.pid, { t: 'gend', winner: w, roles, winners });
+    // 최고의 플레이어 투표: 승리 팀 중에서, 모두가 (자기 자신은 빼고) 15초 동안
+    const mvpAt = winners.length ? Date.now() + MVP_MS : undefined;
+    this.mvpCands = winners;
+    for (const p of this.all()) this.host.send(p.pid, { t: 'gend', winner: w, roles, winners, mvpAt, day: this.day });
     this.push();
-    this.host.later(15_000, () => this.host.onEnd());
+    if (mvpAt) this.host.later(MVP_MS, () => this.mvpDone());
+    else this.host.later(15_000, () => this.host.onEnd());
+    return true;
+  }
+
+  // ── 최고의 플레이어 투표 ──────────────────────────
+  private mvpCands: number[] = [];
+  private mvpVotes = new Map<number, number>();
+  private mvpOver = false;
+  /** 투표할 수 있는 사람: 접속 중인 모든 참가자 (승리 팀 혼자면 그 사람은 고를 대상이 없어 빠짐) */
+  private mvpVoters() { return this.all().filter((p) => p.online && this.mvpCands.some((c) => c !== p.pid)); }
+  private mvpVote(pid: number, target: number) {
+    if (this.mvpOver || !this.mvpCands.includes(target) || target === pid) return;
+    this.mvpVotes.set(pid, target);
+    const voters = this.mvpVoters();
+    const voted = voters.filter((p) => this.mvpVotes.has(p.pid)).length;
+    for (const p of this.all()) this.host.send(p.pid, { t: 'mvp', voted, of: voters.length });
+    if (voted >= voters.length) this.mvpDone();
+  }
+  private mvpDone() {
+    if (this.mvpOver) return;
+    this.mvpOver = true;
+    const n = new Map<number, number>();
+    for (const t of this.mvpVotes.values()) n.set(t, (n.get(t) ?? 0) + 1);
+    const best = Math.max(0, ...n.values());
+    const pids = best ? [...n].filter(([, v]) => v === best).map(([k]) => k) : [];
+    const voters = this.mvpVoters();
+    for (const p of this.all()) this.host.send(p.pid, { t: 'mvp', voted: this.mvpVotes.size, of: voters.length, pids, votes: best });
+    if (pids.length) this.logAll('event', `⭐ 최고의 플레이어: ${pids.map((x) => `${this.name(x)}(${roleName(this.ps.get(x)!.role)})`).join(', ')} — ${best}표`);
+    this.host.later(6000, () => this.host.onEnd());
+  }
+
+  // ── 감정표현: 살아 있는 사람만, 광장·재판 때 ─────────
+  emote(pid: number, e: string): boolean {
+    const p = this.ps.get(pid);
+    if (!p || !p.alive || this.over) return false;
+    if (!(plazaPhase(this.phase) || this.phase === 'defense' || this.phase === 'vote2' || this.phase === 'verdict')) return false;
+    if (this.proxy && this.proxy.target === pid && this.phase === 'defense') return false; // 입이 막힌 사람
+    for (const q of this.all()) this.host.send(q.pid, { t: 'emote', id: pid, e });
     return true;
   }
 
@@ -916,6 +959,7 @@ export class MafiaGame {
 
   handle(pid: number, msg: C2S) {
     const p = this.ps.get(pid);
+    if (p && msg.t === 'mvp' && this.over && !this.disposed) { this.mvpVote(pid, Number(msg.target)); return; }
     if (!p || this.over || this.disposed) return;
     // 중요한 명령: 서버 마감이 지났거나, 클라이언트가 본 단계(seq)가 지금과 다르면 받지 않는다
     if (msg.t === 'act' || msg.t === 'vote' || msg.t === 'choice' || msg.t === 'time' || msg.t === 'drone') {

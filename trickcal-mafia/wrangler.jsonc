@@ -15,5 +15,7 @@
       { "name": "LOBBY", "class_name": "Lobby" }
     ]
   },
+  // 로그 보관 (대시보드 → Workers → trickcalchibigo → 로그). 버그 제보·1분 집계가 여기 남는다
+  "observability": { "enabled": true },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room", "Lobby"] }]
 }

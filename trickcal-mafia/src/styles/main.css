@@ -226,3 +226,21 @@ h3.mafia { color: var(--mafia); } h3.citizen { color: var(--citizen); } h3.neutr
 .sound-btn { position: fixed; right: 10px; bottom: 10px; z-index: 1000; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(12,14,30,.55); color: #fff; font-size: 19px; line-height: 1; cursor: pointer; padding: 0; opacity: .75; transition: opacity .2s; }
 .sound-btn:hover { opacity: 1; }
 @media (pointer: coarse) { .sound-btn { width: 36px; height: 36px; font-size: 17px; right: 6px; bottom: 6px; } }
+
+/* 이모지 그림 (Twemoji) — 글자 크기에 맞춰 */
+img.emo { display: inline-block; width: 1.12em; height: 1.12em; vertical-align: -0.2em; margin: 0 .03em; pointer-events: none; -webkit-user-drag: none; }
+
+/* 버그 제보 */
+.report-btn { position: fixed; right: 58px; bottom: 10px; z-index: 1000; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(12,14,30,.55); color: #fff; font-size: 19px; line-height: 1; cursor: pointer; padding: 0; opacity: .75; transition: opacity .2s; }
+.report-btn:hover { opacity: 1; }
+@media (pointer: coarse) { .report-btn { width: 36px; height: 36px; font-size: 17px; right: 48px; bottom: 6px; } }
+.rp-modal { z-index: 400; }
+/* 대기실·게임 화면에서는 위쪽 막대의 🐞 버튼을 쓴다 (떠 있는 버튼이 채팅 입력을 가리지 않게) */
+body:has(.room) .report-btn { display: none; }
+.top-report { font-size: 18px; padding-left: 10px; padding-right: 10px; }
+.rp-card { width: min(560px, 92%); display: flex; flex-direction: column; gap: 10px; }
+.rp-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.rp-kinds .btn.on { background: #ffb648; color: #2b1a05; }
+.rp-text { width: 100%; min-height: 120px; resize: vertical; font: inherit; font-size: 16px; padding: 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,.2); box-sizing: border-box; }
+.rp-msg { min-height: 1.2em; font-size: 14px; color: #c2304a; }
+.rp-btns { display: flex; justify-content: flex-end; gap: 8px; }

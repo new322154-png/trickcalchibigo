@@ -7,8 +7,9 @@ import { QUIZ } from './quiz';
 import { MafiaGame, type GameTest } from './mafia';
 import { BotBrain } from './bot';
 import { ROLES, type RoleId } from './roles';
+import { censor, cleanText, isSpam } from './filter';
 import {
-  AUTO_START, GAME_MIN, CHARACTERS, MAX_PLAYERS, SPEED, WALK_TOP, WORLD_H, WORLD_W, clamp, isChar,
+  AUTO_START, EMOTES, EMOTE_GAP, GAME_MIN, CHARACTERS, MAX_PLAYERS, SPEED, WALK_TOP, WORLD_H, WORLD_W, clamp, isChar,
   type C2S, type Chair, type MiniId, type MiniState, type PlayerInfo, type S2C, MINI_NAMES,
 } from './protocol';
 
@@ -16,6 +17,8 @@ export interface Conn {
   send(msg: S2C): void;
   /** 서버 쪽에서 소켓을 닫는다 (교체됨·무응답). 봇 등은 없음 */
   close?(code: number, reason: string): void;
+  /** 접속한 곳 (강퇴 투표로 쫓겨난 사람이 바로 다시 못 들어오게) */
+  ip?: string;
 }
 
 /** 대기실에서 잠깐 끊긴 사람을 기다리는 시간 (휴대폰 앱 전환 등) */
@@ -24,6 +27,13 @@ const LOBBY_GRACE = 15_000;
 const GAME_GRACE = 30_000;
 /** 이 시간 동안 아무 메시지(핑 포함)가 없으면 끊긴 것으로 본다 */
 const SILENT_LIMIT = 35_000;
+/** 방이 꽉 찼을 때 대기실 잠수: 이만큼 아무것도 안 하면 경고, 경고 뒤 이만큼 더 지나면 내보냄 */
+const AFK_WARN = 20_000;
+const AFK_KICK = 10_000;
+/** 강퇴 투표: 시간 · 같은 사람이 다시 열 수 있을 때까지 · 쫓겨난 사람이 다시 못 들어오는 시간 */
+const KICK_VOTE_MS = 30_000;
+const KICK_COOLDOWN = 60_000;
+const KICK_BAN_MS = 10 * 60_000;
 
 interface P extends PlayerInfo {
   conn: Conn;
@@ -39,6 +49,16 @@ interface P extends PlayerInfo {
   lastSeen: number;
   /** 메시지 종류별 허용량 (token bucket) */
   buckets?: Record<string, [number, number]>;
+  /** 마지막으로 직접 뭔가 한 시각 (핑 빼고) — 대기실 잠수 판정 */
+  lastAct: number;
+  /** 잠수 경고를 보낸 시각 */
+  afkWarnAt?: number;
+  /** 도배 판정용 최근 채팅 */
+  said: [number, string][];
+  /** 마지막으로 강퇴 투표를 연 시각 */
+  kickAt?: number;
+  /** 마지막 감정표현 시각 */
+  emoteAt?: number;
 }
 
 const now = () => Date.now();
@@ -57,7 +77,7 @@ const KIND: Partial<Record<C2S['t'], string>> = {
   move: 'move', pmove: 'move', fmove: 'move', cmove: 'move',
   chat: 'chat', gchat: 'chat',
   act: 'cmd', vote: 'cmd', choice: 'cmd', time: 'cmd', drone: 'cmd', note: 'cmd', start_game: 'cmd',
-  add_bot: 'cmd', remove_bot: 'cmd', start_mini: 'cmd', stop_mini: 'cmd', press: 'cmd',
+  add_bot: 'cmd', remove_bot: 'cmd', start_mini: 'cmd', stop_mini: 'cmd', press: 'cmd', kick: 'cmd', kickvote: 'cmd', mvp: 'cmd', emote: 'cmd',
 };
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const pickOne = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
@@ -80,6 +100,10 @@ export class RoomCore {
   onStats: (s: Record<string, unknown>) => void = () => {};
   /** 들어오는 사람에게 한 번 보여 줄 안내 (서버 재시작 등) */
   notice: string | null = null;
+  /** 진행 중인 강퇴 투표 */
+  private kv: { target: number; by: number; yes: Set<number>; no: Set<number>; endsAt: number; timer: ReturnType<typeof setTimeout> } | null = null;
+  /** 강퇴 투표로 쫓겨난 곳 [ip, 풀리는 시각] */
+  private banned = new Map<string, number>();
   constructor(public code: string, public pub: boolean) {}
 
   get count() { return this.players.size; }
@@ -104,6 +128,8 @@ export class RoomCore {
       conn.send({ t: 'token', token: back.token });
       if (this.autoAt) conn.send({ t: 'starting', at: this.autoAt });
       if (this.mini) conn.send({ t: 'mini', s: this.mini, title: MINI_NAMES[this.mini.game] });
+      if (this.kv) conn.send(this.kvMsg());
+      back.lastAct = now();
       this.broadcast({ t: 'sys', text: `${back.nick}님이 다시 연결됐어요.` }, back.id);
       // 게임 중이면 지금 화면 + 놓친 기록을 바로 보낸다
       if (this.game?.ps.has(back.id)) this.game.resync(back.id);
@@ -117,14 +143,19 @@ export class RoomCore {
       conn.send({ t: 'error', text: '방이 가득 찼어요.' });
       return null;
     }
-    let nick = String(hello.nick ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 10) || '교주';
+    const ban = conn.ip && conn.ip !== 'local' ? this.banned.get(conn.ip) : undefined;
+    if (ban && ban > now()) {
+      conn.send({ t: 'error', text: `강퇴 투표로 나간 방이라 ${Math.ceil((ban - now()) / 60_000)}분 동안 들어올 수 없어요.` });
+      return null;
+    }
+    let nick = censor(String(hello.nick ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 10)) || '교주';
     const taken = new Set([...this.players.values()].map((p) => p.nick));
     if (taken.has(nick)) { let i = 2; while (taken.has(`${nick}${i}`)) i++; nick = `${nick}${i}`; }
     const id = ++this.seq;
     const p: P = {
       id, nick, char: isChar(hello.char) ? hello.char : pickOne([...CHARACTERS]).id,
       x: rnd(300, 1300), y: rnd(WALK_TOP + 60, WORLD_H - 80), host: this.players.size === 0,
-      conn, lastMoveAt: now(), moved: false, chatTimes: [], joinedAt: now(), lastSeen: now(),
+      conn, lastMoveAt: now(), moved: false, chatTimes: [], joinedAt: now(), lastSeen: now(), lastAct: now(), said: [],
       token: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), online: true,
       ...(bot ? { bot: true } : {}),
     };
@@ -134,6 +165,7 @@ export class RoomCore {
     if (this.autoAt) conn.send({ t: 'starting', at: this.autoAt });
     if (this.mini) conn.send({ t: 'mini', s: this.mini, title: MINI_NAMES[this.mini.game] });
     if (this.notice) conn.send({ t: 'sys', text: this.notice });
+    if (this.kv) conn.send(this.kvMsg());
     this.broadcast({ t: 'join', p: this.info(p) }, id);
     this.broadcast({ t: 'sys', text: `${nick}님이 들어왔어요.` });
     if (!this.flushTimer) this.flushTimer = setInterval(() => this.flush(), 80);
@@ -202,6 +234,10 @@ export class RoomCore {
     this.broadcast({ t: 'leave', id });
     this.broadcast({ t: 'sys', text: `${p.nick}님이 나갔어요.` });
     p.brain?.destroy();
+    if (this.kv) {
+      if (this.kv.target === id) this.endKick(false, true);
+      else { this.kv.yes.delete(id); this.kv.no.delete(id); this.checkKick(); }
+    }
     // 사람이 아무도 없으면 봇도 모두 나간다
     if (!p.bot && [...this.players.values()].every((q) => q.bot)) {
       for (const b of [...this.players.values()]) { b.brain?.destroy(); this.players.delete(b.id); }
@@ -262,9 +298,11 @@ export class RoomCore {
   }
 
   private lastSweep = 0;
+  private lastAfk = 0;
   private flush() {
     const t0 = now();
     if (t0 - this.lastSweep > 5000) { this.lastSweep = t0; this.sweep(); }
+    if (t0 - this.lastAfk > 1000) { this.lastAfk = t0; this.afkCheck(); }
     if (t0 - this.stats.since > 60_000) {
       const s = this.stats;
       const humans = [...this.players.values()].filter((p) => !p.bot);
@@ -291,6 +329,18 @@ export class RoomCore {
     p.lastSeen = now();
     this.stats.in++;
     if (!p.bot && !this.allow(p, KIND[msg.t] ?? 'misc')) return;
+    if (msg.t !== 'ping') { p.lastAct = now(); if (p.afkWarnAt) { p.afkWarnAt = undefined; p.conn.send({ t: 'afk', at: null }); } }
+    // 채팅·쪽지: 심한 말 가리기 + 도배 막기 (게임 안팎 모두)
+    if (msg.t === 'chat' || msg.t === 'gchat' || msg.t === 'note') {
+      const text = cleanText(msg.text, msg.t === 'gchat' ? 120 : 80);
+      if (!text) return;
+      if (!p.bot && isSpam(p.said, text, now())) {
+        p.conn.send(this.game ? { t: 'glog', ch: 'sys', from: -1, text: '같은 말을 너무 자주 보내고 있어요.' } : { t: 'sys', text: '같은 말을 너무 자주 보내고 있어요.' });
+        return;
+      }
+      msg = { ...msg, text };
+    }
+    if (msg.t === 'emote') { this.emote(p, msg.e); return; }
     if (this.game) {
       if (msg.t === 'ping') p.conn.send({ t: 'pong' });
       else this.game.handle(id, msg);
@@ -322,7 +372,7 @@ export class RoomCore {
         break;
       }
       case 'chat': {
-        const text = String(msg.text ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 80);
+        const text = msg.text;
         if (!text) return;
         const t = now();
         p.chatTimes = p.chatTimes.filter((x) => t - x < 5000);
@@ -356,7 +406,114 @@ export class RoomCore {
       case 'ping':
         p.conn.send({ t: 'pong' });
         break;
+      case 'kick':
+        this.startKick(p, Number(msg.target));
+        break;
+      case 'kickvote':
+        if (this.kv && this.kv.target !== id && !p.bot) {
+          (msg.yes ? this.kv.yes : this.kv.no).add(id);
+          (msg.yes ? this.kv.no : this.kv.yes).delete(id);
+          this.broadcast(this.kvMsg());
+          this.checkKick();
+        }
+        break;
     }
+  }
+
+  // ── 감정표현 (대기실·게임 공통, 10초에 한 번) ─────
+  private emote(p: P, e: unknown) {
+    if (typeof e !== 'string' || !(EMOTES as readonly string[]).includes(e)) return;
+    const t = now();
+    if (p.emoteAt && t - p.emoteAt < EMOTE_GAP - 300) return;
+    if (this.game) { if (!this.game.emote(p.id, e)) return; }
+    else this.broadcast({ t: 'emote', id: p.id, e });
+    p.emoteAt = t;
+  }
+
+  // ── 대기실 잠수 · 강퇴 투표 ──────────────────────
+
+  /** 방이 꽉 찼는데 대기실에서 오래 아무것도 안 하는 사람: 경고 → 10초 뒤 내보냄 */
+  private afkCheck() {
+    const t = now();
+    // 가장 오래 가만히 있던 사람부터
+    for (const p of [...this.players.values()].sort((a, b) => a.lastAct - b.lastAct)) {
+      if (p.bot || !p.online) continue;
+      // 한 명이 나가 자리가 생기면 나머지는 경고가 풀린다 (자리 하나 만들 만큼만 내보냄)
+      const full = this.players.size >= MAX_PLAYERS && !this.game && !this.mini;
+      if (!full) {
+        // 게임·미니게임 중이거나 자리가 남으면 잠수 아님 (끝나고 돌아왔을 때 바로 경고받지 않게 시간도 당겨 둔다)
+        if (this.game || this.mini) p.lastAct = Math.max(p.lastAct, t - 5000);
+        if (p.afkWarnAt) { p.afkWarnAt = undefined; p.conn.send({ t: 'afk', at: null }); }
+        continue;
+      }
+      if (!p.afkWarnAt && t - p.lastAct >= AFK_WARN) {
+        p.afkWarnAt = t;
+        p.conn.send({ t: 'afk', at: t + AFK_KICK });
+      } else if (p.afkWarnAt && t - p.afkWarnAt >= AFK_KICK) {
+        this.broadcast({ t: 'sys', text: `${p.nick}님이 잠수로 나갔어요. (방이 꽉 차서 자리를 비웠어요)` }, p.id);
+        this.kickOut(p, 4012, 'afk');
+      }
+    }
+  }
+
+  private kickOut(p: P, code: number, reason: string) {
+    const c = p.conn;
+    this.leave(p.id);
+    try { c.close?.(code, reason); } catch { /* 이미 닫힘 */ }
+  }
+
+  private kvMsg(): S2C {
+    const k = this.kv;
+    if (!k) return { t: 'kickvote', v: null };
+    return { t: 'kickvote', v: { target: k.target, by: k.by, yes: k.yes.size, no: k.no.size, need: this.kickNeed(), endsAt: k.endsAt, voted: [...k.yes, ...k.no] } };
+  }
+  /** 투표할 수 있는 사람 (대상 빼고, 접속 중인 사람) */
+  private kickVoters() { return [...this.players.values()].filter((q) => !q.bot && q.online && q.id !== this.kv?.target); }
+  /** 통과에 필요한 찬성: 투표할 수 있는 사람의 과반 */
+  private kickNeed() { return Math.floor(this.kickVoters().length / 2) + 1; }
+
+  private startKick(p: P, target: number) {
+    const err = (text: string) => p.conn.send({ t: 'error', text });
+    if (this.game) return err('강퇴 투표는 게임 시작 전이나 끝난 뒤 대기실에서만 할 수 있어요.');
+    const q = this.players.get(target);
+    if (!q || q.id === p.id || p.bot) return;
+    if (q.bot) return err("봇은 방장이 '봇 빼기'로 뺄 수 있어요.");
+    if (this.kv) {
+      // 같은 사람 투표가 이미 열려 있으면 찬성으로 센다
+      if (this.kv.target === target) { this.kv.yes.add(p.id); this.kv.no.delete(p.id); this.broadcast(this.kvMsg()); this.checkKick(); return; }
+      return err('이미 진행 중인 강퇴 투표가 있어요.');
+    }
+    const humans = [...this.players.values()].filter((x) => !x.bot && x.online);
+    if (humans.length < 3) return err('강퇴 투표는 사람이 3명 이상일 때 할 수 있어요.');
+    if (p.kickAt && now() - p.kickAt < KICK_COOLDOWN) return err('강퇴 투표는 1분에 한 번만 열 수 있어요.');
+    p.kickAt = now();
+    const endsAt = now() + KICK_VOTE_MS;
+    this.kv = { target, by: p.id, yes: new Set([p.id]), no: new Set(), endsAt, timer: setTimeout(() => this.endKick(!!this.kv && this.kv.yes.size >= this.kickNeed()), KICK_VOTE_MS) };
+    this.broadcast({ t: 'sys', text: `🗳 ${p.nick}님이 ${q.nick}님 강퇴 투표를 열었어요. (30초 · 과반 찬성이면 강퇴)` });
+    this.broadcast(this.kvMsg());
+    this.checkKick();
+  }
+
+  private checkKick() {
+    const k = this.kv;
+    if (!k) return;
+    const need = this.kickNeed();
+    if (k.yes.size >= need) this.endKick(true);
+    else if (this.kickVoters().length - k.no.size < need) this.endKick(false);
+  }
+
+  private endKick(pass: boolean, gone = false) {
+    const k = this.kv;
+    if (!k) return;
+    clearTimeout(k.timer);
+    this.kv = null;
+    this.broadcast({ t: 'kickvote', v: null });
+    const q = this.players.get(k.target);
+    if (gone || !q) return;
+    if (!pass) { this.broadcast({ t: 'sys', text: `강퇴 투표가 부결됐어요. (찬성 ${k.yes.size} · 반대 ${k.no.size})` }); return; }
+    this.broadcast({ t: 'sys', text: `${q.nick}님이 강퇴 투표로 나갔어요. (찬성 ${k.yes.size})` }, q.id);
+    if (q.conn.ip && q.conn.ip !== 'local') this.banned.set(q.conn.ip, now() + KICK_BAN_MS);
+    this.kickOut(q, 4014, 'kicked');
   }
 
   // ── 마피아 본게임 ────────────────────────────────
@@ -398,6 +555,7 @@ export class RoomCore {
       t = { roles, speed: Math.max(1, Math.min(8, Number(test.speed) || 1)), godKill: !!test.godKill, quiet: test.botAct === false ? bots.map((b) => b.id) : [] };
     } else for (const p of this.players.values()) if (p.brain) p.brain.opts = { vote: true, act: true, chat: true };
     if (this.autoTimer) { clearTimeout(this.autoTimer); this.autoTimer = null; this.autoAt = null; }
+    if (this.kv) { clearTimeout(this.kv.timer); this.kv = null; this.broadcast({ t: 'kickvote', v: null }); }
     this.endMini(true);
     this.notice = null;
     // 대기실에서 끊겨 기다리던 사람은 이번 판에서 빠진다

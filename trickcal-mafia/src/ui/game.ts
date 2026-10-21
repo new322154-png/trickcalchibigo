@@ -8,13 +8,18 @@ import { CHARACTERS, FARM_H, FARM_W, type ChatCh, type GameView, type LogCh, typ
 import { playCatch } from '../mini/catch';
 import { playMatch } from '../mini/match';
 import type { RoomLink } from '../net';
-import { asset, bgUrl, clear, h } from './dom';
+import { asset, bgUrl, clear, h, isPhone } from './dom';
 import { follow } from './follow';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
 import { pickBat, playCut, preloadCuts, type BatPick } from './cut';
 import { bgm, type BgmName } from './bgm';
 import { sfx } from './sfx';
+import { emoteBar, type EmoteBar } from './emote';
+import { openReport, setReportCtx } from './report';
+import { shareCard, type CardInfo, type CardPlayer } from './share';
+import { emojiFile } from './emoji';
+import { EMOTES } from '../../shared/protocol';
 
 /** 밤 복도 (배경 2172×724 → 높이 900 기준) */
 const CW = 2700, CH = 900, WALL = 374, FLOOR0 = 398, FLOOR1 = 676;
@@ -34,6 +39,14 @@ function roleChar(role: string) {
 }
 /** 게임 중 다른 사람(과 나)의 모습: 정체를 숨기는 공용 그림 */
 const ANON = './assets/ui/anon.webp';
+/** 게임 끝 화면: [제목, 영어, 배경] */
+const END_T: Record<string, [string, string, string]> = {
+  mafia: ['마피아 팀 승리', 'MAFIA WINS', 'hall_night.webp'],
+  citizen: ['시민 팀 승리', 'CITIZENS WIN', 'hall_day.webp'],
+  jester: ['코미 승리', 'JESTER WINS', 'end_comi.webp'],
+  elena: ['엘레나 승리', 'DRONE QUEEN', 'end_elena.webp'],
+  draw: ['무승부', 'DRAW', 'hall_day.webp'],
+};
 /** 다른 사람 모습: 가면 쓴 케이크 4종 (자리 번호로 고정, 정체와는 무관) */
 const maskImg = (pid: number) => `./assets/ui/mask${(pid % 4) + 1}.webp`;
 function roleImg(role: string): string | null {
@@ -64,6 +77,11 @@ export class GameUI {
   private batPick: BatPick | null = null;
   private batAsked = false;
   private phaseTotal = 1;
+  private emotes: EmoteBar;
+  private emoToggle!: HTMLElement;
+  /** 게임 끝 화면 (최고의 플레이어 투표 결과를 채워 넣는다) */
+  private endEl: HTMLElement | null = null;
+  private endInfo: { winner: string; roles: { pid: number; role: string; alive: boolean }[]; winners: number[]; day: number; mvp: number[] } | null = null;
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
     this.chatIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); } });
@@ -81,12 +99,28 @@ export class GameUI {
     const tog = h('button.plist-toggle', { onclick: () => { this.el.classList.toggle('plist-open'); } }, '👥');
     this.el.appendChild(tog);
     this.el.style.setProperty('--anon', `url("${new URL(ANON, location.href).href}")`);
+    this.emotes = emoteBar((e) => this.link.send({ t: 'emote', e }));
+    this.emotes.el.classList.add('g-emotes');
+    this.emotes.enable(false);
+    // PC: 대화 기록 머리줄 오른쪽에 (채팅 입력을 가리지 않게) / 휴대폰: 😀 버튼을 누르면 펼쳐짐 (CSS)
+    (isPhone() ? this.el : this.el.querySelector('.g-dialog-head')!).appendChild(this.emotes.el);
+    this.emoToggle = h('button.emote-toggle.hidden', { title: '감정표현', onclick: () => this.el.classList.toggle('emo-open') }, '😀');
+    this.el.appendChild(this.emoToggle);
+    this.emotes.el.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('.eb-btn')) this.el.classList.remove('emo-open'); });
     root.appendChild(this.el);
+    setReportCtx('game', () => {
+      const v = this.v;
+      return v ? { phase: v.phase, day: v.day, night: v.night, step: v.step, left: this.left(), role: v.me.role, alive: v.me.alive, pid: this.myPid,
+        players: v.players.length, aliveN: v.players.filter((p) => p.alive).length, act: v.me.act?.kind ?? null, prompt: v.me.prompt?.key ?? null,
+        corridor: !!this.corridor, farm: !!this.farm, log: [...this.log.children].slice(-30).map((e) => e.textContent) } : null;
+    });
     this.tick = window.setInterval(() => this.renderTimer(), 250);
   }
 
   destroy() {
     this.batPick?.close(); this.batPick = null;
+    setReportCtx('game', null);
+    this.emotes.destroy();
     clearInterval(this.tick);
     this.corridor?.destroy();
     this.farm?.destroy();
@@ -116,7 +150,9 @@ export class GameUI {
     else if (m.t === 'fmove') this.farm?.move(m.pid, m.x, m.y);
     else if (m.t === 'pmove') this.scene.move(m.pid, m.x, m.y);
     else if (m.t === 'gmoves') { for (const [pid, x, y] of m.m) { if (m.s === 'p') this.scene.move(pid, x, y); else this.farm?.move(pid, x, y); } }
-    else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners);
+    else if (m.t === 'gend') this.showEnd(m.winner, m.roles, m.winners, m.mvpAt, m.day ?? this.v?.day ?? 0);
+    else if (m.t === 'emote') { if ((EMOTES as readonly string[]).includes(m.e)) this.scene.emote(m.id, m.e); }
+    else if (m.t === 'mvp') this.onMvp(m.voted, m.of, m.pids);
     else if (m.t === 'cut') {
       const mine = m.kind.startsWith('p_');
       if (m.kind === 'vanish') { this.sadMorning = true; if (this.v?.phase === 'morning') bgm('rain'); }
@@ -149,6 +185,11 @@ export class GameUI {
     }
     this.scene.update(v);
     this.el.classList.toggle('walking', this.scene.walkingNow);
+    const trialPh = v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict';
+    const canEmo = v.me.alive && !v.me.silenced && (trialPh || ['intro', 'morning', 'day', 'vote1'].includes(v.phase));
+    this.emotes.enable(canEmo);
+    this.emoToggle.classList.toggle('hidden', !canEmo);
+    if (!canEmo) this.el.classList.remove('emo-open');
     const theme = v.phase === 'night' ? 't-night' : v.phase === 'defense' || v.phase === 'vote2' || v.phase === 'verdict' ? 't-trial' : 't-day';
     if (!this.el.classList.contains(theme)) { this.el.classList.remove('t-day', 't-trial', 't-night'); this.el.classList.add(theme); }
     if (prevPhase !== v.phase || prevStep !== v.step || this.left() > this.phaseTotal) this.phaseTotal = Math.max(1, this.left());
@@ -197,6 +238,7 @@ export class GameUI {
           : h('div.pt-day', String(Math.max(1, v.day)).padStart(2, '0'), h('small', 'DAY')),
         h('div.pt-main', h('b', phaseName[v.phase]), h('small', EN[v.phase] ?? ''), this.timerEl)),
       h('div.spacer'),
+      h('button.btn.small.top-report.g-report', { title: '버그 · 불편 제보', onclick: () => openReport() }, '🐞'),
       h(`button.me-chip.${ROLES[role as RoleId]?.team ?? ''}`, { onclick: () => this.showRoleCard() },
         myImg ? h('img.mc-img', { src: myImg, alt: '' }) : '',
         h('div.mc-text', h('small', v.me.alive ? this.name(this.myPid) : `${this.name(this.myPid)} · 사망`), h('b', roleName(role as RoleId)))),
@@ -478,29 +520,36 @@ export class GameUI {
     if (v.phase === 'intro') setTimeout(() => ov.remove(), 7000);
   }
 
-  private showEnd(winner: string, roles: { pid: number; role: string; alive: boolean }[], winners: number[]) {
+  private showEnd(winner: string, roles: { pid: number; role: string; alive: boolean }[], winners: number[], mvpAt: number | undefined, day: number) {
     const won = winners.includes(this.myPid);
     sfx(won ? 'win' : 'lose');
     bgm(won ? 'title' : 'rain');
-    const T: Record<string, [string, string, string]> = {
-      mafia: ['마피아 팀 승리', 'MAFIA WINS', 'hall_night.webp'],
-      citizen: ['시민 팀 승리', 'CITIZENS WIN', 'hall_day.webp'],
-      jester: ['코미 승리', 'JESTER WINS', 'end_comi.webp'],
-      elena: ['엘레나 승리', 'DRONE QUEEN', 'end_elena.webp'],
-      draw: ['무승부', 'DRAW', 'hall_day.webp'],
-    };
-    const [title, en, bg] = T[winner] ?? T.draw;
+    this.emotes.enable(false);
+    this.emoToggle.classList.add('hidden');
+    const [title, en, bg] = END_T[winner] ?? END_T.draw;
+    this.endInfo = { winner, roles, winners, day, mvp: [] };
     const champs = roles.filter((r) => winners.includes(r.pid));
     const others = roles.filter((r) => !winners.includes(r.pid));
+    // 최고의 플레이어 투표: 승리 팀 캐릭터 아래 ⭐ 버튼 (나는 빼고)
+    const mvpBtns = new Map<number, HTMLButtonElement>();
+    const voteMvp = (pid: number) => {
+      this.link.send({ t: 'mvp', target: pid });
+      sfx('vote');
+      for (const [k, b] of mvpBtns) b.classList.toggle('on', k === pid);
+    };
     // 단체 사진: 가운데가 앞·크게, 바깥으로 갈수록 뒤로
     const photo = h('div.end-photo');
     champs.forEach((r, i) => {
       const n = champs.length;
       const off = i - (n - 1) / 2;
       const img = roleImg(r.role);
-      photo.appendChild(h(`div.end-champ${r.pid === this.myPid ? '.me' : ''}`, { style: `--x:${off}; --ax:${Math.abs(off)}; --i:${i}; z-index:${20 - Math.round(Math.abs(off) * 2)}` },
+      const canVote = !!mvpAt && r.pid !== this.myPid;
+      const btn = canVote ? h('button.end-mvp-btn', { onclick: () => voteMvp(r.pid) }, '⭐ 최고!') as HTMLButtonElement : null;
+      if (btn) mvpBtns.set(r.pid, btn);
+      photo.appendChild(h(`div.end-champ${r.pid === this.myPid ? '.me' : ''}`, { style: `--x:${off}; --ax:${Math.abs(off)}; --i:${i}; z-index:${20 - Math.round(Math.abs(off) * 2)}`, 'data-pid': String(r.pid) },
         img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?'),
-        h('div.end-label', h('b', roleName(r.role as RoleId)), h('small', this.name(r.pid)))));
+        h('div.end-label', h('b', roleName(r.role as RoleId)), h('small', this.name(r.pid))),
+        btn ?? ''));
     });
     // 진 사람들은 구석에서 시무룩
     const losers = h('div.end-losers', others.map((r, i) => {
@@ -517,12 +566,63 @@ export class GameUI {
           h('div.end-who', h('b', this.name(r.pid)), h('small', `${roleName(r.role as RoleId)} · ${ROLES[r.role as RoleId]?.job ?? ''}`)),
           h('div.end-state', r.alive ? '생존' : '사망', winners.includes(r.pid) ? h('i', 'WIN') : ''));
       }));
+    const status = h('span.end-status');
     const ov = h(`div.end-screen.w-${winner}`, { style: `--bg: ${bgUrl(bg)}` },
       h('div.end-bg'),
       h('div.end-title', h('small', en), h('b', title), h(`div.end-me.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…')),
       photo, losers, list,
-      h('div.end-foot', h('span', '15초 뒤 대기실로 돌아갑니다'), h('button.btn.small', { onclick: () => ov.remove() }, '닫기')));
+      h('div.end-foot', status,
+        h('button.btn.small.share', { onclick: () => this.share() }, '📸 결과 공유'),
+        h('button.btn.small', { onclick: () => ov.remove() }, '닫기')));
+    this.endEl = ov;
     this.el.appendChild(ov);
+    // 남은 시간 · 투표 현황
+    const endAt = mvpAt ?? Date.now() + 15_000;
+    const upd = () => {
+      if (!ov.isConnected) { clearInterval(t); return; }
+      if (ov.dataset.done) return;
+      const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+      status.textContent = mvpAt ? `⭐ 최고의 플레이어 투표 ${left}초${ov.dataset.voted ? ` · ${ov.dataset.voted}` : ''}` : `${left}초 뒤 대기실로 돌아갑니다`;
+    };
+    const t = window.setInterval(upd, 250);
+    upd();
+  }
+
+  /** 최고의 플레이어 투표 현황 · 결과 */
+  private onMvp(voted: number, of: number, pids?: number[]) {
+    const ov = this.endEl;
+    if (!ov) return;
+    ov.dataset.voted = `${voted}/${of}명 투표`;
+    if (!pids) return;
+    ov.dataset.done = '1';
+    ov.querySelectorAll<HTMLButtonElement>('.end-mvp-btn').forEach((b) => b.remove());
+    const status = ov.querySelector('.end-status');
+    if (status) status.textContent = '잠시 뒤 대기실로 돌아갑니다';
+    if (this.endInfo) this.endInfo.mvp = pids;
+    if (!pids.length) return;
+    sfx('win');
+    for (const pid of pids) {
+      const c = ov.querySelector(`.end-champ[data-pid="${pid}"]`);
+      if (!c) continue;
+      c.classList.add('mvp');
+      const star = emojiFile('⭐');
+      if (star) c.appendChild(h('img.end-star', { src: star, alt: '' }));
+    }
+    ov.appendChild(h('div.end-mvp', '⭐', h('div', h('small', '최고의 플레이어'), h('br'), h('b', pids.map((p) => this.name(p)).join(', ')))));
+  }
+
+  /** 결과 공유 카드 (대기실로 돌아간 뒤에도 쓸 수 있게 방 화면에 띄운다) */
+  private share() { const c = this.cardInfo(); if (c) void shareCard(this.root, c); }
+  cardInfo(): CardInfo | null {
+    const e = this.endInfo;
+    if (!e) return null;
+    const [title, en, bg] = END_T[e.winner] ?? END_T.draw;
+    const card = (r: { pid: number; role: string; alive: boolean }): CardPlayer => ({
+      name: this.name(r.pid), role: roleName(r.role as RoleId), job: ROLES[r.role as RoleId]?.job ?? '', img: roleImg(r.role),
+      team: ROLES[r.role as RoleId]?.team ?? '', won: e.winners.includes(r.pid), alive: r.alive, mvp: e.mvp.includes(r.pid), self: r.pid === this.myPid,
+    });
+    const players = e.roles.map(card);
+    return { title, en, bg, won: e.winners.includes(this.myPid), day: e.day, me: players.find((p) => p.self), players, mvp: e.mvp.map((p) => this.name(p)) };
   }
 
 }

@@ -68,6 +68,11 @@ export type C2S =
   | { t: 'stop_mini' }
   | { t: 'press' }
   | { t: 'ping' }
+  /** 강퇴 투표 열기 (이미 같은 사람 투표가 있으면 찬성) — 대기실에서만 */
+  | { t: 'kick'; target: number }
+  | { t: 'kickvote'; yes: boolean }
+  /** 감정표현 (EMOTES 중 하나, 10초에 한 번) */
+  | { t: 'emote'; e: string }
   // ── 마피아 본게임 ──
   | { t: 'start_game'; test?: { roles?: Record<string, string>; speed?: number; godKill?: boolean; botVote?: boolean; botAct?: boolean; botChat?: boolean } }
   | { t: 'time'; d: 1 | -1 }
@@ -81,7 +86,9 @@ export type C2S =
   | { t: 'cmove'; x: number; y: number }
   | { t: 'drone' }
   | { t: 'fmove'; x: number; y: number }
-  | { t: 'pmove'; x: number; y: number };
+  | { t: 'pmove'; x: number; y: number }
+  /** 게임 끝: 최고의 플레이어 투표 (승리 팀 중에서) */
+  | { t: 'mvp'; target: number };
 
 export interface Chair { id: number; x: number; y: number; by: number | null }
 
@@ -106,6 +113,12 @@ export type S2C =
   | { t: 'pong' }
   | { t: 'token'; token: string }
   | { t: 'starting'; at: number | null }
+  /** 잠수 경고: at 까지 아무것도 안 하면 방에서 나가게 됨 (null = 경고 끝) */
+  | { t: 'afk'; at: number | null }
+  /** 강퇴 투표 상태 (null = 끝남) */
+  | { t: 'kickvote'; v: { target: number; by: number; yes: number; no: number; need: number; endsAt: number; voted: number[] } | null }
+  /** 감정표현: 대기실은 id(플레이어), 게임은 pid */
+  | { t: 'emote'; id: number; e: string }
   // ── 마피아 본게임 ──
   | { t: 'g'; v: GameView }
   | { t: 'glog'; ch: LogCh; from: number; text: string }
@@ -120,11 +133,17 @@ export type S2C =
   | { t: 'pmove'; pid: number; x: number; y: number }
   /** 모두가 보는 컷씬 (처형 등) */
   | { t: 'cut'; kind: CutKind; pid?: number; text: string; /** 실종: 어젯밤 살아 있던 인원 */ n?: number }
-  | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[] };
+  | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[]; /** 최고의 플레이어 투표 마감 (없으면 투표 없음) */ mvpAt?: number; day?: number }
+  /** 최고의 플레이어 투표: 몇 명이 투표했는지 · 결과 (pids 가 정해지면 끝) */
+  | { t: 'mvp'; voted: number; of: number; pids?: number[]; votes?: number };
 
 // ── 마피아 본게임 ─────────────────────────────────
 
 export const GAME_MIN = 4;
+/** 감정표현 (그림은 Twemoji) */
+export const EMOTES = ['👍', '👏', '😂', '😱', '😡', '🤔', '😭', '❤️', '❓', '‼️'] as const;
+/** 감정표현 간격 (도배 방지) */
+export const EMOTE_GAP = 10_000;
 export const AUTO_START = 8;
 export const STEP_SECONDS = 15;
 

@@ -65,7 +65,13 @@ export class BotBrain {
   onMsg(m: S2C) {
     if (this.dead) return;
     if (m.t === 'g') this.onView(m.v);
-    else if (m.t === 'gend') this.reset();
+    else if (m.t === 'gend') {
+      const me = this.v?.me.pid;
+      this.reset();
+      // 최고의 플레이어 투표 (승리 팀 중 아무나, 나 빼고)
+      const cands = m.winners.filter((x) => x !== me);
+      if (this.opts.vote && m.mvpAt && cands.length) this.after(rnd(1500, 9000), () => this.send({ t: 'mvp', target: pick(cands) }));
+    }
   }
 
   private onView(v: GameView) {

@@ -308,3 +308,44 @@
 .test-chks { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .test-chk { font-size: 14px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .test-chk input { width: 16px; height: 16px; }
+
+/* ── 감정표현 ── */
+.emote-bar { position: relative; display: flex; gap: 4px; padding: 5px 6px; border-radius: 30px; background: rgba(14,16,32,.62); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.18); }
+.emote-bar.hidden { display: none; }
+.eb-btn { width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); cursor: pointer; padding: 0; display: grid; place-items: center; font-size: 24px; transition: transform .12s, background .12s, opacity .2s; }
+.eb-btn:hover:not(:disabled) { background: rgba(255,255,255,.25); transform: translateY(-3px) scale(1.12); }
+.eb-btn:disabled { opacity: .35; cursor: default; }
+.eb-btn img.emo { width: 26px; height: 26px; vertical-align: 0; margin: 0; }
+.eb-cd { position: absolute; right: -8px; top: -10px; min-width: 22px; height: 22px; border-radius: 11px; background: #ffb648; color: #2b1a05; font: 700 13px/22px 'Noto Sans KR', sans-serif; text-align: center; padding: 0 4px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.emote-bar.cool .eb-cd { opacity: 1; }
+.emo-pop { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, 0); z-index: 5; pointer-events: none; animation: emoPop 2.6s cubic-bezier(.2,1.6,.4,1) forwards; filter: drop-shadow(0 3px 4px rgba(0,0,0,.4)); }
+.emo-pop img.emo { width: 64px; height: 64px; display: block; margin: 0; }
+@keyframes emoPop { 0% { transform: translate(-50%, 20px) scale(0); opacity: 0; } 12% { transform: translate(-50%, -6px) scale(1.15); opacity: 1; } 20% { transform: translate(-50%, 0) scale(1); } 85% { opacity: 1; transform: translate(-50%, -6px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -24px) scale(.9); } }
+.emo-float { position: absolute; left: var(--x); bottom: 8%; z-index: 30; pointer-events: none; animation: emoFloat 2.8s ease-out forwards; }
+.emo-float img.emo { width: 54px; height: 54px; display: block; margin: 0; filter: drop-shadow(0 3px 6px rgba(0,0,0,.5)); }
+@keyframes emoFloat { 0% { transform: translate(0, 0) scale(.4); opacity: 0; } 15% { transform: translate(0, -20px) scale(1.1); opacity: 1; } 100% { transform: translate(var(--dx), -260px) scale(.9); opacity: 0; } }
+/* 대기실: 오른쪽 아래 / 게임: 장면 아래 가운데 */
+.room .emote-bar { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 20; }
+.game-screen .g-emotes { margin-left: auto; padding: 2px 4px; gap: 2px; background: rgba(20,22,40,.08); border: 0; backdrop-filter: none; }
+.game-screen .g-emotes .eb-btn { width: 30px; height: 30px; background: transparent; }
+.game-screen .g-emotes .eb-btn:hover:not(:disabled) { background: rgba(0,0,0,.08); }
+.game-screen .g-emotes .eb-btn img.emo { width: 22px; height: 22px; }
+.game-screen .g-emotes .eb-cd { right: -6px; top: -12px; }
+/* 잠수 경고 · 강퇴 투표 */
+.afk-warn { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 60; background: #c2304a; color: #fff; padding: 12px 20px; border-radius: 14px; font-family: 'Jua', sans-serif; font-size: 22px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: afkShake .5s; }
+.afk-warn b { font-size: 30px; min-width: 1.6em; text-align: center; }
+@keyframes afkShake { 20%, 60% { transform: translateX(calc(-50% - 8px)); } 40%, 80% { transform: translateX(calc(-50% + 8px)); } }
+.kv-banner { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 55; width: min(520px, 92%); background: rgba(20,22,40,.92); color: #fff; border: 2px solid #ff7a59; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.kv-banner .kv-title { font-family: 'Jua', sans-serif; font-size: 20px; }
+.kv-banner .kv-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.15); overflow: hidden; }
+.kv-banner .kv-bar i { display: block; height: 100%; background: #ff7a59; transition: width .3s; }
+.kv-banner .kv-row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.kv-banner .kv-row .spacer { flex: 1; }
+.kv-banner .btn.on { outline: 3px solid #ffd38a; }
+.rp .rp-kick { margin-left: auto; border: 0; background: transparent; cursor: pointer; font-size: 15px; opacity: .45; padding: 2px 4px; }
+.rp:hover .rp-kick { opacity: 1; }
+.ch > .emo-pop { bottom: 132px; z-index: 6; }
+.ch > .emo-pop img.emo { width: 72px; height: 72px; }
+.sc-av > .emo-pop { bottom: 100%; }
+.sc-av > .emo-pop img.emo { width: 46px; height: 46px; }
+.game-screen .g-dialog-head .g-emotes { align-self: center; }
