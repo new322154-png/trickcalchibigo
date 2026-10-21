@@ -645,3 +645,25 @@
 #stage.mobile .game-screen.t-night .plist-toggle, #stage.mobile .game-screen.in-corridor .plist-toggle { display: none; }
 /* 벨라: 머리 위 수정구슬까지 그림에 들어 있어 몸이 작아 보이므로 크게 */
 .cut2.k-p_identify .cut2-char { height: 108%; right: 6%; bottom: -6%; }
+
+/* 네르 편 고르기 (직접 조작) */
+.lay-bat.pick .st-b { touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.lay-bat.pick img { -webkit-user-drag: none; pointer-events: none; }
+.lay-bat.pick .bt-ner { animation: none !important; transition: left .5s cubic-bezier(.3,1.2,.5,1); }
+.lay-bat.pick.live:not(.decided) .bt-ner { transition: none; }
+.lay-bat.pick .bt-ner-in { animation: btIdle 1.2s ease-in-out infinite; }
+.lay-bat.pick .bt-ner.walk .bt-ner-in { animation: btWalk .32s ease-in-out infinite; }
+.lay-bat.pick .bt-ner img { transition: transform .12s; }
+@keyframes btIdle { 50% { transform: translateY(-3%) rotate(-2deg); } }
+@keyframes btWalk { 50% { transform: translateY(-7%); } }
+.lay-bat.pick .bt-sweat { animation: sweat .6s 1.7s infinite ease-in-out; }
+.lay-bat.pick.picked .bt-sweat { display: none; }
+.lay-bat.pick .bt-team { cursor: pointer; }
+.lay-bat.pick.live .bt-team:hover { filter: drop-shadow(0 0 14px rgba(255,255,255,.6)); }
+.lay-bat.pick.side-m .bt-team.m, .lay-bat.pick.side-c .bt-team.c { animation: btWin .5s .3s forwards; }
+.lay-bat.pick .bt-result { animation-delay: .35s; }
+.bp-hint { position: absolute; left: 50%; top: 9%; transform: translateX(-50%); text-align: center; white-space: nowrap; font-family: 'Jua', sans-serif; font-size: 40px; color: #fff; text-shadow: 0 3px 0 #0b0714, 0 0 18px #b57bff; opacity: 0; animation: stIn .4s 1.7s forwards; pointer-events: none; }
+.bp-hint small { display: block; margin-top: 6px; font-size: 22px; opacity: .75; }
+.bp-time { position: absolute; right: 4%; top: 6%; width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; font-family: 'Black Han Sans', 'Jua', sans-serif; font-size: 40px; color: #fff; background: rgba(181,123,255,.25); box-shadow: inset 0 0 0 4px #b57bff; opacity: 0; animation: stIn .4s 1.7s forwards; pointer-events: none; }
+.bp-time.hurry { box-shadow: inset 0 0 0 4px #ff3355; color: #ffd0d8; opacity: 1; animation: pulseR .5s infinite alternate; }
+@keyframes pulseR { to { transform: scale(1.08); } }

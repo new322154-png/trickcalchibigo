@@ -185,3 +185,120 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
   });
   if (!playing) next();
 }
+
+/**
+ * 네르 편 고르기 — 직접 조작. 컷인 뒤 니펠 —— 네르 —— 케이크 장면에서
+ * 키보드(←→ / A·D), 드래그, 또는 팀을 눌러 네르를 데려가면 그 편으로 정해진다.
+ * 서버의 결과(p_bat 컷)가 오면 resolve() 로 마무리. 시간이 다 돼 무작위로 정해져도 같은 길.
+ */
+export interface BatPick { resolve(side: 'mafia' | 'citizen'): void; close(): void; started(): boolean }
+export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') => void, secLeft: () => number): BatPick {
+  const def = CUTS.p_bat;
+  let el: HTMLElement | null = null;
+  let done = false, sent = false, live = false;
+  let x = 0.5, vx = 0, drag = false, goal: number | null = null, raf = 0;
+  const keys = new Set<string>();
+  let ner: HTMLElement, img: HTMLImageElement, timeEl: HTMLElement, hint: HTMLElement;
+  const MAFIA_AT = 0.3, CIT_AT = 0.7;
+
+  const cleanup = () => {
+    cancelAnimationFrame(raf);
+    removeEventListener('keydown', kd, true);
+    removeEventListener('keyup', ku, true);
+  };
+  const finish = () => {
+    if (!el) return;
+    const e = el; el = null;
+    cleanup();
+    e.classList.add('out');
+    setTimeout(() => { e.remove(); next(); }, 300);
+  };
+  const place = () => { ner.style.left = `${x * 100}%`; };
+  const pick = (side: 'mafia' | 'citizen') => {
+    if (sent) return;
+    sent = true;
+    el?.classList.add('picked');
+    hint.textContent = side === 'mafia' ? '마피아 팀으로 가는 중…' : '시민 팀으로 가는 중…';
+    sfx('click');
+    choose(side);
+  };
+  const loop = (t0: number) => {
+    let last = t0;
+    const f = (t: number) => {
+      const dt = Math.min(0.05, (t - last) / 1000); last = t;
+      if (!sent) {
+        const dir = (keys.has('l') ? -1 : 0) + (keys.has('r') ? 1 : 0);
+        if (dir) { goal = null; vx = dir * 0.55; }
+        else if (goal !== null && !drag) { const d = goal - x; vx = Math.abs(d) < 0.01 ? 0 : Math.sign(d) * 0.6; if (!vx) goal = null; }
+        else if (!drag) vx = 0;
+        if (!drag) x = Math.max(0.2, Math.min(0.8, x + vx * dt));
+        if (vx) img.style.transform = vx < 0 ? 'scaleX(-1)' : '';
+        ner.classList.toggle('walk', !!vx || drag);
+        place();
+        if (x <= MAFIA_AT) pick('mafia');
+        else if (x >= CIT_AT) pick('citizen');
+        const s = secLeft();
+        timeEl.textContent = `${s}`;
+        timeEl.classList.toggle('hurry', s <= 3);
+      }
+      raf = requestAnimationFrame(f);
+    };
+    raf = requestAnimationFrame(f);
+  };
+  const KEYS: Record<string, 'l' | 'r'> = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r' };
+  const kd = (e: KeyboardEvent) => { const k = KEYS[e.key]; if (!k || !live) return; e.preventDefault(); e.stopPropagation(); keys.add(k); };
+  const ku = (e: KeyboardEvent) => { const k = KEYS[e.key]; if (k) keys.delete(k); };
+
+  queue.push(() => {
+    if (done) { next(); return; }
+    el = h(`div.cut2.lay-bat.k-p_bat.mine.pick`, { style: `--c: ${def.color}` });
+    img = h('img', { src: asset('chars/ner.webp'), alt: '' }) as HTMLImageElement;
+    ner = h('div.bt-ner', h('div.bt-ner-in', img, h('i.bt-sweat', '💦')));
+    timeEl = h('div.bp-time', '');
+    hint = h('div.bp-hint', '네르를 데려갈 쪽으로 움직이세요!', h('small', '← → 키 · 드래그 · 팀을 눌러도 돼요'));
+    const stage = h('div.st-b',
+      h('div.cut2-bg'),
+      h('div.bt-team.m', { onclick: () => { if (live && !sent) goal = 0.25; } }, h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '마피아 팀')),
+      h('div.bt-team.c', { onclick: () => { if (live && !sent) goal = 0.75; } }, h('img', { src: asset('ui/anon.webp'), alt: '' }), h('b', '시민 팀')),
+      ner, hint, timeEl);
+    stage.addEventListener('dragstart', (e) => e.preventDefault());
+    const toX = (e: PointerEvent) => { const r = stage.getBoundingClientRect(); return Math.max(0.2, Math.min(0.8, (e.clientX - r.left) / r.width)); };
+    stage.addEventListener('pointerdown', (e) => {
+      if (!live || sent || (e.target as HTMLElement).closest('.bt-team')) return;
+      drag = true; stage.setPointerCapture(e.pointerId); x = toX(e); goal = null;
+    });
+    stage.addEventListener('pointermove', (e) => { if (drag && !sent) { const nx = toX(e); if (nx !== x) img.style.transform = nx < x ? 'scaleX(-1)' : ''; x = nx; } });
+    const up = () => { drag = false; };
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+    el.append(h('div.st-a', ...charStage(def, cutImg(def.file!), false, '')), stage);
+    host.appendChild(el);
+    sfx('skill');
+    addEventListener('keydown', kd, true);
+    addEventListener('keyup', ku, true);
+    setTimeout(() => { if (el && !done) { live = true; el.classList.add('live'); loop(performance.now()); } }, 1500);
+  });
+  if (!playing) next();
+
+  return {
+    started: () => !!el,
+    resolve(side) {
+      if (done) return;
+      done = true;
+      if (!el) { playCut(host, 'p_bat', side === 'mafia' ? '마피아 편으로!' : '시민 편으로!', ''); return; }
+      cleanup();
+      live = false;
+      const e = el;
+      e.classList.add('picked', side === 'mafia' ? 'side-m' : 'side-c', 'decided');
+      x = side === 'mafia' ? 0.3 : 0.7;
+      img.style.transform = side === 'mafia' ? 'scaleX(-1)' : '';
+      ner.classList.remove('walk');
+      place();
+      hint.remove(); timeEl.remove();
+      e.querySelector('.st-b')!.append(h('div.bt-result', side === 'mafia' ? '마피아 팀으로!' : '시민 팀으로!'));
+      sfx('pop');
+      setTimeout(finish, 1800);
+    },
+    close() { if (done) return; done = true; if (el) finish(); },
+  };
+}

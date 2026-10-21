@@ -12,7 +12,7 @@ import { asset, bgUrl, clear, h } from './dom';
 import { follow } from './follow';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
-import { playCut, preloadCuts } from './cut';
+import { pickBat, playCut, preloadCuts, type BatPick } from './cut';
 import { bgm, type BgmName } from './bgm';
 import { sfx } from './sfx';
 
@@ -60,6 +60,9 @@ export class GameUI {
   private farm: Farm | null = null;
   private scene: Scene;
   private lastKey = '';
+  /** 네르 편 고르기 장면 (직접 조작) */
+  private batPick: BatPick | null = null;
+  private batAsked = false;
   private phaseTotal = 1;
 
   constructor(private root: HTMLElement, public link: RoomLink, private myPid: number) {
@@ -83,6 +86,7 @@ export class GameUI {
   }
 
   destroy() {
+    this.batPick?.close(); this.batPick = null;
     clearInterval(this.tick);
     this.corridor?.destroy();
     this.farm?.destroy();
@@ -117,6 +121,7 @@ export class GameUI {
       const mine = m.kind.startsWith('p_');
       if (m.kind === 'vanish') { this.sadMorning = true; if (this.v?.phase === 'morning') bgm('rain'); }
       if (m.kind === 'execute') bgm('after_trial');
+      if (m.kind === 'p_bat' && this.batPick) { this.batPick.resolve(/마피아/.test(m.text) ? 'mafia' : 'citizen'); this.batPick = null; return; }
       const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? this.face(m.pid) : ANON;
       playCut(this.el, m.kind, m.text, fb, { n: m.n });
     }
@@ -284,6 +289,10 @@ export class GameUI {
       h('div.pbtns', ids.map((id) => h(`button.pbtn${selected === id ? '.sel' : ''}`, { onclick: () => on(id) }, this.name(id))));
 
     this.panel.classList.remove('urgent');
+    if (me.prompt?.key === 'bat' && !this.batAsked) {
+      this.batAsked = true;
+      this.batPick = pickBat(this.el, (side) => this.link.send({ t: 'choice', key: 'bat', value: side }), () => this.left());
+    }
     if (me.prompt) {
       const pr = me.prompt;
       this.panel.classList.add('urgent');

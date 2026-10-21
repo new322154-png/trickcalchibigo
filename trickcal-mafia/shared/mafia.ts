@@ -696,7 +696,8 @@ export class MafiaGame {
         this.logAll('event', '어딘가에서 분노에 찬 외침이 들렸다… 누군가 편을 정한 모양이다.');
       });
     }
-    this.timer(10, () => { this.resolvePrompts(); if (!this.checkWin()) this.startDay(); });
+    // 네르가 편을 고르는 아침은 직접 조작할 시간을 조금 더 준다
+    this.timer(this.prompts.size ? 18 : 10, () => { this.resolvePrompts(); if (!this.checkWin()) this.startDay(); });
     this.push();
   }
 
