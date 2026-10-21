@@ -91,7 +91,7 @@ export class GameUI {
       this.top,
       h('div.g-cols',
         this.plist,
-        h('div.g-center', h('div.g-dialog', h('div.g-dialog-head', h('span', 'LOG'), h('b', '대화 기록')), this.log, this.chatRow)),
+        h('div.g-center', h('div.g-dialog', h('div.g-dialog-head', h('b', '대화')), this.log, this.chatRow)),
         this.panel),
       this.nightEl);
     if (isTouch()) this.el.appendChild(this.scene.joy);
@@ -224,24 +224,23 @@ export class GameUI {
   private renderTop() {
     const v = this.v!;
     const phaseName: Record<string, string> = {
-      intro: '게임 시작', night: `밤 · ${STEP_NAMES[v.step] ?? ''}`, morning: '아침', day: '낮 토론', vote1: '1차 투표', defense: '결선 변론', vote2: '결선 투표', verdict: '판결', end: '게임 끝',
+      intro: '게임 시작', night: '밤', morning: '아침', day: '낮 토론', vote1: '1차 투표', defense: '결선 변론', vote2: '결선 투표', verdict: '판결', end: '게임 끝',
     };
     const role = v.me.role;
-    const EN: Record<string, string> = {
-      intro: 'GAME START', night: 'NIGHT', morning: 'MORNING', day: 'DISCUSSION', vote1: 'VOTE', defense: 'FINAL DEFENSE', vote2: 'FINAL VOTE', verdict: 'VERDICT', end: 'GAME OVER',
-    };
+    // 밤에만 지금 누구 차례인지 작게
+    const sub = v.phase === 'night' ? `${(STEP_NAMES[v.step] ?? '').replace(/^[①②③] /, '')} 차례` : '';
     const myImg = roleImg(role);
     clear(this.top).append(
       h('div.phase-title',
         v.phase === 'night'
-          ? h('div.pt-day', String(v.night).padStart(2, '0'), h('small', 'NIGHT'))
-          : h('div.pt-day', String(Math.max(1, v.day)).padStart(2, '0'), h('small', 'DAY')),
-        h('div.pt-main', h('b', phaseName[v.phase]), h('small', EN[v.phase] ?? ''), this.timerEl)),
+          ? h('div.pt-day', String(v.night), h('small', '번째 밤'))
+          : h('div.pt-day', String(Math.max(1, v.day)), h('small', '일째')),
+        h('div.pt-main', h('b', phaseName[v.phase]), sub ? h('small', sub) : '', this.timerEl)),
       h('div.spacer'),
       h('button.btn.small.top-report.g-report', { title: '버그 · 불편 제보', onclick: () => openReport() }, '🐞'),
       h(`button.me-chip.${ROLES[role as RoleId]?.team ?? ''}`, { onclick: () => this.showRoleCard() },
         myImg ? h('img.mc-img', { src: myImg, alt: '' }) : '',
-        h('div.mc-text', h('small', v.me.alive ? this.name(this.myPid) : `${this.name(this.myPid)} · 사망`), h('b', roleName(role as RoleId)))),
+        h('div.mc-text', h('small', v.me.alive ? this.name(this.myPid) : `${this.name(this.myPid)} (사망)`), h('b', roleName(role as RoleId)))),
     );
     this.renderTimer();
   }
@@ -350,7 +349,7 @@ export class GameUI {
       case 'night': head('🌙 밤', '자기 방에 있어요.'); break;
       case 'morning': head('☀ 아침', '어젯밤 일이 발표됩니다.'); break;
       case 'day': {
-        head('☀ 낮 — 토론', '채팅으로 토론하세요. 왼쪽 목록을 눌러 메모를 남길 수 있어요.');
+        head('☀ 낮 토론', '채팅으로 토론하세요. 왼쪽 목록을 눌러 메모를 남길 수 있어요.');
         if (me.notesLeft > 0) this.panel.append(h('button.btn.wide', { onclick: () => this.noteForm() }, `✉ 익명 쪽지 보내기 (${me.notesLeft})`));
         if (me.canTime) {
           const t = (d: 1 | -1) => () => { sfx('click'); this.link.send({ t: 'time', d }); };
@@ -371,7 +370,7 @@ export class GameUI {
       case 'defense':
         if (me.silenced) head('🤐 입이 막혔다', '누군가 당신의 목소리를 훔쳤어요. 이번 변론에서는 말할 수 없어요.');
         else if (me.proxyFor !== undefined) head('🗣 선동 중', `지금 채팅은 ${this.name(me.proxyFor)}의 이름으로 나갑니다.`);
-        else head('⚖ 결선 변론', v.cands.includes(this.myPid) ? '당신이 결선에 올랐어요! 45초 동안 변론하세요.' : `${v.cands.map(this.name).join(' vs ')} — 변론을 들어 보세요.`);
+        else head('⚖ 결선 변론', v.cands.includes(this.myPid) ? '당신이 결선에 올랐어요! 45초 동안 변론하세요.' : `${v.cands.map(this.name).join('와(과) ')}의 변론을 들어 보세요.`);
         break;
       case 'vote2': {
         if (!me.canVote) { head('🗳 결선 투표', '다른 사람들이 투표하고 있어요.'); break; }
@@ -435,7 +434,7 @@ export class GameUI {
       ? act.locked ? '🔒 방 문이 잠겼다! 오늘 밤은 아무것도 할 수 없다.'
         : act.done ? `능력을 썼어요. (${ACT_LABEL[act.kind]}: ${act.choice === null ? '쓰지 않음' : this.name(act.choice)})`
           : `지금은 당신의 차례! 문을 열고 나가 ${ACT_LABEL[act.kind]}할 사람의 방으로 가세요.${act.optional ? ' (안 써도 돼요)' : ' (시간이 지나면 무작위)'}`
-      : `${STEP_NAMES[v.step]} 차례 — 누군가 움직이고 있다…`;
+      : `${STEP_NAMES[v.step]} 차례. 누군가 움직이고 있다…`;
     clear(this.nightEl).append(
       h('div.n-room', { style: `--room-bg: ${bgUrl('night_room.webp')}` },
         h('div.n-me', img ? h('img', { src: img, alt: '' }) : h('div.n-sil', '?')),
@@ -526,7 +525,7 @@ export class GameUI {
     bgm(won ? 'title' : 'rain');
     this.emotes.enable(false);
     this.emoToggle.classList.add('hidden');
-    const [title, en, bg] = END_T[winner] ?? END_T.draw;
+    const [title, , bg] = END_T[winner] ?? END_T.draw;
     this.endInfo = { winner, roles, winners, day, mvp: [] };
     const champs = roles.filter((r) => winners.includes(r.pid));
     const others = roles.filter((r) => !winners.includes(r.pid));
@@ -557,7 +556,7 @@ export class GameUI {
       return h('div.end-loser', { style: `--i:${i}` }, img ? h('img', { src: img, alt: '' }) : '', h('small', roleName(r.role as RoleId)));
     }));
     // 정체 공개표: 케이크 가면이 하나씩 벗겨진다
-    const list = h('div.end-list', h('div.end-list-head', h('span', 'UNMASKED'), h('b', '모두의 정체')),
+    const list = h('div.end-list', h('div.end-list-head', h('b', '가면 아래 정체')),
       ...roles.map((r, i) => {
         const img = roleImg(r.role);
         const team = ROLES[r.role as RoleId]?.team ?? '';
@@ -569,7 +568,7 @@ export class GameUI {
     const status = h('span.end-status');
     const ov = h(`div.end-screen.w-${winner}`, { style: `--bg: ${bgUrl(bg)}` },
       h('div.end-bg'),
-      h('div.end-title', h('small', en), h('b', title), h(`div.end-me.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…')),
+      h('div.end-title', h('b', title), h(`div.end-me.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…')),
       photo, losers, list,
       h('div.end-foot', status,
         h('button.btn.small.share', { onclick: () => this.share() }, '📸 결과 공유'),

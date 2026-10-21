@@ -75,7 +75,7 @@ export async function drawCard(c: CardInfo): Promise<HTMLCanvasElement> {
   // 제목
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#ffd38a'; ctx.font = '700 26px "Noto Sans KR", sans-serif';
-  ctx.fillText(`TRICKCAL MAFIA · ${c.en}`, 60, 86);
+  ctx.fillText('트릭컬 마피아', 60, 86);
   ctx.font = '104px "Black Han Sans", "Jua", sans-serif';
   ctx.lineJoin = 'round'; ctx.lineWidth = 14; ctx.strokeStyle = '#1d2030';
   ctx.strokeText(c.title, 56, 196); ctx.fillStyle = '#fff'; ctx.fillText(c.title, 56, 196);
@@ -130,7 +130,7 @@ export async function drawCard(c: CardInfo): Promise<HTMLCanvasElement> {
 
   // 모두의 정체
   const top = 820;
-  ctx.fillStyle = '#ffd38a'; ctx.font = '700 22px "Noto Sans KR", sans-serif'; ctx.fillText('UNMASKED · 모두의 정체', 60, top - 18);
+  ctx.fillStyle = '#ffd38a'; ctx.font = '700 22px "Noto Sans KR", sans-serif'; ctx.fillText('가면 아래 정체', 60, top - 18);
   const cols = 4, gap = 14, cw = (W - 120 - gap * (cols - 1)) / cols, ch = 112;
   c.players.slice(0, 12).forEach((p, i) => {
     const x = 60 + (i % cols) * (cw + gap), yy = top + Math.floor(i / cols) * (ch + gap);

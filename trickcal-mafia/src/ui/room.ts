@@ -188,7 +188,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
         codeEl.replaceChildren(
           h('span', pub ? '빠른 매칭 방' : '방 코드'), h('b', m.code),
           pub ? '' : h('button.btn.small', { onclick: copyInvite }, '초대 링크 복사'));
-        sys(pub ? '빠른 매칭 방에 들어왔어요. 사람이 모이는 동안 미니게임을 즐겨 보세요!' : `방 코드 ${m.code} — 친구에게 초대 링크를 보내 주세요.`);
+        sys(pub ? '빠른 매칭 방에 들어왔어요. 사람이 모이는 동안 미니게임을 즐겨 보세요!' : `방 코드는 ${m.code}예요. 친구에게 초대 링크를 보내 주세요.`);
         refresh();
         break;
       case 'join': addAvatar(m.p); sfx('pop'); refresh(); break;
@@ -316,7 +316,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     hostBar.append(h('div.wait-msg', pub && !startingAt ? `매칭 중… ${waiting}` : waiting));
     if (amHost) {
       hostBar.append(
-        h('div.host-label', '👑 방장 메뉴 — 멀티 미니게임'),
+        h('div.host-label', '👑 다 같이 미니게임'),
         h('div.mini-btns', (Object.keys(MINI_NAMES) as MiniId[]).map((g) =>
           h('button.btn.small', { disabled: !!mini || n < 2, title: MINI_DESC[g], onclick: () => link.send({ t: 'start_mini', game: g }) }, MINI_NAMES[g]))),
         mini ? h('button.btn.small.wide', { onclick: () => link.send({ t: 'stop_mini' }) }, '미니게임 끝내기') : '',
@@ -367,7 +367,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
     const film = h('button.btn.small.wide', { onclick: () => { tb.vote = false; tb.act = false; tb.chat = false; tb.god = true; refresh(); } }, '🎬 촬영 모드 (봇 전부 끄기 + 니펠 독점 습격)');
     const sum = [...testRoles.values()].filter(Boolean).length;
     const box = h('details.test-box',
-      h('summary', `🧪 테스트 설정 — 직업 지정 ${sum}명 · ${testSpeed}배속${tb.god ? ' · 독점 습격' : ''}`),
+      h('summary', `🧪 테스트 설정 (직업 지정 ${sum}명, ${testSpeed}배속${tb.god ? ', 독점 습격' : ''})`),
       ...humans.map((a) => roleSelect(a.info.id, a.info.id === me ? '나' : a.info.nick)),
       sp, film,
       h('div.test-chks', chk('vote', '봇 투표'), chk('act', '봇 능력·선택'), chk('chat', '봇 채팅')),

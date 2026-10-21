@@ -1,0 +1,244 @@
+/*
+ * 화면 겉모습 (마지막에 덮어씀) — "가면 파티 저택의 소품"
+ *  - 패널은 크림색 종이 카드: 코코아색 굵은 테두리 + 아래로 딱 떨어지는 그림자 (흐린 유리·비스듬히 깎은 모서리 대신)
+ *  - 버튼은 트릭컬처럼 통통한 젤리 버튼: 누르면 그림자만큼 내려간다
+ *  - 금색 손그림 선(가면 쓴 케이크 손님들과 같은 색)은 큰 판에만 한 줄
+ *  - 글자는 한국어만. 제목·버튼은 주아, 본문은 Noto Sans KR
+ *  밤·재판 때는 같은 모양에 자두색 종이.
+ */
+:root {
+  --k-ink: #3a2a22;        /* 코코아: 테두리 · 글자 */
+  --k-ink2: #7a6556;       /* 흐린 글자 */
+  --k-paper: #fffaf0;      /* 크림 종이 */
+  --k-paper2: #f4e9d4;     /* 안쪽 칸 */
+  --k-gold: #d4a64a;       /* 케이크 손님 선 */
+  --k-butter: #ffd257;     /* 주요 버튼 */
+  --k-butter-d: #d99a1e;
+  --k-cherry: #e2506a;     /* 마피아 · 위험 */
+  --k-sky: #3f86d0;        /* 시민 */
+  --k-grape: #9a6ad6;      /* 중립 */
+  --k-mint: #3aa57a;
+  --k-hard: 0 4px 0 var(--k-ink);
+  --k-r: 18px;             /* 큰 판 */
+  --k-r2: 12px;            /* 버튼 · 칸 */
+  --k-font: 'Jua', 'Noto Sans KR', sans-serif;
+}
+/* 밤 · 재판: 자두색 종이 */
+.t-night, .t-trial {
+  --k-paper: #2e2546;
+  --k-paper2: #3b3158;
+  --k-ink: #140e24;
+  --k-ink2: #b6a9d6;
+  --k-text: #fff3dc;
+}
+.t-day, .room, .tt { --k-text: #3a2a22; }
+
+/* ── 버튼 ───────────────────────────── */
+.btn, .game-screen .btn, .room.t-day .r-top .btn, .room.t-day .r-side .btn, .sh-side .btn:not(.gold) {
+  font-family: var(--k-font); font-weight: 400; letter-spacing: 0;
+  background: #fff; color: #3a2a22; border: 2.5px solid #3a2a22; border-radius: var(--k-r2);
+  box-shadow: 0 4px 0 #3a2a22; clip-path: none; transition: transform .08s, box-shadow .08s, background .12s;
+}
+.btn:hover:not(:disabled) { background: #fff6dc; border-color: #3a2a22; }
+.btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #3a2a22; }
+.btn:disabled { opacity: .45; box-shadow: 0 2px 0 #3a2a22; }
+.btn.gold, .game-screen .btn.gold, .room.t-day .r-side .btn.gold, .t-trial .btn.gold, .t-night .btn.gold, .n-door .btn.gold {
+  background: var(--k-butter); color: #3a2a22; border: 2.5px solid #3a2a22; clip-path: none; font-family: var(--k-font); letter-spacing: 0;
+  box-shadow: 0 5px 0 #3a2a22, inset 0 -5px 0 var(--k-butter-d);
+}
+.btn.gold:hover:not(:disabled) { background: #ffdc78; }
+.btn.small { border-radius: 10px; box-shadow: 0 3px 0 #3a2a22; }
+.btn.small:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #3a2a22; }
+.btn.small.gold { box-shadow: 0 3px 0 #3a2a22, inset 0 -3px 0 var(--k-butter-d); }
+.btn.mafia, .game-screen .btn.big.mafia { background: var(--k-cherry); color: #fff; border: 2.5px solid #3a2a22; }
+.btn.citizen { background: var(--k-sky); color: #fff; border-color: #3a2a22; }
+.game-screen .btn.sel, .game-screen .pbtn.sel { background: #ffe1e6 !important; border-color: var(--k-cherry) !important; color: #3a2a22 !important; }
+
+/* ── 카드 · 덮개 ───────────────────────── */
+.overlay, .game-screen .overlay { background: rgba(40, 24, 18, .55); }
+.card, .game-screen .card {
+  background: #fffaf0; color: #3a2a22; border: 3px solid #3a2a22; border-radius: 24px;
+  box-shadow: 0 8px 0 #3a2a22; backdrop-filter: none;
+}
+.card h2 { font-family: var(--k-font); font-weight: 400; color: #3a2a22; }
+.card .hint, .card p.hint { color: #7a6556; }
+.card input, .card textarea, .card select { background: #fff; color: #3a2a22; border: 2px solid #c9b79c; border-radius: 10px; }
+.card input:focus, .card textarea:focus { outline: none; border-color: #3a2a22; }
+
+/* ── 꼬리표 ───────────────────────────── */
+.tag, .game-screen .tag { border-radius: 999px; background: var(--k-paper2); color: var(--k-ink2); font-weight: 700; }
+.tag.me, .game-screen .tag.me, .t-trial .tag.me, .t-night .tag.me { background: var(--k-butter); color: #3a2a22; }
+.tag.mafia, .game-screen .tag.mafia { background: var(--k-cherry); color: #fff; }
+.tag.citizen { background: var(--k-sky); color: #fff; }
+.tag.neutral { background: var(--k-grape); color: #fff; }
+.tag.info, .game-screen .tag.info, .t-trial .tag.info { background: #d8f2e5; color: #1f6e4f; }
+.tag.reveal { background: #fff0c7; color: #7a4f00; }
+.t-night .tag.info, .t-trial .tag.info { background: #2f5a4a; color: #c9f5e0; }
+
+/* ── 타이틀 메뉴: 두툼한 이름표 ───────────── */
+.tt-btn { clip-path: none; border: 3px solid #3a2a22; border-radius: 20px; background: #fffaf0; color: #3a2a22; box-shadow: 0 6px 0 #3a2a22; padding: 12px 26px 14px; gap: 0; transition: transform .1s, box-shadow .1s, background .12s; }
+.tt-btn b { font-family: var(--k-font); font-size: 34px; line-height: 1.2; }
+.tt-btn small { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; font-weight: 500; letter-spacing: 0; color: #7a6556; }
+.tt-btn:hover { transform: translateY(-2px); background: #fff; }
+.tt-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #3a2a22; }
+.tt-btn.main, .tt-btn.main:hover { background: var(--k-butter); color: #3a2a22; box-shadow: 0 6px 0 #3a2a22, inset 0 -6px 0 var(--k-butter-d); }
+.tt-btn.main small { color: #6b4a10; }
+.tt-rule { border-radius: 999px; border: 2px solid #3a2a22; background: #fffaf0; color: #3a2a22; font-family: var(--k-font); box-shadow: 0 3px 0 #3a2a22; }
+.tt .profile-chip { border: 2.5px solid #3a2a22; border-radius: 14px; background: #fffaf0; box-shadow: 0 4px 0 #3a2a22; }
+.tt .profile-chip small { color: #7a6556; }
+
+/* ── 대기실 ───────────────────────────── */
+.room.t-day .room-code { clip-path: none; background: #fffaf0; color: #7a6556; border: 2.5px solid #3a2a22; border-radius: 14px; box-shadow: var(--k-hard); padding: 8px 16px; }
+.room.t-day .room-code b { color: #3a2a22; letter-spacing: 5px; }
+.room.t-day .room-count { background: var(--k-butter); color: #3a2a22; border: 2.5px solid #3a2a22; border-radius: 999px; box-shadow: var(--k-hard); padding: 8px 18px; }
+.room.t-day .r-top .btn { box-shadow: 0 4px 0 #3a2a22; }
+.room.t-day .r-side {
+  background: #fffaf0; backdrop-filter: none; border: 3px solid #3a2a22; border-radius: 22px; box-shadow: 0 6px 0 #3a2a22;
+  --text: #3a2a22; --dim: #7a6556; --line: rgba(58,42,34,.15); --panel2: #f4e9d4; --gold: #c46a12;
+}
+.room.t-day .host-bar, .room.t-day .r-plist { border-bottom: 2px dashed rgba(212,166,74,.7); }
+.room.t-day .wait-msg { color: #c46a12; font-family: var(--k-font); font-weight: 400; font-size: 20px; }
+.host-label { font-family: var(--k-font); color: #7a6556; }
+.room.t-day .rp { background: #f4e9d4; border-radius: 999px; }
+.room.t-day .rp.self { outline: 2.5px solid #3a2a22; background: #fff0c7; }
+.room.t-day .chat-row { border-top: 2px dashed rgba(212,166,74,.7); }
+.room.t-day .chat-in { border: 2px solid #c9b79c; border-radius: 10px; }
+.room.t-day .chat-in:focus { border-color: #3a2a22; outline: none; }
+.room.t-day .chat-log .cl-line b { color: #c46a12; }
+.room.t-day .mini-banner { background: #fffaf0; color: #3a2a22; border: 3px solid #3a2a22; border-radius: 18px; box-shadow: 0 5px 0 #3a2a22; }
+.room.t-day .mini-banner .mb-sub { color: #7a6556; }
+.test-box { border-color: #c9b79c !important; border-radius: 12px !important; }
+.emote-bar, .room .emote-bar { background: #fffaf0; border: 2.5px solid #3a2a22; box-shadow: 0 4px 0 #3a2a22; backdrop-filter: none; }
+.eb-btn { background: transparent; }
+.eb-btn:hover:not(:disabled) { background: #f4e9d4; }
+.eb-cd { background: var(--k-butter); border: 2px solid #3a2a22; line-height: 18px; }
+.kv-banner { background: #fffaf0; color: #3a2a22; border: 3px solid #3a2a22; box-shadow: 0 5px 0 #3a2a22; }
+.kv-banner .kv-title { color: #3a2a22; }
+.kv-banner .kv-bar { background: #f4e9d4; border: 2px solid #3a2a22; height: 12px; border-radius: 999px; }
+.kv-banner .kv-bar i { background: var(--k-cherry); }
+.afk-warn { border: 3px solid #3a2a22; box-shadow: 0 5px 0 #3a2a22; background: var(--k-cherry); }
+
+/* 봇 꼬리표 */
+.tag.bot { background: #e6e0f5; color: #4a3f73; }
+
+/* ── 게임: 공통 판 ─────────────────────── */
+.game-screen .g-plist, .game-screen .g-panel, .g-dialog, .g-night .n-side {
+  background: var(--k-paper) !important; backdrop-filter: none !important; color: var(--k-text);
+  border: 3px solid var(--k-ink) !important; border-radius: var(--k-r) !important; box-shadow: 0 5px 0 var(--k-ink) !important;
+}
+.game-screen { --ink: var(--k-text); --ink-dim: var(--k-ink2); --line: color-mix(in srgb, var(--k-ink2) 30%, transparent); --glass2: var(--k-paper2); }
+.t-day.game-screen { --accent: #c46a12; }
+.t-night.game-screen, .t-trial.game-screen { --accent: #ffd257; }
+
+/* 단계 제목: 몇째 날 + 큰 글씨 */
+.phase-title { filter: none; align-items: center; }
+.pt-day { width: auto; min-width: 84px; height: 84px; padding: 0 14px; clip-path: none; border-radius: 20px; background: var(--k-butter) !important; color: #3a2a22 !important; border: 3px solid #3a2a22; box-shadow: 0 5px 0 #3a2a22; font-family: var(--k-font); font-size: 44px; }
+.pt-day small { font-family: var(--k-font); font-size: 16px; font-weight: 400; letter-spacing: 0; margin-top: 0; }
+.pt-main b, .t-day .pt-main b, .t-night .pt-main b { font-family: var(--k-font); font-size: 50px; color: #fff; -webkit-text-stroke: 7px #3a2a22; paint-order: stroke fill; text-shadow: 0 4px 0 #3a2a22; letter-spacing: 0; }
+.pt-main small, .t-day .pt-main small { font-family: var(--k-font); font-size: 20px; font-weight: 400; letter-spacing: 0; color: #fff; -webkit-text-stroke: 4px #3a2a22; paint-order: stroke fill; margin-top: 2px; }
+.game-screen .g-timer span, .t-day .g-timer span { color: #fff; -webkit-text-stroke: 4px #3a2a22; paint-order: stroke fill; text-shadow: none; font-family: var(--k-font); font-weight: 400; font-size: 22px; }
+.game-screen .g-timer i { height: 12px; border-radius: 999px; background: #fffaf0; border: 2.5px solid #3a2a22; box-shadow: none; }
+.game-screen .g-timer i::after { background: var(--k-butter); }
+.game-screen .g-timer.urgent i::after { background: var(--k-cherry); }
+
+/* 내 캐릭터 이름표 */
+.game-screen .me-chip { clip-path: none; border: 3px solid #3a2a22; border-radius: 18px; background: #fffaf0; box-shadow: 0 5px 0 #3a2a22; backdrop-filter: none; overflow: visible; }
+.game-screen .me-chip::before { display: none; }
+.me-chip.mafia { background: #ffe1e6 !important; } .me-chip.citizen { background: #dfeeff !important; } .me-chip.neutral { background: #efe4ff !important; }
+.mc-text small { color: #7a6556; }
+.mc-text b { color: #3a2a22; }
+.game-screen .g-top .g-report { margin-top: 18px; }
+
+/* 왼쪽 플레이어 목록 */
+.game-screen .g-title { font-family: var(--k-font); color: var(--k-text); border-bottom: 2px dashed color-mix(in srgb, var(--k-gold) 70%, transparent); }
+.game-screen .g-title::before { display: none; }
+.game-screen .g-p { border-radius: 12px; }
+.game-screen .g-p:hover { background: var(--k-paper2); transform: none; }
+.game-screen .g-p.self { background: color-mix(in srgb, var(--k-butter) 35%, transparent); }
+.game-screen .g-pname { color: var(--k-text); }
+
+/* 가운데 대화창 */
+.g-dialog-head { border-bottom: 2px dashed color-mix(in srgb, var(--k-gold) 70%, transparent); align-items: center; }
+.g-dialog-head b { font-family: var(--k-font); color: var(--k-ink2); font-size: 18px; }
+.game-screen .g-chatrow { border-top: 2px dashed color-mix(in srgb, var(--k-gold) 70%, transparent); }
+.game-screen .chat-in { background: var(--k-paper2); border: 2px solid transparent; border-radius: 10px; color: var(--k-text); }
+.game-screen .chat-in:focus { border-color: var(--k-ink2); }
+.game-screen .gl-event { border: 0; background: var(--k-paper2); border-radius: 10px; color: var(--k-text); }
+.game-screen .gl-secret { background: color-mix(in srgb, var(--k-grape) 18%, transparent); border-left: 0; border-radius: 10px; }
+.game-screen .gl-note { background: #fff1a8; border-radius: 10px; }
+.game-screen .gl-sys { color: var(--k-ink2); }
+.game-screen .gl-chat { color: var(--k-text); }
+.game-screen .ch-tab, .game-screen .ch-label { border-radius: 999px; border: 2px solid var(--k-ink2); background: transparent; color: var(--k-text); font-family: var(--k-font); }
+.game-screen .ch-tab.on { background: var(--k-butter); border-color: #3a2a22; color: #3a2a22; }
+.game-screen .g-emotes { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+
+/* 오른쪽 행동 판 */
+.game-screen .ph-head { border-bottom: 2px dashed color-mix(in srgb, var(--k-gold) 70%, transparent); }
+.game-screen .ph-title { font-family: var(--k-font); color: var(--k-text); }
+.game-screen .ph-title::before { display: none; }
+.game-screen .ph-sub { color: var(--k-ink2); }
+.game-screen .pbtn { background: #fff; color: #3a2a22; border: 2.5px solid #3a2a22; border-radius: 12px; box-shadow: 0 3px 0 #3a2a22; font-family: var(--k-font); }
+.game-screen .pbtn:hover { transform: translateY(-1px); border-color: #3a2a22; background: #fff6dc; }
+.game-screen .pbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 #3a2a22; }
+.pbtn.sel::after { content: '투표'; font-family: var(--k-font); font-size: 15px; letter-spacing: 0; color: var(--k-cherry); border: 3px solid var(--k-cherry); }
+.game-screen .btn:not(.gold):not(.mafia) { background: #fff; color: #3a2a22; }
+
+/* 밤 옆판 */
+.g-night .n-side { color: var(--k-text); }
+.n-title { font-family: var(--k-font) !important; color: var(--k-text) !important; }
+.n-step .on { color: #ffd257; }
+.n-step .on::before { color: #ffd257; }
+.n-status { background: var(--k-paper2) !important; border-left: 0 !important; border-radius: 12px !important; color: var(--k-text) !important; }
+.n-door .btn.gold { font-size: 32px; padding: 16px 34px; box-shadow: 0 6px 0 #3a2a22, inset 0 -6px 0 var(--k-butter-d), 0 0 40px rgba(255,210,87,.45); }
+
+/* 역할 카드 */
+.game-screen .rolecard { border-top: 3px solid #3a2a22; }
+.game-screen .rc-name { font-family: var(--k-font); color: #3a2a22; }
+
+/* ── 끝 화면 ───────────────────────────── */
+.end-title b { font-family: var(--k-font); -webkit-text-stroke: 10px #3a2a22; text-shadow: 0 6px 0 #3a2a22; }
+.end-me { clip-path: none; border: 3px solid #3a2a22; border-radius: 999px; box-shadow: 0 4px 0 #3a2a22; padding: 2px 26px; }
+.end-me.win { background: var(--k-butter); color: #3a2a22; }
+.end-me.lose { background: #d9d2c8; color: #3a2a22; }
+.end-label { clip-path: none; background: #fffaf0; color: #3a2a22; border: 2.5px solid #3a2a22; border-radius: 12px; box-shadow: 0 3px 0 #3a2a22; margin-top: -4px; }
+.end-label small { color: #7a6556; }
+.end-champ.me .end-label { background: var(--k-butter); }
+.end-loser small { background: #fffaf0; color: #3a2a22; border-radius: 999px; padding: 1px 8px; }
+.end-list { background: #fffaf0; color: #3a2a22; backdrop-filter: none; border: 3px solid #3a2a22; border-radius: 22px; box-shadow: 0 6px 0 #3a2a22; }
+.end-list-head { border-bottom: 2px dashed rgba(212,166,74,.8); }
+.end-list-head b { color: #3a2a22; }
+.end-row { border-left-width: 6px; border-radius: 4px 12px 12px 4px; }
+.end-row.self { background: #fff0c7; }
+.end-who small, .end-state { color: #7a6556; }
+.end-state i { background: var(--k-butter); border: 2px solid #3a2a22; border-radius: 999px; letter-spacing: 0; font-family: var(--k-font); font-weight: 400; font-size: 14px; padding: 0 8px; }
+.end-foot { text-shadow: 0 0 4px #000, 0 1px 2px #000; }
+.end-foot .btn.share { background: var(--k-butter); }
+.end-mvp-btn { border: 2.5px solid #3a2a22; background: #fffaf0; color: #3a2a22; box-shadow: 0 3px 0 #3a2a22; border-radius: 999px; }
+.end-mvp-btn:hover, .end-mvp-btn.on { background: var(--k-butter); color: #3a2a22; }
+/* 버튼 안 이모지가 캐릭터 그림 크기로 커지지 않게 */
+#stage .end-champ .end-mvp-btn img.emo, .end-champ .end-mvp-btn img.emo { height: 1.1em; width: 1.1em; filter: none; animation: none; }
+.end-mvp { background: #fffaf0; color: #3a2a22; border: 3px solid #3a2a22; box-shadow: 0 5px 0 #3a2a22; }
+.end-mvp small { color: #7a6556; }
+.end-mvp b { color: #c46a12; }
+
+/* ── 신고 · 공유 · 잠수 같은 작은 창 ───────── */
+.sh-side { border: 3px solid #3a2a22; box-shadow: 0 6px 0 #3a2a22; }
+.sh-side h3 { color: #3a2a22; }
+.rp-kinds .btn.on { background: var(--k-butter); color: #3a2a22; }
+.report-btn, .sound-btn { background: #fffaf0; color: #3a2a22; border: 2.5px solid #3a2a22; box-shadow: 0 3px 0 #3a2a22; opacity: .9; }
+.plist-toggle, #stage.mobile .plist-toggle, #stage.mobile .emote-toggle:not(.hidden) { background: #fffaf0 !important; border: 2.5px solid #3a2a22 !important; box-shadow: 0 3px 0 #3a2a22 !important; }
+#stage.mobile .game-screen.plist-open .plist-toggle, #stage.mobile .game-screen.emo-open .emote-toggle { background: var(--k-butter) !important; }
+#stage.mobile .game-screen .g-emotes { background: #fffaf0 !important; border: 2.5px solid #3a2a22 !important; box-shadow: 0 3px 0 #3a2a22 !important; }
+.net-badge { border: 2.5px solid #3a2a22; border-radius: 999px; box-shadow: 0 3px 0 #3a2a22; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .tt-btn, .pbtn { transition: none; }
+}
+:focus-visible { outline: 3px solid #3f86d0; outline-offset: 2px; }
+.card h3 { color: #7a6556; font-family: 'Jua', sans-serif; font-weight: 400; }
+#stage .end-champ img.end-star { height: 72px; width: 72px; top: -80px; }
+#stage.compact .end-photo { left: 40%; bottom: 18%; }
+#stage.compact .end-loser img { height: 90px; }
+/* 컷씬의 작은 영문 머리글은 뺀다 (한국어 제목만) */
+.cut2-title small, .va-msg small { display: none; }
+.va-msg b, .cut2-title b { word-break: keep-all; }

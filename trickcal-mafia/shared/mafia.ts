@@ -730,7 +730,7 @@ export class MafiaGame {
     for (const [v, t] of this.votes) if (t !== null) tally.set(t, (tally.get(t) ?? 0) + this.weight(v));
     const sorted = [...tally].sort((a, b) => b[1] - a[1]);
     this.counts = sorted;
-    this.logAll('event', `1차 투표 결과 — ${sorted.map(([t, c]) => `${this.name(t)} ${c}표`).join(' · ') || '모두 기권'}`);
+    this.logAll('event', `1차 투표 결과: ${sorted.map(([t, c]) => `${this.name(t)} ${c}표`).join(', ') || '모두 기권'}`);
     if (!sorted.length) { this.logAll('event', '처형 없이 밤이 된다.'); this.timer(3, () => this.startNight()); this.push(); return; }
     const top = sorted[0][1];
     const firsts = sorted.filter(([, c]) => c === top).map(([t]) => t);
@@ -742,7 +742,7 @@ export class MafiaGame {
     this.phase = 'defense';
     this.stage = [...this.cands];
     this.proxy = null;
-    this.logAll('event', this.cands.length === 2 ? `⚖ 결선 대결: ${this.name(this.cands[0])} vs ${this.name(this.cands[1])} — 45초 동안 변론하세요!` : `⚖ ${this.name(this.cands[0])}의 최후 변론 (45초)`);
+    this.logAll('event', this.cands.length === 2 ? `⚖ 결선 대결: ${this.name(this.cands[0])} vs ${this.name(this.cands[1])}. 45초 동안 변론하세요!` : `⚖ ${this.name(this.cands[0])}의 최후 변론 (45초)`);
     // 죠안의 선동
     const joan = this.alive().find((p) => p.role === 'joan' && !p.usedOnce);
     if (joan) {
@@ -789,7 +789,7 @@ export class MafiaGame {
     const ca = sum((t) => t === a);
     const cb = b === undefined ? sum((t) => t === null) : sum((t) => t === b);
     this.counts = b === undefined ? [[a, ca]] : [[a, ca], [b, cb]];
-    this.logAll('event', b === undefined ? `결과 — 찬성 ${ca} · 반대 ${cb}` : `결선 결과 — ${this.name(a)} ${ca}표 · ${this.name(b)} ${cb}표`);
+    this.logAll('event', b === undefined ? `결과: 찬성 ${ca}, 반대 ${cb}` : `결선 결과: ${this.name(a)} ${ca}표, ${this.name(b)} ${cb}표`);
     let executed: number | null = null;
     if (ca > cb) executed = a;
     else if (b !== undefined && cb > ca) executed = b;
@@ -941,7 +941,7 @@ export class MafiaGame {
     const pids = best ? [...n].filter(([, v]) => v === best).map(([k]) => k) : [];
     const voters = this.mvpVoters();
     for (const p of this.all()) this.host.send(p.pid, { t: 'mvp', voted: this.mvpVotes.size, of: voters.length, pids, votes: best });
-    if (pids.length) this.logAll('event', `⭐ 최고의 플레이어: ${pids.map((x) => `${this.name(x)}(${roleName(this.ps.get(x)!.role)})`).join(', ')} — ${best}표`);
+    if (pids.length) this.logAll('event', `⭐ 최고의 플레이어: ${pids.map((x) => `${this.name(x)}(${roleName(this.ps.get(x)!.role)})`).join(', ')} (${best}표)`);
     this.host.later(6000, () => this.host.onEnd());
   }
 
