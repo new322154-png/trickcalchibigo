@@ -643,3 +643,5 @@
 #stage.mobile .game-screen .g-center { grid-column: 2; grid-row: 1; }
 #stage.mobile .game-screen .g-panel { grid-column: 3; grid-row: 1; }
 #stage.mobile .game-screen.t-night .plist-toggle, #stage.mobile .game-screen.in-corridor .plist-toggle { display: none; }
+/* 벨라: 머리 위 수정구슬까지 그림에 들어 있어 몸이 작아 보이므로 크게 */
+.cut2.k-p_identify .cut2-char { height: 108%; right: 6%; bottom: -6%; }

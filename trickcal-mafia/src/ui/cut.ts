@@ -101,7 +101,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
   if (!def) return;
   queue.push(() => {
     const layout = def.layout ?? 'char';
-    const el = h(`div.cut2.lay-${layout}${kind.startsWith('p_') ? '.mine' : ''}`, { style: `--c: ${def.color}` });
+    const el = h(`div.cut2.lay-${layout}.k-${kind}${kind.startsWith('p_') ? '.mine' : ''}`, { style: `--c: ${def.color}` });
     const file = def.file ? cutImg(def.file) : fallbackImg;
     switch (layout) {
       case 'contact':
