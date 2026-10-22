@@ -6,6 +6,7 @@
  */
 import { EMOJI_FILES } from './emoji-list';
 import { asset } from './dom';
+import { COLOR_ZONE, inkIcon } from './ink';
 
 const ZWJ = String.fromCodePoint(0x200d), VS = String.fromCodePoint(0xfe0f);
 const RE = new RegExp(`\\p{Extended_Pictographic}(?:${VS}|[${String.fromCodePoint(0x1f3fb)}-${String.fromCodePoint(0x1f3ff)}])?(?:${ZWJ}\\p{Extended_Pictographic}${VS}?)*`, 'gu');
@@ -39,11 +40,14 @@ function swapText(t: Text) {
   RE.lastIndex = 0;
   const frag = document.createDocumentFragment();
   let last = 0, changed = false;
+  // 화면 장식 자리는 잉크 선 아이콘, 사람이 쓴 말·감정표현·컷씬은 컬러 그림
+  const color = !!t.parentElement?.closest(COLOR_ZONE);
   for (const m of s.matchAll(RE)) {
-    const src = emojiFile(m[0]);
-    if (!src) continue;
+    const ink = color ? null : inkIcon(m[0]);
+    const src = ink ? null : emojiFile(m[0]);
+    if (!ink && !src) continue;
     if (m.index! > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
-    frag.appendChild(emo(m[0]));
+    frag.appendChild(ink ?? emo(m[0]));
     last = m.index! + m[0].length;
     changed = true;
   }
