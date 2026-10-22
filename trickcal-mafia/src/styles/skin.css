@@ -448,7 +448,7 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
 #stage.mobile .card .row { margin: 8px 0; gap: 10px; font-size: 15px; }
 #stage.mobile .card .row.end { margin-top: 10px; }
 #stage.mobile .card input, #stage.mobile .card textarea { font-size: 15px; padding: 6px 10px; }
-#stage.mobile .roommenu, #stage.mobile .minimenu, #stage.mobile .profile { width: 480px; }
+#stage.mobile .roommenu, #stage.mobile .minimenu { width: 480px; }
 #stage.mobile .rules { width: 94%; max-height: 100%; }
 #stage.mobile .rules .close { right: 12px; top: 10px; }
 #stage.mobile .rules h2 { font-size: 22px; }
@@ -621,3 +621,95 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
 #stage.mobile .end-foot { right: 62px; }
 #stage.mobile .g-night .n-mini { padding-right: 40px; }
 .rule-flow li b { margin-right: 4px; }
+
+/* ═══════ 배치 정리 (휴대폰 · PC 공통 규칙 + 휴대폰 치수) ═══════ */
+/* 대화창 '−'(입력줄만): 크기 버튼을 입력줄 오른쪽 끝에 나란히 (전송과 겹치지 않게) */
+.game-screen[data-dlg="min"] .g-dialog { flex-direction: row; align-items: center; }
+.game-screen[data-dlg="min"] .g-chatrow { flex: 1; min-width: 0; order: 1; }
+.game-screen[data-dlg="min"] .dlg-size { position: static; order: 2; margin: 0 12px 0 0; flex: none; }
+/* 안내판을 접으면: 오른쪽 칸을 비우고 INFO 탭은 화면 오른쪽 끝에 붙임, 대화창은 가운데 */
+.game-screen.panel-min .g-cols { grid-template-columns: 250px 1fr 250px; }
+#stage.compact .game-screen.panel-min .g-cols { grid-template-columns: 190px 1fr 190px; }
+.game-screen.panel-min .g-right { position: static; }
+.game-screen.panel-min .panel-tab, #stage.mobile .game-screen.panel-min .panel-tab { left: auto; right: 0; top: 0; border-radius: 6px 0 0 6px; z-index: 6; }
+
+/* 휴대폰: 왼쪽 위 사건 꼬리표와 명단 판을 같은 너비 · 같은 왼쪽 선으로 */
+#stage.mobile .pt-main { width: 236px; min-width: 0; box-sizing: border-box; }
+#stage.mobile .game-screen .g-plist { left: 2px; top: 14px; width: 236px; box-sizing: border-box; max-height: calc(100% - 16px);
+  transform: translateX(calc(-100% - 40px)); visibility: hidden; transition: transform .2s ease-out, visibility 0s linear .2s; }
+#stage.mobile .game-screen.plist-open .g-plist { transform: none; visibility: visible; transition: transform .2s ease-out, visibility 0s; }
+#stage.mobile .game-screen.plist-open .plist-toggle, #stage.mobile .game-screen.plist-open .emote-toggle:not(.hidden) { left: 256px; transition: left .2s ease-out; }
+#stage.mobile .plist-toggle, #stage.mobile .emote-toggle { transition: left .2s ease-out; }
+/* 휴대폰: 대화창은 조이스틱과 같은 폭의 여백을 양쪽에 두고 가운데 */
+#stage.mobile .game-screen.panel-min .g-cols { grid-template-columns: 0 1fr 0; }
+#stage.mobile .game-screen.walking.panel-min .g-center { padding: 0 132px; }
+#stage.mobile .game-screen.panel-min .panel-tab { width: 26px; }
+/* 휴대폰 대기실: 조이스틱 크기를 게임과 같게, 채팅은 가운데 좌우 같은 여백 */
+#stage.mobile .room .joy { width: 120px; height: 120px; left: 10px; bottom: 10px; }
+#stage.mobile .room .joy .joy-knob { left: 35px; top: 35px; width: 50px; height: 50px; }
+#stage.mobile .r-dock { left: 50%; right: auto; transform: translateX(-50%); width: calc(100% - 284px); }
+
+/* ═══════ 아침 신문 (실종 · 조용한 밤) ═══════
+ * 신문이 빙글빙글 돌며 날아와 책상에 탁 놓이고, 사진 위에 도장이 쾅. 크기는 em 이라 무대마다 font-size 로 맞춤 */
+.lay-news { font-size: 20px; }
+#stage.compact .lay-news { font-size: 14px; }
+#stage.mobile .lay-news { font-size: 9.6px; }
+.nw-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(40,26,12,.55), rgba(10,6,2,.88) 75%); }
+.nw-paper { position: absolute; left: 50%; top: 50%; width: 50em; padding: 1.4em 2em 1.8em; color: var(--p-ink);
+  background: var(--grain), linear-gradient(175deg, #efe9da, #e4dcc6 70%, #d9cfb4); box-shadow: 0 .2em .3em rgba(0,0,0,.3), 0 2em 4em rgba(0,0,0,.55);
+  transform: translate(-50%, -50%) rotate(-2.5deg); animation: nwSpin 1.05s cubic-bezier(.12,.72,.28,1) both; }
+@keyframes nwSpin {
+  0% { transform: translate(-50%, -50%) rotate(-1080deg) scale(.03); opacity: 0; }
+  20% { opacity: 1; }
+  82% { transform: translate(-50%, -50%) rotate(-2.5deg) scale(1.04); }
+  100% { transform: translate(-50%, -50%) rotate(-2.5deg) scale(1); }
+}
+.nw-mast { text-align: center; border-bottom: .3em double var(--p-ink); padding-bottom: .5em; margin-bottom: 1.1em; }
+.nw-ears { display: flex; justify-content: space-between; font-family: var(--p-type); font-size: .8em; letter-spacing: .12em; color: var(--p-ink2); border-top: 2px solid var(--p-ink); border-bottom: 1px solid var(--p-ink); padding: .25em 0; }
+.nw-name { display: block; font-family: var(--p-head); font-weight: 700; font-size: 3.6em; line-height: 1.15; letter-spacing: .08em; margin-top: .12em; }
+.nw-name-en { display: block; font-size: .75em; color: var(--p-ink2); letter-spacing: .3em; }
+.nw-body { display: grid; grid-template-columns: 17em 1fr; gap: 1.8em; align-items: start; }
+.nw-pic { position: relative; }
+.nw-photo { position: relative; height: 15em; background: #cfc6b0; border: 1px solid var(--p-ink); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
+.nw-photo img { height: 92%; width: auto; filter: grayscale(1) contrast(1.15) sepia(.25); }
+.nw-photo.scene { background: var(--bg) center / cover no-repeat; filter: grayscale(1) contrast(1.1) sepia(.3); }
+.nw-photo::after { content: ''; position: absolute; inset: 0; background: radial-gradient(rgba(43,36,32,.18) 30%, transparent 32%) 0 0 / 4px 4px; mix-blend-mode: multiply; pointer-events: none; }
+.nw-q { position: absolute; right: .3em; top: .1em; font-family: var(--p-head); font-weight: 700; font-size: 4em; color: rgba(43,36,32,.55); }
+.nw-cap { font-size: .8em; color: var(--p-ink2); margin-top: .35em; font-style: italic; }
+.nw-stamp { position: absolute; left: 50%; top: 42%; font-family: var(--p-type); font-size: 1.9em; letter-spacing: .14em; color: var(--p-red); border: .14em solid currentColor; border-radius: .15em; padding: .05em .45em; white-space: nowrap;
+  background: rgba(239,233,218,.35); transform: translate(-50%, -50%) rotate(-14deg); -webkit-mask: var(--stamp-mask); mask: var(--stamp-mask); opacity: 0; animation: nwStamp .22s cubic-bezier(.5,0,.8,.6) 1.25s forwards; }
+.k-quiet .nw-stamp { color: var(--p-green); }
+@keyframes nwStamp { from { transform: translate(-50%, -50%) rotate(-14deg) scale(2.6); opacity: 0; } to { transform: translate(-50%, -50%) rotate(-14deg) scale(1); opacity: .92; } }
+.lay-news .nw-paper { animation-name: nwSpin; }
+.lay-news.k-vanish .nw-paper, .lay-news.k-quiet .nw-paper { animation: nwSpin 1.05s cubic-bezier(.12,.72,.28,1) both, nwThud .3s ease-out 1.25s; }
+@keyframes nwThud { 40% { margin-top: .25em; } }
+.nw-story { min-width: 0; }
+.nw-kick { display: block; font-size: .85em; color: var(--p-red); letter-spacing: .2em; border-bottom: 1px solid rgba(43,36,32,.4); padding-bottom: .3em; margin-bottom: .4em; }
+.k-quiet .nw-kick { color: var(--p-green); }
+.nw-head { display: block; font-family: var(--p-head); font-weight: 700; font-size: 2.7em; line-height: 1.2; letter-spacing: -.02em; word-break: keep-all; }
+.nw-sub { font-size: 1.05em; line-height: 1.55; margin: .6em 0 .7em; color: var(--p-ink); word-break: keep-all; }
+.nw-lines { columns: 2; column-gap: 1.2em; }
+.nw-lines i { display: block; height: .42em; margin: .5em 0; width: var(--w); background: rgba(43,36,32,.2); border-radius: 1px; break-inside: avoid; }
+.lay-news .cut2-skip { color: rgba(255,240,220,.5); }
+#stage.mobile .lay-news .cut2-skip { font-size: 12px; right: 12px; bottom: 8px; }
+
+/* 프로필: 캐릭터 고르기는 폴라로이드 사진 */
+.char-pick { background: #fbf8f0; border: 0; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.22); color: var(--p-ink); font-family: var(--p-body); font-weight: 600; padding: 6px 4px 6px; min-width: 0; }
+.char-pick:nth-child(odd) { transform: rotate(-1.5deg); } .char-pick:nth-child(even) { transform: rotate(1.2deg); }
+.char-pick:hover { transform: rotate(0) translateY(-2px); }
+.char-pick img { background: #e2dccd; width: 100%; max-width: none; }
+.char-pick.on { outline: 3px solid var(--p-red); background: #fbe3dc; }
+.profile .char-grid { max-height: 360px; overflow-y: auto; padding: 6px; }
+/* 휴대폰: 프로필 창이 화면 안에 다 들어오게 (사진 8칸, 목록만 스크롤) */
+#stage.mobile .profile { width: 680px; display: flex; flex-direction: column; }
+#stage.mobile .profile .row { margin: 4px 0; }
+#stage.mobile .profile .char-grid { grid-template-columns: repeat(8, 1fr); gap: 6px; max-height: 196px; flex: 0 1 auto; min-height: 0; }
+#stage.mobile .char-pick { font-size: 12px; padding: 3px 2px 4px; gap: 2px; }
+#stage.mobile .char-pick img { height: 58px; }
+#stage.mobile .profile .row.end { margin-top: 8px; }
+#stage.mobile .lay-news .cut2-skip { right: auto; left: 12px; }
+.game-screen[data-dlg="min"] .g-dialog-head { display: none; }
+.game-screen[data-dlg="min"] .g-chatrow .chat-in { min-width: 0; width: 100%; }
+.game-screen[data-dlg="min"] .g-dialog { min-width: 0; }
+#stage.mobile .game-screen.plist-open .sc-joy { visibility: hidden; }
+.lay-news .cut2-skip { right: auto; left: 24px; }

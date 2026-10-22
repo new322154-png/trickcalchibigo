@@ -32,7 +32,8 @@ export class MoveInput {
       let dy = (e.clientY - (r.top + r.height / 2)) / scale;
       const d = Math.hypot(dx, dy);
       if (d > R) { dx = (dx / d) * R; dy = (dy / d) * R; }
-      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      const k = this.el.offsetWidth / 200; // 화면마다 조이스틱 크기가 달라도 손잡이가 테두리 안에서 움직이게
+      knob.style.transform = `translate(${dx * k}px, ${dy * k}px)`;
       this.stick = { x: dx / R, y: dy / R };
     };
     const end = () => { pid = null; this.stick = { x: 0, y: 0 }; knob.style.transform = ''; };

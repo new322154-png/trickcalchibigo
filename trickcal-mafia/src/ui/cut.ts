@@ -7,7 +7,7 @@ import type { CutKind } from '../../shared/protocol';
 import { asset, bgUrl, h } from './dom';
 import { sfx } from './sfx';
 
-type Layout = 'char' | 'contact' | 'paper' | 'impact' | 'farm' | 'bat' | 'vanish' | 'drone' | 'droneTry';
+type Layout = 'char' | 'contact' | 'paper' | 'impact' | 'farm' | 'bat' | 'news' | 'drone' | 'droneTry';
 interface CutDef { file?: string; title: string; en: string; color: string; layout?: Layout; ms?: number }
 
 export const CUTS: Record<CutKind, CutDef> = {
@@ -26,7 +26,7 @@ export const CUTS: Record<CutKind, CutDef> = {
   p_drone_fail: { file: 'drone_ok.webp', title: '조립 실패', en: 'FAILED', color: '#8890b0', layout: 'droneTry', ms: 2000 },
   execute: { file: 'execute.webp', title: '처형', en: 'EXECUTION', color: '#ff3355', layout: 'paper' },
   overturn: { file: 'overturn.webp', title: '판결 뒤집기', en: 'OVERTURN', color: '#7ac8ff' },
-  vanish: { title: '실종', en: 'MISSING', color: '#8890b0', layout: 'vanish', ms: 5200 },
+  vanish: { title: '실종', en: 'MISSING', color: '#b0342b', layout: 'news', ms: 4800 },
   saved: { file: 'p_protect.webp', title: '치유', en: 'HEALED', color: '#5fd38a', layout: 'impact', ms: 2600 },
   counter: { file: 'counter.webp', title: '반격', en: 'COUNTER', color: '#ffb648', layout: 'impact', ms: 2600 },
   blast: { file: 'blast.webp', title: '폭사', en: 'EXPLOSION', color: '#ff5a2a' },
@@ -41,7 +41,7 @@ export const CUTS: Record<CutKind, CutDef> = {
 const SE: Partial<Record<CutKind, [string, number][]>> = {
   p_kill: [['slash', 0]], p_contact: [['contact', 0]], p_drone_ok: [['droneOk', 0]], p_drone_fail: [['fizzle', 0]],
   p_farm: [['skill', 0], ['bang', 3450]], p_bat: [['skill', 0], ['pop', 4700]],
-  execute: [['execute', 0]], vanish: [['vanish', 0], ['panic', 0]], saved: [['heal', 0]], counter: [['clang', 0]],
+  execute: [['execute', 0]], vanish: [['paper', 0], ['vanish', 700], ['gavel', 1250]], saved: [['heal', 0]], counter: [['clang', 0]],
   blast: [['boom', 0]], wish: [['revive', 0]], uros: [['revive', 0], ['slash', 500]], drone: [['buzz', 0]],
   reveal: [['reveal', 0]], overturn: [['reveal', 0], ['gavel', 200]],
 };
@@ -83,7 +83,6 @@ function next() {
 }
 
 const cutImg = (f: string) => asset('cut/' + f);
-const PANIC = ['💦', '😨', '😱', '❗', '‼️', '💦', '😨', '❗'];
 
 /** 캐릭터 컷인 한 장면 (기본 모양) */
 function charStage(def: CutDef, img: string, still: boolean, text: string) {
@@ -94,7 +93,47 @@ function title(def: CutDef, text: string) {
   return h('div.cut2-title', h('small', def.en), h('b', def.title), text && text !== def.title ? h('span', text) : '');
 }
 
-export interface CutExtra { n?: number; myImg?: string }
+/** 아침 신문 한 장 (실종 / 조용한 밤) */
+function newsPaper(kind: 'missing' | 'quiet', headline: string, day: number, photo: string) {
+  const dd = String(Math.max(1, day)).padStart(2, '0');
+  const missing = kind === 'missing';
+  const lines = h('div.nw-lines', ...Array.from({ length: 7 }, (_, i) => h('i', { style: `--w: ${[96, 88, 100, 72, 94, 84, 58][i]}%` })));
+  const pic = missing
+    ? h('div.nw-photo', h('img', { src: photo, alt: '' }), h('div.nw-q', '?'))
+    : h('div.nw-photo.scene', { style: `--bg: ${bgUrl('hall_day.webp')}` });
+  return [
+    h('div.nw-shade'),
+    h('div.nw-paper',
+      h('div.nw-mast',
+        h('div.nw-ears', h('span', `DAY ${dd}`), h('span', 'MORNING EDITION')),
+        h('b.nw-name', '저택 일보'),
+        h('small.en.nw-name-en', 'THE MANSION DAILY')),
+      h('div.nw-body',
+        h('div.nw-pic', pic, h('div.nw-stamp', missing ? 'MISSING' : 'ALL CLEAR'), h('div.nw-cap', missing ? '어젯밤 마지막 모습' : '오늘 아침 광장')),
+        h('div.nw-story',
+          h('small.en.nw-kick', missing ? 'BREAKING NEWS' : 'MORNING REPORT'),
+          h('b.nw-head', headline),
+          h('p.nw-sub', missing ? `${Math.max(1, day)}일째 아침, 광장에 빈자리가 생겼다. 범인은 아직 우리 안에 있다.` : '어젯밤 저택에서는 아무도 사라지지 않았다. 하지만 안심하긴 이르다.'),
+          lines)),
+    ),
+  ];
+}
+
+/** 조용한 아침: 신문만 (서버 컷 없이 화면에서 띄움) */
+export function playNews(host: HTMLElement, day: number) {
+  queue.push(() => {
+    const el = h('div.cut2.lay-news.k-quiet', { style: '--c: #2f6b4a' }, ...newsPaper('quiet', '조용한 밤이었다', day, ''), h('div.cut2-skip', '눌러서 넘기기'));
+    let done = false;
+    const close = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => { el.remove(); next(); }, 300); };
+    el.onclick = close;
+    host.appendChild(el);
+    sfx('paper'); setTimeout(() => !done && sfx('gavel'), 1250);
+    setTimeout(close, 3400);
+  });
+  if (!playing) next();
+}
+
+export interface CutExtra { n?: number; myImg?: string; /** 아침 신문의 날짜 */ day?: number }
 
 export function playCut(host: HTMLElement, kind: CutKind, text: string, fallbackImg: string, extra: CutExtra = {}) {
   const def = CUTS[kind];
@@ -142,21 +181,10 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
             h('div.bt-result', side === 'm' ? '마피아 팀으로!' : '시민 팀으로!')));
         break;
       }
-      case 'vanish': {
-        // 케이크들이 인원수대로 하나씩 걸어 나오다… 한 자리가 비어 있다! 다 같이 당황
-        const n = Math.max(3, Math.min(12, extra.n ?? 6));
-        const row = h('div.va-row', { style: `--n: ${n}` });
-        for (let i = 0; i < n; i++) {
-          const missing = i === Math.floor(n / 2);
-          row.appendChild(missing
-            ? h('div.va-slot.missing', { style: `--i: ${i}` }, h('div.va-q', '?'))
-            : h('div.va-slot', { style: `--i: ${i}` },
-              h('img', { src: asset(`ui/mask${(i % 4) + 1}.webp`), alt: '' }),
-              h('i.va-bub', { style: `--d: ${(2.1 + Math.random() * 0.6).toFixed(2)}s` }, PANIC[(i * 3 + Math.floor(Math.random() * 3)) % PANIC.length])));
-        }
-        el.append(h('div.cut2-scene', { style: `--bg: ${bgUrl('hall_day.webp')}` }), row, h('div.va-msg', h('small', def.en), h('b', text || '누군가 사라졌다!')));
+      case 'news':
+        // 아침 신문: 빙글빙글 돌며 날아와 탁 놓이고, 사진 위에 MISSING 도장
+        el.append(...newsPaper('missing', text || '누군가 사라졌다!', extra.day ?? 0, fallbackImg));
         break;
-      }
       case 'drone':
         // 화면을 가리지 않고, 드론이 살짝 지나가며 알림
         el.append(h('div.dr-shade'), h('img.dr-drone', { src: cutImg('drone.webp'), alt: '' }), h('div.dr-msg', '🛸 밤새 어디선가 드론 소리가 들렸다…'));

@@ -88,6 +88,8 @@ export function sfx(name: string) {
       case 'open': tone(420, 0.12, 'sine', 0.1, 300); break;
       case 'close': tone(600, 0.12, 'sine', 0.08, -300); break;
       case 'wrong': tone(180, 0.18, 'square', 0.06); tone(150, 0.2, 'square', 0.05, 0, 0.1); break;
+      // 신문이 휘익 날아와 탁 놓이는 소리
+      case 'paper': noise(0.55, 0.07, 3200, 0.6, 0, 'bandpass', -1800); noise(0.12, 0.14, 900, 0.7, 0.62, 'lowpass'); break;
       case 'pop': tone(500, 0.1, 'sine', 0.15, 500); break;
       case 'night': tone(220, 0.8, 'sine', 0.1, -80); tone(330, 0.8, 'sine', 0.06, -120, 0.15); break;
       case 'morning': tone(520, 0.25, 'triangle', 0.08); tone(660, 0.25, 'triangle', 0.08, 0, 0.12); tone(780, 0.35, 'triangle', 0.08, 0, 0.24); break;

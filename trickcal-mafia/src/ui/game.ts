@@ -12,7 +12,7 @@ import { asset, bgUrl, clear, h, isPhone } from './dom';
 import { follow } from './follow';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
-import { pickBat, playCut, preloadCuts, type BatPick } from './cut';
+import { pickBat, playCut, playNews, preloadCuts, type BatPick } from './cut';
 import { bgm, type BgmName } from './bgm';
 import { sfx } from './sfx';
 import { emoteBar, type EmoteBar } from './emote';
@@ -177,7 +177,7 @@ export class GameUI {
       if (m.kind === 'execute') bgm('after_trial');
       if (m.kind === 'p_bat' && this.batPick) { this.batPick.resolve(/마피아/.test(m.text) ? 'mafia' : 'citizen'); this.batPick = null; return; }
       const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? this.face(m.pid) : ANON;
-      playCut(this.el, m.kind, m.text, fb, { n: m.n });
+      playCut(this.el, m.kind, m.text, fb, { n: m.n, day: this.newsDay });
     }
   }
 
@@ -220,11 +220,19 @@ export class GameUI {
   }
 
   private quiet = false;
+  /** 아침 신문에 찍을 날짜 ('☀ N일째 아침' 기록에서) */
+  private newsDay = 0;
   private addLog(ch: LogCh, from: number, text: string) {
     const who = from >= 0 ? this.name(from) : '';
     const snd = (n: string) => { if (!this.quiet) sfx(n); };
     let el: HTMLElement;
-    if (ch === 'event') { el = h('div.gl-event', text); if (/사라졌|처형/.test(text)) snd('death'); }
+    if (ch === 'event') {
+      el = h('div.gl-event', text);
+      if (/사라졌|처형/.test(text)) snd('death');
+      const dm = /(\d+)일째 아침/.exec(text);
+      if (dm) this.newsDay = Number(dm[1]);
+      if (text === '조용한 밤이었다.' && !this.quiet) playNews(this.el, this.newsDay);
+    }
     else if (ch === 'secret') { el = h('div.gl-secret', '🔒 ', text); snd('secret'); }
     else if (ch === 'note') { el = h('div.gl-note', '✉ 익명 쪽지: ', text); snd('note'); }
     else if (ch === 'sys') el = h('div.gl-sys', text);
