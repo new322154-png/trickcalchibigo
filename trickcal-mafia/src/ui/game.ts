@@ -12,7 +12,7 @@ import { asset, bgUrl, clear, h, isPhone } from './dom';
 import { follow } from './follow';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
-import { canDrop, droneRaid, pickBat, playCut, playNews, preloadCuts, type BatPick } from './cut';
+import { canDrop, droneRaid, nerSlam, pickBat, playCut, playNews, preloadCuts, type BatPick } from './cut';
 import { bgm, type BgmName } from './bgm';
 import { sfx } from './sfx';
 import { emoteBar, type EmoteBar } from './emote';
@@ -30,7 +30,7 @@ const ACT_LABEL: Record<string, string> = {
   kill: '습격', seal: '해킹', disguise: '변장', protect: '치유하기', investigate: '조사', track: '지켜보기', reveal: '직업 공개', identify: '직업 알아내기', revive: '소원 빌기',
 };
 const CH_LABEL: Record<ChatCh, string> = { day: '전체', nifel: '니펠', dead: '죽은 사람', defense: '변론' };
-const MEMO = ['', '의심', '마피아?', '시민?', '확정 시민', '확정 마피아'];
+const MEMO = ['', '의심', '니펠?', '시민?', '확정 시민', '확정 니펠'];
 
 /** 직업 캐릭터 (assets/chars/<id>.webp) */
 function roleChar(role: string) {
@@ -41,7 +41,7 @@ function roleChar(role: string) {
 const ANON = './assets/ui/anon.webp';
 /** 게임 끝 화면: [제목, 영어, 배경] */
 const END_T: Record<string, [string, string, string]> = {
-  mafia: ['마피아 팀 승리', 'MAFIA WINS', 'hall_night.webp'],
+  mafia: ['니펠 팀 승리', 'NIFEL WINS', 'hall_night.webp'],
   citizen: ['시민 팀 승리', 'CITIZENS WIN', 'hall_day.webp'],
   jester: ['코미 승리', 'JESTER WINS', 'end_comi.webp'],
   elena: ['엘레나 승리', 'DRONE QUEEN', 'end_elena.webp'],
@@ -175,7 +175,7 @@ export class GameUI {
       const mine = m.kind.startsWith('p_');
       if (m.kind === 'vanish') { this.sadMorning = true; if (this.v?.phase === 'morning') bgm('rain'); }
       if (m.kind === 'execute') bgm('after_trial');
-      if (m.kind === 'p_bat' && this.batPick) { this.batPick.resolve(/마피아/.test(m.text) ? 'mafia' : 'citizen'); this.batPick = null; return; }
+      if (m.kind === 'p_bat' && this.batPick) { this.batPick.resolve(/니펠/.test(m.text) ? 'mafia' : 'citizen'); this.batPick = null; return; }
       const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? this.face(m.pid) : ANON;
       playCut(this.el, m.kind, m.text, fb, { n: m.n, day: this.newsDay });
     }
@@ -366,7 +366,7 @@ export class GameUI {
       this.panel.classList.add('urgent');
       this.el.classList.remove('panel-min');
       head('⚡ 선택', pr.text);
-      const label = (o: number | string) => typeof o === 'number' ? this.name(o) : ({ mafia: '마피아 팀', citizen: '시민 팀', yes: '뒤집는다', no: '그대로 둔다' } as Record<string, string>)[o] ?? o;
+      const label = (o: number | string) => typeof o === 'number' ? this.name(o) : ({ mafia: '니펠 팀', citizen: '시민 팀', yes: '뒤집는다', no: '그대로 둔다' } as Record<string, string>)[o] ?? o;
       this.panel.append(h('div.pbtns', pr.options.map((o) => h('button.pbtn', { onclick: () => { sfx('click'); this.link.send({ t: 'choice', key: pr.key, value: o }); } }, label(o)))));
       if (pr.key === 'agitate' || pr.key === 'avenge') this.panel.append(h('button.btn.wide', { onclick: () => this.link.send({ t: 'choice', key: pr.key, value: null }) }, '쓰지 않는다'));
       return;
@@ -549,7 +549,7 @@ export class GameUI {
     const img = roleImg(role);
     const ov = h('div.overlay', { onclick: (e: Event) => e.target === ov && ov.remove() },
       h(`div.card.rolecard.${def.team}`,
-        h('div.rc-team', h('small.en', { mafia: 'MAFIA', citizen: 'CITIZENS', neutral: 'NEUTRAL' }[def.team]), { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[def.team]),
+        h('div.rc-team', h('small.en', { mafia: 'NIFEL TEAM', citizen: 'CITIZENS', neutral: 'NEUTRAL' }[def.team]), { mafia: '니펠 팀', citizen: '시민 팀', neutral: '중립' }[def.team]),
         img ? h('img.rc-img', { src: img, alt: '' }) : '',
         h('div.rc-name', roleName(role)),
         h('div.rc-job', def.job),
@@ -574,16 +574,21 @@ export class GameUI {
       this.el.appendChild(ov);
       return ov;
     };
-    if (winner !== 'elena' && winner !== 'jester') { real(); return; }
+    // 네르가 고른 편이 이겼으면 반대편 승리 화면 → 네르 몸통 박치기
+    const ner = roles.find((r) => r.role === 'bat' && winners.includes(r.pid));
+    const nerWin = !!ner && (winner === 'mafia' || winner === 'citizen');
+    if (winner !== 'elena' && winner !== 'jester' && !nerWin) { real(); return; }
     // 엘레나 · 코미 승리: 원래 이겼을 팀의 승리 화면이 잠깐 → 엘레나는 드론 습격, 코미는 사료캔.
     // 엘레나가 없었다면 이겼을 팀(살아남은 수가 더 많은 팀)의 승리 화면이 잠깐 → 드론 떼가 몰려와 전부 왼쪽으로 밀어내고 → 엘레나 승리
     const alive = (t: string) => roles.filter((r) => r.alive && ROLES[r.role as RoleId]?.team === t).length;
-    const fakeTeam = alive('mafia') > 0 && alive('mafia') >= alive('citizen') ? 'mafia' : 'citizen';
+    const fakeTeam = nerWin ? (winner === 'mafia' ? 'citizen' : 'mafia') : alive('mafia') > 0 && alive('mafia') >= alive('citizen') ? 'mafia' : 'citizen';
     const fakeWin = roles.filter((r) => ROLES[r.role as RoleId]?.team === fakeTeam).map((r) => r.pid);
     sfx('win');
     const fake = this.endScreen(fakeTeam, roles, fakeWin, undefined, true);
     this.el.appendChild(fake);
-    if (winner === 'elena') droneRaid(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid'); this.el.insertBefore(ov, fake); }, () => fake.remove());
+    const behind = () => { const ov = real(); ov.classList.add('after-raid', 'prep'); this.el.insertBefore(ov, fake); return ov; };
+    if (nerWin) nerSlam(this.el, fake, behind, () => fake.remove(), winner === 'mafia' ? 1 : -1);
+    else if (winner === 'elena') droneRaid(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid'); this.el.insertBefore(ov, fake); }, () => fake.remove());
     // 코미 승리: 이긴 줄 알았던 캐릭터들이 사료캔에 하나씩 깔리고 → 코미가 캔 위에 → 코미 승리
     else canDrop(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid', 'prep', 'canned'); this.el.insertBefore(ov, fake); return ov; }, () => fake.remove());
   }

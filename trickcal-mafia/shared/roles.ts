@@ -65,7 +65,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   },
   police: {
     id: 'police', char: '폴랑', job: '조사', team: 'citizen', night: 'investigate',
-    desc: '밤에 한 명을 조사해서 니펠인지 아닌지 알아낸다. (니펠이 아닌 마피아 팀원은 시민으로 나온다)',
+    desc: '밤에 한 명을 조사해서 니펠인지 아닌지 알아낸다. (니펠이 아닌 니펠 팀원은 시민으로 나온다)',
   },
   medium: {
     id: 'medium', char: '이드', job: '영매', team: 'citizen',
@@ -93,7 +93,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   },
   spiky: {
     id: 'spiky', char: '스피키', job: '변장', team: 'citizen', night: 'disguise', once: true,
-    desc: '한 번, 밤 ①에 한 명으로 변장해 그 직업을 알아내고, 그날 밤 ③에 그 능력을 한 번 쓴다. 이후 직업이 공개되면 그 직업으로 보인다. 이드로 변장하면 그날 밤 주말농장에 들어갈 수 있다(이드가 둘로 보인다). 니펠은 능력을 못 쓰는 대신 마피아인 걸 알게 되고, 마피아 팀원으로 변장했다면 공개 때 스피키로 보인다.',
+    desc: '한 번, 밤 ①에 한 명으로 변장해 그 직업을 알아내고, 그날 밤 ③에 그 능력을 한 번 쓴다. 이후 직업이 공개되면 그 직업으로 보인다. 이드로 변장하면 그날 밤 주말농장에 들어갈 수 있다(이드가 둘로 보인다). 니펠은 능력을 못 쓰는 대신 니펠 팀인 걸 알게 되고, 니펠 팀원으로 변장했다면 공개 때 스피키로 보인다.',
   },
   wish: {
     id: 'wish', char: '우이', job: '소원', team: 'citizen', night: 'revive', once: true,
@@ -103,7 +103,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   // ── 중립 ──
   bat: {
     id: 'bat', char: '네르', job: '박쥐', team: 'neutral',
-    desc: '3일째 아침에 마피아 팀과 시민 팀 중 하나를 골라 그 팀이 된다. 고르기 전에는 조사에 시민으로 나온다. 고르기 전에 사라지면 패배.',
+    desc: '3일째 아침에 니펠 팀과 시민 팀 중 하나를 골라 그 팀이 된다. 고르기 전에는 조사에 시민으로 나온다. 고르기 전에 사라지면 패배.',
   },
   jester: {
     id: 'jester', char: '코미', job: '광대', team: 'neutral',

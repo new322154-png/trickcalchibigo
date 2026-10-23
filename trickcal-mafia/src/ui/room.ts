@@ -394,7 +394,7 @@ export function enterRoom(root: HTMLElement, code: string, profile: Profile, onE
   function roleSelect(pid: number, label: string) {
     const sel = h('select.test-sel', { onchange: (e: Event) => { testRoles.set(pid, (e.target as HTMLSelectElement).value); refresh(); } },
       h('option', { value: '' }, `${label}: 무작위`),
-      ...(['mafia', 'citizen', 'neutral'] as const).map((team) => h('optgroup', { label: { mafia: '마피아 팀', citizen: '시민 팀', neutral: '중립' }[team] },
+      ...(['mafia', 'citizen', 'neutral'] as const).map((team) => h('optgroup', { label: { mafia: '니펠 팀', citizen: '시민 팀', neutral: '중립' }[team] },
         ...Object.values(ROLES).filter((r) => r.team === team).map((r) => h('option', { value: r.id }, `${label}: ${roleName(r.id as RoleId)} (${r.job})`)))));
     (sel as HTMLSelectElement).value = testRoles.get(pid) ?? '';
     return sel;

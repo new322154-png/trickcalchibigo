@@ -204,16 +204,16 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
       }
       case 'bat': {
         // ① 네르 컷인 → ② 니펠 —— 네르 —— 케이크, 갈팡질팡하다 고른 쪽으로
-        const side = /마피아/.test(text) ? 'm' : 'c';
+        const side = /니펠/.test(text) ? 'm' : 'c';
         el.classList.add('side-' + side);
         el.append(
           h('div.st-a', ...charStage(def, file, false, '')),
           h('div.st-b',
             h('div.cut2-bg'),
-            h('div.bt-team.m', h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '마피아 팀')),
+            h('div.bt-team.m', h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '니펠 팀')),
             h('div.bt-team.c', h('img', { src: asset('ui/anon.webp'), alt: '' }), h('b', '시민 팀')),
             h('div.bt-ner', h('div.bt-ner-in', h('img', { src: asset('chars/ner.webp'), alt: '' }), h('i.bt-sweat', '💦'))),
-            h('div.bt-result', side === 'm' ? '마피아 팀으로!' : '시민 팀으로!')));
+            h('div.bt-result', side === 'm' ? '니펠 팀으로!' : '시민 팀으로!')));
         break;
       }
       case 'news':
@@ -317,7 +317,7 @@ export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') =
     if (sent) return;
     sent = true;
     el?.classList.add('picked');
-    hint.textContent = side === 'mafia' ? '마피아 팀으로 가는 중…' : '시민 팀으로 가는 중…';
+    hint.textContent = side === 'mafia' ? '니펠 팀으로 가는 중…' : '시민 팀으로 가는 중…';
     sfx('click');
     choose(side);
   };
@@ -357,7 +357,7 @@ export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') =
     hint = h('div.bp-hint', '네르를 데려갈 쪽으로 움직이세요!', h('small', '← → 키, 드래그, 팀 누르기 모두 돼요'));
     const stage = h('div.st-b',
       h('div.cut2-bg'),
-      h('div.bt-team.m', { onclick: () => { if (live && !sent) goal = 0.25; } }, h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '마피아 팀')),
+      h('div.bt-team.m', { onclick: () => { if (live && !sent) goal = 0.25; } }, h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '니펠 팀')),
       h('div.bt-team.c', { onclick: () => { if (live && !sent) goal = 0.75; } }, h('img', { src: asset('ui/anon.webp'), alt: '' }), h('b', '시민 팀')),
       ner, hint, timeEl);
     stage.addEventListener('dragstart', (e) => e.preventDefault());
@@ -384,7 +384,7 @@ export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') =
     resolve(side) {
       if (done) return;
       done = true;
-      if (!el) { playCut(host, 'p_bat', side === 'mafia' ? '마피아 편으로!' : '시민 편으로!', ''); return; }
+      if (!el) { playCut(host, 'p_bat', side === 'mafia' ? '니펠 편으로!' : '시민 편으로!', ''); return; }
       cleanup();
       live = false;
       const e = el;
@@ -394,7 +394,7 @@ export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') =
       ner.classList.remove('walk');
       place();
       hint.remove(); timeEl.remove();
-      e.querySelector('.st-b')!.append(h('div.bt-result', side === 'mafia' ? '마피아 팀으로!' : '시민 팀으로!'));
+      e.querySelector('.st-b')!.append(h('div.bt-result', side === 'mafia' ? '니펠 팀으로!' : '시민 팀으로!'));
       sfx('pop');
       setTimeout(finish, 1800);
     },
@@ -564,5 +564,83 @@ export function canDrop(host: HTMLElement, fake: HTMLElement, makeReal: () => HT
         }, 650);
       }, BIG_FALL);
     }, t2);
+  }, START);
+}
+
+/**
+ * 네르 승리: 네르가 고른 편이 이겼을 때. 반대편 승리 화면(fake)이 잠깐 → 아래(진 사람 줄)에 있던 네르가 튀어나와
+ * 화면 한쪽 가운데로 폴짝 → 몸을 젖혔다가 몸통 박치기! → 화면 · UI 통째로 반대쪽으로 날아가고 진짜 승리 화면(makeReal).
+ * dir: 1 = 왼쪽에서 오른쪽으로 들이받음 (니펠 편 승리), -1 = 오른쪽에서 왼쪽으로 (시민 편 승리)
+ */
+export function nerSlam(host: HTMLElement, fake: HTMLElement, makeReal: () => HTMLElement, done: () => void, dir: 1 | -1) {
+  const START = 2300;
+  setTimeout(() => {
+    if (!fake.isConnected) return done();
+    const W = host.offsetWidth || 1280, H = host.offsetHeight || 720;
+    const hr = host.getBoundingClientRect();
+    const k = W / hr.width;
+    // 진 사람 줄에서 네르 찾기 (없으면 화면 아래 가운데에서)
+    const mine = [...fake.querySelectorAll<HTMLElement>('.end-loser')].find((e) => e.querySelector('img')?.getAttribute('src')?.includes('ner.webp'));
+    const from = mine?.getBoundingClientRect();
+    const nh = H * 0.34, nw = nh * 0.8;
+    const sx = from ? ((from.left + from.width / 2) - hr.left) * k : W / 2, sy = from ? (from.bottom - hr.top) * k : H;
+    const tx = dir === 1 ? W * 0.16 : W * 0.84, ty = H * 0.68; // 한쪽 가운데 (발 위치)
+    const layer = h('div.slam');
+    const ner = h('div.sl-ner', { style: `left: ${-nw / 2}px; top: ${-nh}px; width: ${nw}px; height: ${nh}px` },
+      h('img', { src: asset('chars/ner.webp'), alt: '', style: dir === -1 ? 'transform: scaleX(-1)' : '' }));
+    layer.appendChild(ner);
+    host.appendChild(layer);
+    if (mine) mine.style.visibility = 'hidden';
+    const at = (x: number, y: number, extra = '') => `translate(${x}px, ${y}px) ${extra}`;
+    // ① 튀어나와 폴짝 (포물선)
+    sfx('pop');
+    const JUMP = 620;
+    ner.animate([
+      { transform: at(sx, sy, 'scale(.35)'), offset: 0 },
+      { transform: at((sx + tx) / 2, Math.min(sy, ty) - H * 0.32, 'scale(.9) rotate(' + (dir * 12) + 'deg)'), offset: 0.5, easing: 'ease-in' },
+      { transform: at(tx, ty, 'scale(1.1, .85)'), offset: 0.88 },
+      { transform: at(tx, ty), offset: 1 },
+    ], { duration: JUMP, easing: 'cubic-bezier(.3,.6,.4,1)', fill: 'forwards' });
+    setTimeout(() => sfx('thump'), JUMP * 0.88);
+    // ② 몸 젖히기 → ③ 박치기
+    const WIND = 380, DASH = 170;
+    const hitX = W * 0.5 + dir * (-W * 0.02);
+    setTimeout(() => {
+      if (!fake.isConnected) return;
+      ner.animate([{ transform: at(tx, ty) }, { transform: at(tx - dir * 40, ty + 6, `rotate(${-dir * 14}deg) scale(.92, 1.04)`) }],
+        { duration: WIND, easing: 'ease-out', fill: 'forwards' });
+      sfx('swoosh');
+    }, JUMP + 80);
+    setTimeout(() => {
+      if (!fake.isConnected) return;
+      layer.appendChild(h('div.sl-speed', { style: `--dir: ${dir}` }));
+      ner.animate([{ transform: at(tx - dir * 40, ty + 6, `rotate(${-dir * 14}deg) scale(.92, 1.04)`) }, { transform: at(hitX, ty - H * 0.04, `rotate(${dir * 18}deg) scale(1.15, .9)`) }],
+        { duration: DASH, easing: 'cubic-bezier(.6,0,1,.5)', fill: 'forwards' });
+    }, JUMP + 80 + WIND);
+    // 쾅! 화면 통째로 날아감
+    setTimeout(() => {
+      if (!fake.isConnected) return done();
+      const real = makeReal();
+      sfx('punch');
+      const fx = h('div.sl-hit', { style: `left: ${hitX + dir * nw * 0.45}px; top: ${ty - nh * 0.55}px` }, POW());
+      layer.appendChild(fx);
+      layer.appendChild(h('div.sl-flash'));
+      real.classList.remove('prep');
+      fake.style.transformOrigin = dir === 1 ? '0% 50%' : '100% 50%';
+      fake.animate([
+        { transform: 'none' },
+        { transform: `translateX(${dir * 30}px) rotate(${dir * 2}deg)`, offset: 0.12 },
+        { transform: `translateX(${dir * W * 1.25}px) translateY(${-H * 0.12}px) rotate(${dir * 16}deg)` },
+      ], { duration: 520, delay: 90, easing: 'cubic-bezier(.4,0,.9,.5)', fill: 'forwards' });
+      // 네르는 튕겨 나와 승리 화면 쪽으로 착지하며 사라짐
+      ner.animate([
+        { transform: at(hitX, ty - H * 0.04, `rotate(${dir * 18}deg) scale(1.15, .9)`) },
+        { transform: at(hitX - dir * 60, ty - H * 0.2, `rotate(${-dir * 10}deg)`), offset: 0.4 },
+        { transform: at(hitX - dir * 90, ty, 'none'), opacity: 1, offset: 0.75 },
+        { transform: at(hitX - dir * 90, ty, 'none'), opacity: 0 },
+      ], { duration: 900, delay: 110, easing: 'ease-out', fill: 'forwards' });
+      setTimeout(() => sfx('reveal'), 350);
+      setTimeout(() => { done(); layer.remove(); }, 1050);
+    }, JUMP + 80 + WIND + DASH);
   }, START);
 }

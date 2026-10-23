@@ -390,7 +390,7 @@ export class MafiaGame {
       const mates = this.matesOf(p);
       this.secret(p.pid, `당신은 ${label(p.role)}입니다. ${ROLES[p.role].desc}`);
       if (mates.length) this.secret(p.pid, `함께하는 니펠: ${mates.map(this.name).join(', ')}`);
-      if (ROLES[p.role].member) this.secret(p.pid, '마피아 팀원이에요. 니펠은 아직 당신을 몰라요. 능력은 처음부터 쓸 수 있어요.');
+      if (ROLES[p.role].member) this.secret(p.pid, '니펠 팀원이에요. 니펠은 아직 당신을 몰라요. 능력은 처음부터 쓸 수 있어요.');
     }
     this.timer(8, () => this.startNight());
     this.push();
@@ -402,7 +402,7 @@ export class MafiaGame {
     p.contacted = true;
     this.pcut(p.pid, 'p_contact', '접선 성공!');
     this.secret(p.pid, `🤝 접선 성공! ${how} 이제 니펠 채팅에 들어간다. 동료: ${this.matesOf(p).map(this.name).join(', ') || '없음'}`);
-    for (const q of this.all()) if (q.pid !== p.pid && this.isKiller(q)) this.secret(q.pid, `🤝 ${p.name}가 접선해 왔다. 마피아 팀원(${roleName(p.role)})이다.`);
+    for (const q of this.all()) if (q.pid !== p.pid && this.isKiller(q)) this.secret(q.pid, `🤝 ${p.name}가 접선해 왔다. 니펠 팀원(${roleName(p.role)})이다.`);
   }
 
   private startNight() {
@@ -493,7 +493,7 @@ export class MafiaGame {
         break;
       case 'disguise': {
         p.usedOnce = true;
-        if (this.isKiller(t)) { this.secret(p.pid, `🎭 ${t.name}로 변장하려 했지만… ${t.name}는 마피아다! 니펠의 능력은 쓸 수 없다.`); break; }
+        if (this.isKiller(t)) { this.secret(p.pid, `🎭 ${t.name}로 변장하려 했지만… ${t.name}는 니펠 팀이다! 니펠의 능력은 쓸 수 없다.`); break; }
         p.copyRole = t.role;
         p.shownRole = this.isMafiaTeam(t) ? undefined : t.role;
         const k = ROLES[t.role].night;
@@ -694,10 +694,10 @@ export class MafiaGame {
       this.ask(bat.pid, 'bat', ['mafia', 'citizen'], '네르가 분노하며 변신한다! 어느 편에 설까? (안 고르면 무작위)', (v) => {
         const side = v === 'mafia' || v === 'citizen' ? v : rand(['mafia', 'citizen'] as const);
         bat.batSide = side;
-        this.pcut(bat.pid, 'p_bat', side === 'mafia' ? '마피아 편으로!' : '시민 편으로!');
-        this.secret(bat.pid, `네르는 ${side === 'mafia' ? '마피아' : '시민'} 팀을 골랐다!`);
+        this.pcut(bat.pid, 'p_bat', side === 'mafia' ? '니펠 편으로!' : '시민 편으로!');
+        this.secret(bat.pid, `네르는 ${side === 'mafia' ? '니펠' : '시민'} 팀을 골랐다!`);
         if (side === 'mafia') {
-          for (const q of this.all()) if (q.pid !== bat.pid && this.inNifelChat(q)) this.secret(q.pid, `🦇 ${bat.name}(네르)가 마피아 팀에 합류했다! 이제 습격에 함께한다.`);
+          for (const q of this.all()) if (q.pid !== bat.pid && this.inNifelChat(q)) this.secret(q.pid, `🦇 ${bat.name}(네르)가 니펠 팀에 합류했다! 이제 습격에 함께한다.`);
           this.secret(bat.pid, `동료: ${this.matesOf(bat).map(this.name).join(', ') || '없음'}`);
         }
         this.logAll('event', '어딘가에서 분노에 찬 외침이 들렸다… 누군가 편을 정한 모양이다.');
@@ -910,7 +910,7 @@ export class MafiaGame {
       const team = this.isMafiaTeam(p) ? 'mafia' : p.role === 'bat' ? p.batSide ?? 'none' : ROLES[p.role].team;
       if (w === 'jester' ? p.role === 'jester' : w === 'elena' ? p.role === 'elena' : team === w) winners.push(p.pid);
     }
-    const title = { mafia: '마피아 팀 승리!', citizen: '시민 팀 승리!', jester: '코미 승리!', elena: '엘레나 승리!', draw: '무승부' }[w];
+    const title = { mafia: '니펠 팀 승리!', citizen: '시민 팀 승리!', jester: '코미 승리!', elena: '엘레나 승리!', draw: '무승부' }[w];
     this.logAll('event', `🏆 ${title}`);
     const roles = this.all().map((p) => ({ pid: p.pid, role: p.role, alive: p.alive }));
     // 최고의 플레이어 투표: 승리 팀 중에서, 모두가 (자기 자신은 빼고) 15초 동안
