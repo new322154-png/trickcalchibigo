@@ -82,4 +82,4 @@ export function inkIcon(e: string): SVGSVGElement | null {
   return s;
 }
 /** 이 글자 위치는 사람이 쓴 말·감정표현·컷씬이라 컬러 그림을 써야 하는 곳인지 */
-export const COLOR_ZONE = '.gl-chat, .cl-line, .ch-bubble, .sc-bubble, .emote-bar, .emo-pop, .emo-float, .va-bub, .bt-sweat, .fa-bang, .f-say, .nl.dead, .nl.nifel, .chat-log .cl-line';
+export const COLOR_ZONE = '.bt-emo, .gl-chat, .cl-line, .ch-bubble, .sc-bubble, .emote-bar, .emo-pop, .emo-float, .va-bub, .bt-sweat, .fa-bang, .f-say, .nl.dead, .nl.nifel, .chat-log .cl-line';

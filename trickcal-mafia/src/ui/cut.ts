@@ -117,6 +117,18 @@ const UROS_PLAN: ShatterPlan = {
   hitStop: 0.11,
 };
 
+/**
+ * 네르 편 고르기: 양쪽 팀이 번갈아 감정표현으로 네르를 부르고(손짓 · 유혹), 고른 쪽은 환호 🎉, 못 고른 쪽은 시무룩 😢.
+ * --d: 자동 장면에서 뜨는 때, --pd: 직접 고르는 장면에서 반복 주기 안의 시작점
+ */
+function teamEmo(side: 'm' | 'c') {
+  const calls = side === 'm' ? ['👋', '😈', '💰'] : ['👋', '🙏', '🍰'];
+  const base = side === 'm' ? 1.8 : 2.35;
+  return h('div.bt-emo',
+    ...calls.map((e, i) => h('i.call', { style: `--d: ${(base + i * 0.75).toFixed(2)}s; --pd: ${((side === 'm' ? 0 : 0.6) + i * 1.2).toFixed(2)}s` }, e)),
+    h('i.win', '🎉'), h('i.sad', '😢'));
+}
+
 /** 캐릭터 컷인 한 장면 (기본 모양) */
 function charStage(def: CutDef, img: string, still: boolean, text: string) {
   const im = h(`img.cut2-char${still ? '.still' : ''}`, { src: img, alt: '' });
@@ -210,8 +222,8 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
           h('div.st-a', ...charStage(def, file, false, '')),
           h('div.st-b',
             h('div.cut2-bg'),
-            h('div.bt-team.m', h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '니펠 팀')),
-            h('div.bt-team.c', h('img', { src: asset('ui/anon.webp'), alt: '' }), h('b', '시민 팀')),
+            h('div.bt-team.m', h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '니펠 팀'), teamEmo('m')),
+            h('div.bt-team.c', h('img', { src: asset('ui/anon.webp'), alt: '' }), h('b', '시민 팀'), teamEmo('c')),
             h('div.bt-ner', h('div.bt-ner-in', h('img', { src: asset('chars/ner.webp'), alt: '' }), h('i.bt-sweat', '💦'))),
             h('div.bt-result', side === 'm' ? '니펠 팀으로!' : '시민 팀으로!')));
         break;
@@ -357,8 +369,8 @@ export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') =
     hint = h('div.bp-hint', '네르를 데려갈 쪽으로 움직이세요!', h('small', '← → 키, 드래그, 팀 누르기 모두 돼요'));
     const stage = h('div.st-b',
       h('div.cut2-bg'),
-      h('div.bt-team.m', { onclick: () => { if (live && !sent) goal = 0.25; } }, h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '니펠 팀')),
-      h('div.bt-team.c', { onclick: () => { if (live && !sent) goal = 0.75; } }, h('img', { src: asset('ui/anon.webp'), alt: '' }), h('b', '시민 팀')),
+      h('div.bt-team.m', { onclick: () => { if (live && !sent) goal = 0.25; } }, h('img', { src: asset('chars/nifel.webp'), alt: '' }), h('b', '니펠 팀'), teamEmo('m')),
+      h('div.bt-team.c', { onclick: () => { if (live && !sent) goal = 0.75; } }, h('img', { src: asset('ui/anon.webp'), alt: '' }), h('b', '시민 팀'), teamEmo('c')),
       ner, hint, timeEl);
     stage.addEventListener('dragstart', (e) => e.preventDefault());
     const toX = (e: PointerEvent) => { const r = stage.getBoundingClientRect(); return Math.max(0.2, Math.min(0.8, (e.clientX - r.left) / r.width)); };

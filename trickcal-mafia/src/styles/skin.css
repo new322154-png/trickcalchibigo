@@ -838,3 +838,31 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
 .sl-hit .su-pow { animation: suPow .45s cubic-bezier(.1,.8,.3,1) forwards; }
 .sl-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: slFlash .35s ease-out; }
 @keyframes slFlash { 0% { opacity: .8; } 100% { opacity: 0; } }
+
+/* ═══════ 네르 편 고르기: 양쪽 팀이 감정표현으로 부르고, 고른 쪽 환호 · 못 고른 쪽 시무룩 ═══════ */
+.bt-emo { position: absolute; left: 50%; top: -6%; width: 0; height: 0; z-index: 2; }
+.bt-emo i { position: absolute; left: 0; top: 0; font-style: normal; font-size: 100px; line-height: 1; transform: translate(-50%, -50%) scale(0); opacity: 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
+#stage.compact .bt-emo i { font-size: 72px; } #stage.mobile .bt-emo i { font-size: 46px; }
+@keyframes btEmo { 0% { transform: translate(-50%, -20%) scale(0) rotate(-20deg); opacity: 0; } 25% { transform: translate(-50%, -60%) scale(1.15) rotate(8deg); opacity: 1; } 70% { transform: translate(-50%, -80%) scale(1) rotate(-4deg); opacity: 1; } 100% { transform: translate(-50%, -120%) scale(.9); opacity: 0; } }
+@keyframes btEmoLoop { 0% { transform: translate(-50%, -20%) scale(0) rotate(-20deg); opacity: 0; } 10% { transform: translate(-50%, -60%) scale(1.15) rotate(8deg); opacity: 1; } 28% { transform: translate(-50%, -80%) scale(1); opacity: 1; } 40%, 100% { transform: translate(-50%, -120%) scale(.9); opacity: 0; } }
+@keyframes btPop { 0% { transform: translate(-50%, -20%) scale(0); opacity: 0; } 60% { transform: translate(-50%, -70%) scale(1.25); opacity: 1; } 100% { transform: translate(-50%, -60%) scale(1); opacity: 1; } }
+/* 부르기: 자동 장면은 정해진 때에, 직접 고르는 장면은 고를 때까지 반복 */
+.lay-bat:not(.pick) .bt-emo i.call { animation: btEmo .9s var(--d) ease-out; }
+.lay-bat.pick .bt-emo i.call { animation: btEmoLoop 3.6s calc(1.7s + var(--pd)) ease-out infinite; }
+.lay-bat.pick.picked .bt-emo i.call, .lay-bat.pick.decided .bt-emo i.call { animation: none; opacity: 0; }
+/* 손짓하듯 네르 쪽으로 몸을 기울임 */
+.bt-team img { transform-origin: 50% 100%; }
+.lay-bat:not(.pick) .bt-team.m img { animation: btLeanM .38s 1.7s 6 alternate ease-in-out; }
+.lay-bat:not(.pick) .bt-team.c img { animation: btLeanC .38s 1.9s 6 alternate ease-in-out; }
+.lay-bat.pick:not(.picked) .bt-team.m img { animation: btLeanM .45s 1.7s infinite alternate ease-in-out; }
+.lay-bat.pick:not(.picked) .bt-team.c img { animation: btLeanC .45s 1.9s infinite alternate ease-in-out; }
+@keyframes btLeanM { to { transform: rotate(7deg) translateX(3%); } }
+@keyframes btLeanC { to { transform: rotate(-7deg) translateX(-3%); } }
+/* 결과: 고른 쪽 🎉, 못 고른 쪽은 회색으로 축 처지며 😢 */
+.lay-bat:not(.pick).side-m .bt-team.m i.win, .lay-bat:not(.pick).side-c .bt-team.c i.win,
+.lay-bat:not(.pick).side-m .bt-team.c i.sad, .lay-bat:not(.pick).side-c .bt-team.m i.sad { animation: btPop .5s 4.2s forwards; }
+.lay-bat.pick.side-m .bt-team.m i.win, .lay-bat.pick.side-c .bt-team.c i.win,
+.lay-bat.pick.side-m .bt-team.c i.sad, .lay-bat.pick.side-c .bt-team.m i.sad { animation: btPop .5s .35s forwards; }
+@keyframes btSulk { to { filter: grayscale(.85) brightness(.7); transform: translateY(5%) scale(.96); } }
+.lay-bat:not(.pick).side-m .bt-team.c, .lay-bat:not(.pick).side-c .bt-team.m { animation: btSulk .5s 4.2s forwards; }
+.lay-bat.pick.side-m .bt-team.c, .lay-bat.pick.side-c .bt-team.m { animation: btSulk .5s .35s forwards; }
