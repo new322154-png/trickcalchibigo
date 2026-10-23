@@ -90,6 +90,20 @@ export function sfx(name: string) {
       case 'wrong': tone(180, 0.18, 'square', 0.06); tone(150, 0.2, 'square', 0.05, 0, 0.1); break;
       // 신문이 휘익 날아와 탁 놓이는 소리
       case 'paper': noise(0.55, 0.07, 3200, 0.6, 0, 'bandpass', -1800); noise(0.12, 0.14, 900, 0.7, 0.62, 'lowpass'); break;
+      // 유리에 금 가는 소리 · 쿵 · 와장창
+      case 'crack': noise(0.09, 0.3, 4200, 0.7, 0, 'highpass'); tone(2400, 0.05, 'square', 0.04, -1400); noise(0.25, 0.08, 1800, 2, 0.04, 'bandpass', 1500); break;
+      case 'thump': tone(70, 0.45, 'sine', 0.28, -30); noise(0.2, 0.1, 300, 0.7, 0, 'lowpass'); break;
+      case 'shatter':
+        noise(0.6, 0.25, 5200, 0.5, 0, 'highpass', -2500); noise(1.0, 0.12, 2600, 0.6, 0.05, 'bandpass', -1200); tone(60, 0.5, 'sine', 0.25, -20);
+        for (let i = 0; i < 9; i++) tone(2200 + Math.random() * 3200, 0.14, 'sine', 0.035, 0, 0.08 + i * 0.07 + Math.random() * 0.05);
+        break;
+      // 묵직한 타격: 저음 쿵 + 퍽 + 고음 쨍
+      case 'punch':
+        tone(52, 0.7, 'sine', 0.45, -22); tone(110, 0.22, 'square', 0.14, -70);
+        noise(0.3, 0.4, 420, 0.7, 0, 'lowpass'); noise(0.07, 0.35, 2600, 0.6, 0, 'bandpass'); noise(0.35, 0.12, 6000, 0.6, 0.02, 'highpass', -3000);
+        break;
+      case 'tink': tone(3200 + Math.random() * 2400, 0.12, 'sine', 0.035); noise(0.06, 0.04, 6500, 0.8, 0, 'highpass'); break;
+      case 'swoosh': noise(0.22, 0.12, 900, 0.9, 0, 'bandpass', 2400); break;
       case 'pop': tone(500, 0.1, 'sine', 0.15, 500); break;
       case 'night': tone(220, 0.8, 'sine', 0.1, -80); tone(330, 0.8, 'sine', 0.06, -120, 0.15); break;
       case 'morning': tone(520, 0.25, 'triangle', 0.08); tone(660, 0.25, 'triangle', 0.08, 0, 0.12); tone(780, 0.35, 'triangle', 0.08, 0, 0.24); break;

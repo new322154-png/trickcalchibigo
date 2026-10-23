@@ -12,7 +12,7 @@ import { asset, bgUrl, clear, h, isPhone } from './dom';
 import { follow } from './follow';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
-import { pickBat, playCut, playNews, preloadCuts, type BatPick } from './cut';
+import { droneRaid, pickBat, playCut, playNews, preloadCuts, type BatPick } from './cut';
 import { bgm, type BgmName } from './bgm';
 import { sfx } from './sfx';
 import { emoteBar, type EmoteBar } from './emote';
@@ -563,12 +563,32 @@ export class GameUI {
 
   private showEnd(winner: string, roles: { pid: number; role: string; alive: boolean }[], winners: number[], mvpAt: number | undefined, day: number) {
     const won = winners.includes(this.myPid);
-    sfx(won ? 'win' : 'lose');
-    bgm(won ? 'title' : 'rain');
     this.emotes.enable(false);
     this.emoToggle.classList.add('hidden');
-    const [title, en, bg] = END_T[winner] ?? END_T.draw;
     this.endInfo = { winner, roles, winners, day, mvp: [] };
+    const real = () => {
+      sfx(won ? 'win' : 'lose');
+      bgm(won ? 'title' : 'rain');
+      const ov = this.endScreen(winner, roles, winners, mvpAt, false);
+      this.endEl = ov;
+      this.el.appendChild(ov);
+      return ov;
+    };
+    if (winner !== 'elena') { real(); return; }
+    // 엘레나 승리: 엘레나가 없었다면 이겼을 팀(살아남은 수가 더 많은 팀)의 승리 화면이 잠깐 → 드론 떼가 몰려와 전부 왼쪽으로 밀어내고 → 엘레나 승리
+    const alive = (t: string) => roles.filter((r) => r.alive && ROLES[r.role as RoleId]?.team === t).length;
+    const fakeTeam = alive('mafia') > 0 && alive('mafia') >= alive('citizen') ? 'mafia' : 'citizen';
+    const fakeWin = roles.filter((r) => ROLES[r.role as RoleId]?.team === fakeTeam).map((r) => r.pid);
+    sfx('win');
+    const fake = this.endScreen(fakeTeam, roles, fakeWin, undefined, true);
+    this.el.appendChild(fake);
+    droneRaid(this.el, fake, () => { if (!fake.isConnected && !this.el.isConnected) return; fake.remove(); real().classList.add('after-raid'); });
+  }
+
+  /** 끝 화면 한 장 (fake: 엘레나 연출용 가짜 승리 화면 — 누를 수 없고 투표 · 시간 표시 없음) */
+  private endScreen(winner: string, roles: { pid: number; role: string; alive: boolean }[], winners: number[], mvpAt: number | undefined, fake: boolean) {
+    const won = winners.includes(this.myPid);
+    const [title, en, bg] = END_T[winner] ?? END_T.draw;
     const champs = roles.filter((r) => winners.includes(r.pid));
     const others = roles.filter((r) => !winners.includes(r.pid));
     // 최고의 플레이어 투표: 승리 팀 캐릭터 아래 ⭐ 버튼 (나는 빼고)
@@ -584,7 +604,7 @@ export class GameUI {
       const n = champs.length;
       const off = i - (n - 1) / 2;
       const img = roleImg(r.role);
-      const canVote = !!mvpAt && r.pid !== this.myPid;
+      const canVote = !fake && !!mvpAt && r.pid !== this.myPid;
       const btn = canVote ? h('button.end-mvp-btn', { onclick: () => voteMvp(r.pid) }, '⭐ 최고!') as HTMLButtonElement : null;
       if (btn) mvpBtns.set(r.pid, btn);
       photo.appendChild(h(`div.end-champ${r.pid === this.myPid ? '.me' : ''}`, { style: `--x:${off}; --ax:${Math.abs(off)}; --i:${i}; z-index:${20 - Math.round(Math.abs(off) * 2)}`, 'data-pid': String(r.pid) },
@@ -608,25 +628,25 @@ export class GameUI {
           h('div.end-state', r.alive ? '생존' : '사망', winners.includes(r.pid) ? h('i', 'WIN') : ''));
       }));
     const status = h('span.end-status');
-    const ov = h(`div.end-screen.w-${winner}`, { style: `--bg: ${bgUrl(bg)}` },
+    const ov = h(`div.end-screen.w-${winner}${fake ? '.fake' : ''}`, { style: `--bg: ${bgUrl(bg)}` },
       h('div.end-bg'),
       h('div.end-title', h('small.en', en), h('b', title), h(`div.end-me.${won ? 'win' : 'lose'}`, won ? '승리!' : '패배…')),
       photo, losers, list,
       h('div.end-foot', status,
         h('button.btn.small.share', { onclick: () => this.share() }, '📸 결과 공유'),
         h('button.btn.small', { onclick: () => ov.remove() }, '닫기')));
-    this.endEl = ov;
-    this.el.appendChild(ov);
+    if (fake) return ov;
     // 남은 시간 · 투표 현황
     const endAt = mvpAt ?? Date.now() + 15_000;
     const upd = () => {
-      if (!ov.isConnected) { clearInterval(t); return; }
+      if (!ov.isConnected) { if (Date.now() > endAt) clearInterval(t); return; }
       if (ov.dataset.done) return;
       const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
       status.textContent = mvpAt ? `⭐ 최고의 플레이어 투표 ${left}초${ov.dataset.voted ? ` (${ov.dataset.voted})` : ''}` : `${left}초 뒤 대기실로 돌아갑니다`;
     };
     const t = window.setInterval(upd, 250);
     upd();
+    return ov;
   }
 
   /** 최고의 플레이어 투표 현황 · 결과 */
