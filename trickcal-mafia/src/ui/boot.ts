@@ -116,7 +116,12 @@ export function showBoot(root: HTMLElement, onDone: () => void) {
     busy = true;
     if (matchMedia('(pointer: coarse)').matches) void document.documentElement.requestFullscreen?.().catch(() => {});
     sfx('open');
-    const logo = h('img.splash-logo', { src: asset('ui/boot/fanmade.webp'), alt: '' });
+    // 첫 화면: 공식 로고 변형 대신 글자만 (비공식 팬게임 안내)
+    const logo = h('div.splash-logo.splash-text',
+      h('small.en', 'UNOFFICIAL FAN GAME'),
+      h('b', '비공식 팬게임'),
+      h('span', '트릭컬 리바이브의 팬이 만든 게임이에요.'),
+      h('span', '어떠한 형태의 수익도 얻지 않으며, 모든 권리는 에피드게임즈에 있습니다.'));
     const panel = h('div.boot-panel.splash', logo);
     await zoomFrom(btn, panel).finished;
     await sleep(250);

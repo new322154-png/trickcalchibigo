@@ -47,7 +47,7 @@ export function showTitle(root: HTMLElement, act: TitleActions) {
       h('button.tt-btn', { onclick: () => { sfx('click'); miniMenu(root, () => profile); } }, h('small.en', 'MINI GAMES'), h('b', '미니게임')),
       h('button.tt-rule', { onclick: () => { sfx('click'); showRules(root); } }, '규칙과 직업'),
       status),
-    h('div.fan-notice', '본 게임은 트릭컬 리바이브의 비공식 팬게임입니다.'),
+    h('div.fan-notice', h('span', '이 게임은 트릭컬 리바이브의 비공식 팬게임으로, 어떠한 형태의 수익도 얻지 않습니다.'), h('span', '트릭컬 리바이브와 관련된 모든 권리는 에피드게임즈(EPID GAMES)에 있습니다.')),
   );
   // 마우스가 있는 쪽이 조금 더 넓어진다
   let pend = -1;
