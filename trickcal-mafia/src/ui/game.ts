@@ -12,7 +12,7 @@ import { asset, bgUrl, clear, h, isPhone } from './dom';
 import { follow } from './follow';
 import { MoveInput, isTouch } from './input';
 import { Scene } from './scene';
-import { droneRaid, pickBat, playCut, playNews, preloadCuts, type BatPick } from './cut';
+import { canDrop, droneRaid, pickBat, playCut, playNews, preloadCuts, type BatPick } from './cut';
 import { bgm, type BgmName } from './bgm';
 import { sfx } from './sfx';
 import { emoteBar, type EmoteBar } from './emote';
@@ -574,15 +574,18 @@ export class GameUI {
       this.el.appendChild(ov);
       return ov;
     };
-    if (winner !== 'elena') { real(); return; }
-    // 엘레나 승리: 엘레나가 없었다면 이겼을 팀(살아남은 수가 더 많은 팀)의 승리 화면이 잠깐 → 드론 떼가 몰려와 전부 왼쪽으로 밀어내고 → 엘레나 승리
+    if (winner !== 'elena' && winner !== 'jester') { real(); return; }
+    // 엘레나 · 코미 승리: 원래 이겼을 팀의 승리 화면이 잠깐 → 엘레나는 드론 습격, 코미는 사료캔.
+    // 엘레나가 없었다면 이겼을 팀(살아남은 수가 더 많은 팀)의 승리 화면이 잠깐 → 드론 떼가 몰려와 전부 왼쪽으로 밀어내고 → 엘레나 승리
     const alive = (t: string) => roles.filter((r) => r.alive && ROLES[r.role as RoleId]?.team === t).length;
     const fakeTeam = alive('mafia') > 0 && alive('mafia') >= alive('citizen') ? 'mafia' : 'citizen';
     const fakeWin = roles.filter((r) => ROLES[r.role as RoleId]?.team === fakeTeam).map((r) => r.pid);
     sfx('win');
     const fake = this.endScreen(fakeTeam, roles, fakeWin, undefined, true);
     this.el.appendChild(fake);
-    droneRaid(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid'); this.el.insertBefore(ov, fake); }, () => fake.remove());
+    if (winner === 'elena') droneRaid(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid'); this.el.insertBefore(ov, fake); }, () => fake.remove());
+    // 코미 승리: 이긴 줄 알았던 캐릭터들이 사료캔에 하나씩 깔리고 → 코미가 캔 위에 → 코미 승리
+    else canDrop(this.el, fake, () => { real(); }, () => fake.remove());
   }
 
   /** 끝 화면 한 장 (fake: 엘레나 연출용 가짜 승리 화면 — 누를 수 없고 투표 · 시간 표시 없음) */

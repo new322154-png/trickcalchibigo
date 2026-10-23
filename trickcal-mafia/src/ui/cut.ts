@@ -470,3 +470,76 @@ export function droneRaid(host: HTMLElement, fake: HTMLElement, showReal: () => 
     }, B);
   }, START);
 }
+
+/**
+ * 코미 승리: 가짜 승리 화면(fake)의 이긴 캐릭터들 머리 위로 캐릭터만 한 사료캔이 하나씩 쿵 떨어져 덮어 버리고,
+ * 마지막으로 가운데에 큰 캔이 떨어지면 그 위로 코미가 톡 올라선다. 잠깐 뒤 코미 승리 화면(showReal).
+ */
+export function canDrop(host: HTMLElement, fake: HTMLElement, showReal: () => void, done: () => void) {
+  const START = 2200;  // 가짜 승리 화면을 보여 주는 시간
+  const GAP = 420;     // 캔 사이 간격
+  const FALL = 420;    // 떨어지는 시간
+  const layer = h('div.cans');
+  setTimeout(() => {
+    if (!fake.isConnected) return done();
+    host.appendChild(layer);
+    const hr = host.getBoundingClientRect();
+    const k = (host.offsetWidth || 1280) / hr.width; // 화면 px → 무대 px
+    const at = (r: DOMRect) => ({ x: (r.left - hr.left) * k, y: (r.top - hr.top) * k, w: r.width * k, h: r.height * k });
+    const thud = (big = false) => {
+      sfx('thump'); if (big) sfx('clang');
+      fake.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${big ? 10 : 6}px)` }, { transform: 'translateY(-2px)' }, { transform: 'none' }], { duration: 260 });
+    };
+    // 캔 하나 떨어뜨리기: 바닥 가운데(cx, bottom)에 높이 hgt 로 착지
+    const drop = (cx: number, bottom: number, hgt: number, delay: number, onLand?: () => void, big = false) => {
+      const w = hgt * (322 / 420);
+      const can = h('div.can', { style: `left: ${cx - w / 2}px; top: ${bottom - hgt}px; width: ${w}px; height: ${hgt}px` },
+        h('img', { src: asset('ui/can.webp'), alt: '' }), h('i.can-dust'));
+      layer.appendChild(can);
+      can.animate([
+        { transform: `translateY(${-(bottom + 60)}px)`, offset: 0 },
+        { transform: 'translateY(0) scale(1.06, .82)', offset: 0.72, easing: 'ease-out' },
+        { transform: 'translateY(-4%) scale(.96, 1.06)', offset: 0.86 },
+        { transform: 'none' },
+      ], { duration: FALL / 0.72, delay, easing: 'cubic-bezier(.5,0,1,.6)', fill: 'backwards' });
+      setTimeout(() => { if (!fake.isConnected) return; can.classList.add('landed'); thud(big); onLand?.(); }, delay + FALL);
+      return can;
+    };
+    // ① 이긴 캐릭터들 위로 하나씩 (왼쪽부터)
+    const champs = [...fake.querySelectorAll<HTMLElement>('.end-champ')].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    let rightmost = 0;
+    champs.forEach((c, i) => {
+      const img = c.querySelector('img') ?? c;
+      const r = at(img.getBoundingClientRect());
+      rightmost = Math.max(rightmost, r.x + r.w / 2 + (r.h * 1.08 * (322 / 420)) / 2);
+      drop(r.x + r.w / 2, r.y + r.h + 4, r.h * 1.08, i * GAP, () => {
+        // 깔린 캐릭터는 납작하게 사라짐
+        img.animate([{ transform: 'none' }, { transform: 'scaleY(.2)', opacity: 0 }], { duration: 120, fill: 'forwards' });
+      });
+    });
+    // ② 마지막: 가운데에 큰 캔 → 그 위로 코미가 톡
+    const H = host.offsetHeight || 720, W = host.offsetWidth || 1280;
+    const t2 = champs.length * GAP + 250;
+    // 큰 캔은 화면 가운데, 다른 캔과 겹치면 그 오른쪽 (오른쪽 정체 표는 넘지 않게)
+    const bigW = H * 0.42 * (322 / 420);
+    const bx = Math.min(Math.max(W * 0.5, rightmost + bigW / 2 + 12), W * 0.62);
+    const big = drop(bx, H * 0.86, H * 0.42, t2, undefined, true);
+    big.classList.add('big');
+    const comi = h('img.can-comi', { src: asset('chars/comi.webp'), alt: '' });
+    const ch = H * 0.36, cw = ch * (136 / 175);
+    comi.setAttribute('style', `left: ${bx - cw / 2}px; top: ${H * 0.86 - H * 0.42 - ch + H * 0.03}px; width: ${cw}px; height: ${ch}px`);
+    setTimeout(() => {
+      if (!fake.isConnected) return;
+      layer.appendChild(comi);
+      layer.appendChild(h('div.can-spark', { style: `left: ${bx}px; top: ${H * 0.86 - H * 0.42 - ch * 0.5}px` }));
+      sfx('pop'); setTimeout(() => sfx('reveal'), 150);
+    }, t2 + FALL + 280);
+    // ③ 코미 승리 화면
+    setTimeout(() => {
+      if (!fake.isConnected) return done();
+      showReal();
+      layer.classList.add('out');
+      setTimeout(() => { done(); layer.remove(); }, 650);
+    }, t2 + FALL + 280 + 1300);
+  }, START);
+}

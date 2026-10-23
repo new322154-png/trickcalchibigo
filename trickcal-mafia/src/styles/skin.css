@@ -800,3 +800,21 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
 .end-screen.fake.dragging::after { opacity: 0; transition: opacity .3s; }
 .end-screen.fake.dragging .end-bg { box-shadow: .6em 0 1.2em rgba(0,0,0,.6); }
 .end-screen.after-raid { animation: none; }
+
+/* ═══════ 코미 승리: 사료캔이 쿵쿵 → 코미가 큰 캔 위에 (cut.ts canDrop) ═══════ */
+.cans { position: absolute; inset: 0; z-index: 96; pointer-events: none; overflow: hidden; }
+.cans.out { opacity: 0; transition: opacity .6s; }
+.can { position: absolute; }
+.can img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 .5em .6em rgba(0,0,0,.45)); }
+.can-dust { position: absolute; left: -30%; right: -30%; bottom: -6%; height: 30%; border-radius: 50%; opacity: 0;
+  background: radial-gradient(ellipse at 50% 70%, rgba(255,245,230,.85), rgba(255,240,220,0) 70%); }
+.can.landed .can-dust { animation: canDust .5s ease-out; }
+@keyframes canDust { 0% { opacity: .95; transform: scale(.4, .6); } 100% { opacity: 0; transform: scale(1.3, 1); } }
+.can-comi { position: absolute; z-index: 2; filter: drop-shadow(0 0 1em rgba(255,200,230,.8)); animation: canComi .5s cubic-bezier(.2,1.7,.4,1) both, canBob .9s .5s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+@keyframes canComi { from { transform: translateY(60%) scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes canBob { to { transform: translateY(-4%) rotate(2deg); } }
+.can-spark { position: absolute; width: 0; height: 0; }
+.can-spark::before { content: ''; position: absolute; left: 0; top: 0; width: 22em; height: 22em; transform: translate(-50%, -50%) scale(.2); border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,190,220,.5) 35%, transparent 65%); animation: canSpark .6s ease-out forwards; }
+@keyframes canSpark { to { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
+.cans { font-size: 20px; } #stage.compact .cans { font-size: 14px; } #stage.mobile .cans { font-size: 9.6px; }
