@@ -403,57 +403,70 @@ export function pickBat(host: HTMLElement, choose: (side: 'mafia' | 'citizen') =
 }
 
 /**
- * 엘레나 승리: 가짜 승리 화면(fake) 위로 드론 떼가 오른쪽에서 우르르 몰려와 (엘레나도 드론을 타고)
- * 캐릭터 · 제목 · 표 · 배경을 지나가는 순서대로 왼쪽으로 밀어내 버린다. 다 쓸려 나가면 done().
+ * 엘레나 승리: 가짜 승리 화면(fake) 위로
+ *   ① 작은 드론 떼가 오른쪽에서 우르르 몰려와 캐릭터 · 제목 · 표 · 버튼을 지나가는 순서대로 왼쪽으로 쓸어 가고
+ *   ② 큰 드론을 탄 엘레나가 날아와 배경 오른쪽 끝을 물고 왼쪽으로 끌고 가면, 그 뒤에서 엘레나 승리 화면(showReal)이 드러난다.
  */
-export function droneRaid(host: HTMLElement, fake: HTMLElement, done: () => void) {
+export function droneRaid(host: HTMLElement, fake: HTMLElement, showReal: () => void, done: () => void) {
   const W = host.offsetWidth || 1280;
   const SPEED = 1.15; // 드론 떼 앞줄이 화면을 가로지르는 속도 (화면 너비/초)
   const START = 2400; // 가짜 승리 화면을 보여 주는 시간 (ms)
   const raid = h('div.raid', { style: `--w: ${W}px` });
-  const N = 22;
+  const N = 24;
   for (let i = 0; i < N; i++) {
     const row = (i * 0.618) % 1; // 위아래로 고르게 흩뿌림
     const size = 8 + Math.random() * 9;
     raid.appendChild(h('img.rd-drone', {
       src: asset('cut/drone.webp'), alt: '',
-      style: `--y: ${4 + row * 84}%; --s: ${size}%; --d: ${(Math.random() * 0.45).toFixed(2)}s; --b: ${(0.25 + Math.random() * 0.25).toFixed(2)}s`,
+      style: `--y: ${2 + row * 86}%; --s: ${size}%; --d: ${(Math.random() * 0.4).toFixed(2)}s; --b: ${(0.25 + Math.random() * 0.25).toFixed(2)}s`,
     }));
   }
-  // 엘레나: 큰 드론에 올라타 한가운데로
-  raid.appendChild(h('div.rd-elena', h('img.rd-ride', { src: asset('cut/drone.webp'), alt: '' }), h('img.rd-el', { src: asset('chars/elena.webp'), alt: '' })));
+  // 엘레나: 큰 드론을 타고 와서 배경 끝을 문다
+  const boss = h('div.rd-boss', h('img.rd-ride', { src: asset('cut/drone.webp'), alt: '' }), h('img.rd-el', { src: asset('chars/elena.webp'), alt: '' }), h('i.rd-claw'));
   setTimeout(() => {
     if (!fake.isConnected) return done();
     sfx('buzz'); sfx('swoosh');
-    setTimeout(() => sfx('buzz'), 500);
+    setTimeout(() => sfx('buzz'), 450);
     fake.classList.add('raided');
     host.appendChild(raid);
-    // 밀려나는 것들: 오른쪽 끝이 드론 앞줄에 닿는 때부터 휙
+    // ① 작은 드론 떼: 오른쪽 끝이 앞줄에 닿는 때부터 휙 (배경은 그대로)
     const hr = host.getBoundingClientRect();
     const k = W / hr.width;
     const parts = [...fake.querySelectorAll<HTMLElement>('.end-title, .end-champ, .end-loser, .end-list, .end-foot, .end-mvp')];
-    let last = 0;
     for (const el of parts) {
       const r = el.getBoundingClientRect();
       const right = (r.right - hr.left) / hr.width; // 0~1
       const delay = Math.max(0, (1.05 - right) / SPEED) * 1000 + 120;
       const dist = (r.right - hr.left) * k + 160;
-      last = Math.max(last, delay);
       el.animate([
         { transform: 'none' },
         { transform: 'translateX(14px) rotate(4deg)', offset: 0.12 },
         { transform: `translateX(${-dist}px) translateY(${(Math.random() * 60 - 30).toFixed(0)}px) rotate(${(-10 - Math.random() * 20).toFixed(0)}deg)` },
-      ], { duration: 700, delay, easing: 'cubic-bezier(.45,0,.85,.5)', fill: 'forwards' });
+      ], { duration: 650, delay, easing: 'cubic-bezier(.45,0,.85,.5)', fill: 'forwards' });
       setTimeout(() => sfx('pop'), delay);
     }
-    // 배경도 통째로 끌려감
-    const bg = fake.querySelector<HTMLElement>('.end-bg');
-    bg?.animate([{ transform: 'none' }, { transform: `translateX(${-W * 1.1}px)` }], { duration: 1500, delay: 250, easing: 'cubic-bezier(.5,0,.75,.4)', fill: 'forwards' });
-    const total = Math.max(last + 700, 1750);
+    // ② 엘레나 등장 → 배경 끝을 물고 끌고 감
+    const B = 1450, ARRIVE = 450, DRAG = 1000;
     setTimeout(() => {
-      done();
-      // 드론 떼는 엘레나 화면이 뜬 뒤에도 잠깐 마저 빠져나감
-      setTimeout(() => raid.remove(), 1200);
-    }, total);
+      if (!fake.isConnected) return;
+      showReal(); // 뒤에 미리 깔아 둠 (배경이 끌려가면서 드러남)
+      fake.classList.add('dragging');
+      raid.appendChild(boss);
+      sfx('buzz');
+      const bw = boss.offsetWidth;
+      const bite = -bw * 0.5; // 드론 몸통 가운데가 배경 오른쪽 끝에 오게
+      boss.animate([{ transform: 'translateX(40px)' }, { transform: `translateX(${bite - 24}px)`, offset: 0.8 }, { transform: `translateX(${bite}px)` }],
+        { duration: ARRIVE, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+      setTimeout(() => {
+        sfx('clang');
+        boss.classList.add('bit');
+        const drag = { duration: DRAG, easing: 'cubic-bezier(.55,0,.8,.45)', fill: 'forwards' as FillMode };
+        boss.animate([{ transform: `translateX(${bite}px)` }, { transform: `translateX(${bite + 10}px)`, offset: 0.08 }, { transform: `translateX(${bite - W * 1.15}px)` }], drag);
+        const bg = fake.querySelector<HTMLElement>('.end-bg');
+        bg?.animate([{ transform: 'none' }, { transform: 'translateX(10px)', offset: 0.08 }, { transform: `translateX(${-W * 1.15}px)` }], drag);
+        setTimeout(() => sfx('swoosh'), DRAG * 0.4);
+        setTimeout(() => { done(); setTimeout(() => raid.remove(), 100); }, DRAG + 50);
+      }, ARRIVE);
+    }, B);
   }, START);
 }

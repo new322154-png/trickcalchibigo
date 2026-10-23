@@ -789,9 +789,14 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
   animation: rdFly 1.2s var(--d) cubic-bezier(.3,0,.7,1) forwards, rdBob var(--b) ease-in-out infinite alternate; }
 @keyframes rdFly { to { translate: calc(var(--w) * -1.4) 0; } }
 @keyframes rdBob { from { rotate: -6deg; } to { rotate: 6deg; } }
-.rd-elena { position: absolute; left: 100%; top: 22%; height: 52%; aspect-ratio: 1; animation: rdFly 1.7s .15s cubic-bezier(.3,0,.65,1) forwards; }
-.rd-el { position: absolute; left: 18%; bottom: 30%; height: 72%; width: auto; filter: drop-shadow(0 0 1.2em rgba(77,163,255,.7)); animation: rdBob .3s ease-in-out infinite alternate; }
+.rd-boss { position: absolute; left: 100%; top: 24%; height: 54%; aspect-ratio: 1; }
+.rd-el { position: absolute; left: 20%; bottom: 30%; height: 70%; width: auto; filter: drop-shadow(0 0 1.2em rgba(77,163,255,.7)); animation: rdBob .3s ease-in-out infinite alternate; }
 .rd-ride { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; animation: rdBob .22s ease-in-out infinite alternate-reverse; }
-.end-screen.after-raid { background: #070a14; animation: none; }
-.end-screen.after-raid .end-bg { animation: rdWipe .6s cubic-bezier(.2,.7,.2,1), endZoom 14s ease-out forwards; }
-@keyframes rdWipe { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+/* 배경을 문 집게: 드론 아래에서 배경 끝을 꽉 */
+.rd-claw { position: absolute; left: 44%; bottom: -6%; width: 12%; height: 22%; border: .35em solid #9fb6d6; border-top: 0; border-radius: 0 0 40% 40%; opacity: 0; box-shadow: 0 .2em .4em rgba(0,0,0,.4); }
+.rd-boss.bit .rd-claw { opacity: 1; animation: rdBite .18s ease-out; }
+@keyframes rdBite { from { transform: scaleY(1.5) translateY(-20%); } }
+.end-screen.fake.dragging { background: transparent; }
+.end-screen.fake.dragging::after { opacity: 0; transition: opacity .3s; }
+.end-screen.fake.dragging .end-bg { box-shadow: .6em 0 1.2em rgba(0,0,0,.6); }
+.end-screen.after-raid { animation: none; }

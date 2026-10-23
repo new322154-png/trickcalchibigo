@@ -582,7 +582,7 @@ export class GameUI {
     sfx('win');
     const fake = this.endScreen(fakeTeam, roles, fakeWin, undefined, true);
     this.el.appendChild(fake);
-    droneRaid(this.el, fake, () => { if (!fake.isConnected && !this.el.isConnected) return; fake.remove(); real().classList.add('after-raid'); });
+    droneRaid(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid'); this.el.insertBefore(ov, fake); }, () => fake.remove());
   }
 
   /** 끝 화면 한 장 (fake: 엘레나 연출용 가짜 승리 화면 — 누를 수 없고 투표 · 시간 표시 없음) */
