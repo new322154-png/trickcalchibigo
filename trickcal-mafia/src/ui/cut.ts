@@ -472,79 +472,107 @@ export function droneRaid(host: HTMLElement, fake: HTMLElement, showReal: () => 
 }
 
 /**
- * 코미 승리: 가짜 승리 화면(fake)의 이긴 캐릭터들 머리 위로 캐릭터만 한 사료캔이 하나씩 쿵 떨어져 덮어 버리고,
- * 마지막 큰 캔이 쿵 떨어지는 순간 가짜 화면(배경 · UI · 작은 캔)이 아래로 찌그러지며 사라지고
- * 그 뒤에 깔아 둔 코미 승리 화면(makeReal)이 드러난다. 큰 캔과 그 위에 올라선 코미는 승리 화면에 그대로 남는다.
+ * 코미 승리: 가짜 승리 화면(fake)의 이긴 캐릭터들 머리 위로 캐릭터만 한 사료캔이 바깥쪽부터 (왼쪽, 오른쪽, …) 하나씩 쿵,
+ * 마지막으로 코미가 올라탄 큰 캔이 가운데로 떨어지며 가짜 화면(배경 · UI · 캔 통째로)을 아래로 밀어 떨어뜨린다.
+ * 위에서부터 드러나는 건 미리 깔아 둔 코미 승리 화면(makeReal) — 큰 캔과 코미는 그 화면에 그대로 남는다.
  */
 export function canDrop(host: HTMLElement, fake: HTMLElement, makeReal: () => HTMLElement, done: () => void) {
   const START = 2200;  // 가짜 승리 화면을 보여 주는 시간
   const GAP = 420;     // 캔 사이 간격
-  const FALL = 420;    // 떨어지는 시간
-  const layer = h('div.cans');
+  const FALL = 420;    // 작은 캔이 떨어지는 시간
+  const CAN = 322 / 420;
   setTimeout(() => {
     if (!fake.isConnected) return done();
-    host.appendChild(layer);
     const hr = host.getBoundingClientRect();
     const k = (host.offsetWidth || 1280) / hr.width; // 화면 px → 무대 px
     const at = (r: DOMRect) => ({ x: (r.left - hr.left) * k, y: (r.top - hr.top) * k, w: r.width * k, h: r.height * k });
-    const thud = (big = false) => {
-      sfx('thump'); if (big) sfx('clang');
-      if (!big) fake.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(6px)' }, { transform: 'translateY(-2px)' }, { transform: 'none' }], { duration: 260 });
+    const W = host.offsetWidth || 1280, H = host.offsetHeight || 720;
+    const canEl = (cx: number, bottom: number, hgt: number, extra?: HTMLElement) => {
+      const w = hgt * CAN;
+      return h('div.can', { style: `left: ${cx - w / 2}px; top: ${bottom - hgt}px; width: ${w}px; height: ${hgt}px` },
+        extra ?? '', h('img', { src: asset('ui/can.webp'), alt: '' }), h('i.can-dust'));
     };
-    // 캔 하나 떨어뜨리기: 바닥 가운데(cx, bottom)에 높이 hgt 로 착지
-    const drop = (into: HTMLElement, cx: number, bottom: number, hgt: number, delay: number, onLand?: () => void, big = false) => {
-      const w = hgt * (322 / 420);
-      const can = h('div.can', { style: `left: ${cx - w / 2}px; top: ${bottom - hgt}px; width: ${w}px; height: ${hgt}px` },
-        h('img', { src: asset('ui/can.webp'), alt: '' }), h('i.can-dust'));
-      into.appendChild(can);
+    // ① 작은 캔: 가운데 한 명은 남기고 바깥쪽부터 왼쪽 · 오른쪽 번갈아. 캔은 가짜 화면 안에 넣어 같이 떨어지게
+    const champs = [...fake.querySelectorAll<HTMLElement>('.end-champ')].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    const mid = Math.floor((champs.length - 1) / 2);
+    const order: number[] = [];
+    for (let l = 0, r = champs.length - 1; l <= r; l++, r--) { if (l !== mid) order.push(l); if (r !== l && r !== mid) order.push(r); }
+    const smalls = h('div.cans');
+    fake.appendChild(smalls);
+    order.forEach((ci, i) => {
+      const img = champs[ci].querySelector('img') ?? champs[ci];
+      const r = at(img.getBoundingClientRect());
+      const can = canEl(r.x + r.w / 2, r.y + r.h + 4, r.h * 1.08);
+      smalls.appendChild(can);
+      const bottom = r.y + r.h + 4, delay = i * GAP;
       can.animate([
         { transform: `translateY(${-(bottom + 60)}px)`, offset: 0 },
         { transform: 'translateY(0) scale(1.06, .82)', offset: 0.72, easing: 'ease-out' },
         { transform: 'translateY(-4%) scale(.96, 1.06)', offset: 0.86 },
         { transform: 'none' },
       ], { duration: FALL / 0.72, delay, easing: 'cubic-bezier(.5,0,1,.6)', fill: 'backwards' });
-      setTimeout(() => { if (!fake.isConnected) return; can.classList.add('landed'); thud(big); onLand?.(); }, delay + FALL);
-      return can;
-    };
-    // ① 이긴 캐릭터들 위로 하나씩 (왼쪽부터)
-    const champs = [...fake.querySelectorAll<HTMLElement>('.end-champ')].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
-    champs.forEach((c, i) => {
-      const img = c.querySelector('img') ?? c;
-      const r = at(img.getBoundingClientRect());
-      drop(layer, r.x + r.w / 2, r.y + r.h + 4, r.h * 1.08, i * GAP, () => {
+      setTimeout(() => {
+        if (!fake.isConnected) return;
+        can.classList.add('landed'); sfx('thump');
         img.animate([{ transform: 'none' }, { transform: 'scaleY(.2)', opacity: 0 }], { duration: 120, fill: 'forwards' });
-      });
+        fake.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(6px)' }, { transform: 'translateY(-2px)' }, { transform: 'none' }], { duration: 260 });
+      }, delay + FALL);
     });
-    // ② 마지막 큰 캔: 코미 승리 화면을 가짜 화면 뒤에 미리 깔고(애니메이션 멈춤), 그 화면의 코미 자리에 떨어뜨린다
-    const t2 = champs.length * GAP + 250;
+    // ② 코미를 태운 큰 캔: 코미 승리 화면을 뒤에 미리 깔고(애니메이션 멈춤) 그 화면의 코미 자리를 목표로
+    const t2 = order.length * GAP + (order.length ? 300 : 0);
     setTimeout(() => {
       if (!fake.isConnected) return done();
       const real = makeReal();
-      const W = host.offsetWidth || 1280, H = host.offsetHeight || 720;
       const spot = real.querySelector<HTMLElement>('.end-champ img');
       const sr = spot ? at(spot.getBoundingClientRect()) : { x: W * 0.4, y: H * 0.3, w: H * 0.3, h: H * 0.5 };
-      const canH = Math.max(H * 0.3, sr.h * 0.78), bottom = sr.y + sr.h;
-      const keep = h('div.cans.keep');
-      real.insertBefore(keep, real.querySelector('.end-list'));
-      const cx = sr.x + sr.w / 2;
-      const bigCan = drop(layer, cx, bottom, canH, 0, () => {
-        keep.appendChild(bigCan); // 떨어지는 동안엔 맨 위, 내려앉으면 코미 화면 속으로 옮겨 남김
-        // 쿵! 가짜 화면과 작은 캔들이 아래로 찌그러지며 사라지고 코미 화면이 드러남
-        const crush = [{ transform: 'none', opacity: 1 }, { transform: 'scale(1.03, .9)', opacity: 1, offset: 0.25 }, { transform: 'scale(1.08, .02)', opacity: 0.2 }];
-        const opt = { duration: 420, easing: 'cubic-bezier(.6,0,.9,.4)', fill: 'forwards' as FillMode };
-        fake.style.transformOrigin = '50% 100%'; layer.style.transformOrigin = '50% 100%';
-        fake.animate(crush, opt); layer.animate(crush, opt);
-        real.classList.remove('prep');
-        real.animate([{ transform: 'translateY(8px)' }, { transform: 'translateY(-3px)', offset: 0.5 }, { transform: 'none' }], { duration: 300 });
-        // 코미가 캔 위로 톡
-        const ch = Math.max(H * 0.3, sr.h * 0.82), cw = ch * (136 / 175);
-        keep.append(
-          h('div.can-spark', { style: `left: ${cx}px; top: ${bottom - canH - ch * 0.5}px` }),
-          h('img.can-comi', { src: asset('chars/comi.webp'), alt: '', style: `left: ${cx - cw / 2}px; top: ${bottom - canH - ch + canH * 0.06}px; width: ${cw}px; height: ${ch}px` }));
-        sfx('pop'); setTimeout(() => sfx('reveal'), 150);
-        setTimeout(() => { done(); layer.remove(); }, 450);
-      }, true);
-      bigCan.classList.add('big');
+      const canH = Math.max(H * 0.3, sr.h * 0.78), bottom = sr.y + sr.h, cx = sr.x + sr.w / 2;
+      const ch = Math.max(H * 0.3, sr.h * 0.82), cw = ch * (136 / 175);
+      const comi = h('img.can-comi.ride', { src: asset('chars/comi.webp'), alt: '', style: `left: ${(canH * CAN - cw) / 2}px; top: ${-ch + canH * 0.06}px; width: ${cw}px; height: ${ch}px` });
+      const big = canEl(cx, bottom, canH, comi);
+      big.classList.add('big');
+      const top = h('div.cans');
+      host.appendChild(top);
+      top.appendChild(big);
+      // 손으로 그리는 낙하: 캔 바닥이 화면 위끝을 지나면 가짜 화면이 캔 바닥에 붙어 같이 밀려 내려감
+      const D = bottom + ch + 40;     // 캔이 내려오는 거리
+      const T = 0.85;                 // 낙하 시간 (초)
+      let t0 = 0, phase = 0, revealed = false;
+      sfx('swoosh');
+      const step = (now: number) => {
+        if (!t0) t0 = now;
+        const t = (now - t0) / 1000;
+        if (phase === 0) {
+          const p = Math.min(1, t / T), e = p * p; // 중력처럼 점점 빠르게
+          const ty = -D * (1 - e);
+          big.style.transform = `translateY(${ty}px)`;
+          const canBottom = bottom + ty;
+          if (canBottom > 0) {
+            if (!revealed) { revealed = true; real.classList.remove('prep'); sfx('thump'); sfx('clang'); }
+            fake.style.transform = `translateY(${canBottom}px)`;
+          }
+          if (p >= 1) {
+            phase = 1; t0 = now;
+            big.style.transform = '';
+            // 쿵 내려앉음 + 코미는 캔 위에서 통
+            big.animate([{ transform: 'scale(1.08, .8)' }, { transform: 'translateY(-5%) scale(.95, 1.07)', offset: 0.5 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
+            big.classList.add('landed');
+            sfx('thump'); sfx('pop'); setTimeout(() => sfx('reveal'), 160);
+            top.appendChild(h('div.can-spark', { style: `left: ${cx}px; top: ${bottom - canH - ch * 0.5}px` }));
+            // 큰 캔과 코미는 코미 승리 화면 속으로 옮겨 남김
+            const keep = h('div.cans.keep');
+            real.insertBefore(keep, real.querySelector('.end-list'));
+            keep.appendChild(big);
+            setTimeout(() => top.remove(), 700);
+          }
+        } else {
+          // 캔에서 떨어진 가짜 화면은 계속 아래로 떨어져 사라짐
+          const v = (2 * D) / T; // 낙하 끝 속도
+          fake.style.transform = `translateY(${bottom + v * t + 1800 * t * t}px)`;
+          if (bottom + v * t > H * 1.2) { done(); return; }
+        }
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
     }, t2);
   }, START);
 }
