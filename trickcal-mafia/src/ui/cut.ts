@@ -523,56 +523,46 @@ export function canDrop(host: HTMLElement, fake: HTMLElement, makeReal: () => HT
     setTimeout(() => {
       if (!fake.isConnected) return done();
       const real = makeReal();
-      const spot = real.querySelector<HTMLElement>('.end-champ img');
+      // 가운데 캐릭터 자리 (작은 캔들과 같은 바닥 높이)에 조금 더 큰 캔으로
+      const midImg = champs[mid]?.querySelector<HTMLElement>('img');
+      const spot = midImg ?? real.querySelector<HTMLElement>('.end-champ img');
       const sr = spot ? at(spot.getBoundingClientRect()) : { x: W * 0.4, y: H * 0.3, w: H * 0.3, h: H * 0.5 };
-      const canH = Math.max(H * 0.3, sr.h * 0.78), bottom = sr.y + sr.h, cx = sr.x + sr.w / 2;
-      const ch = Math.max(H * 0.3, sr.h * 0.82), cw = ch * (136 / 175);
+      const canH = sr.h * 1.08 * 1.25, bottom = sr.y + sr.h + 4, cx = sr.x + sr.w / 2;
+      const ch = sr.h * 0.95, cw = ch * (136 / 175);
+      if (midImg) setTimeout(() => midImg.animate([{ transform: 'none' }, { transform: 'scaleY(.2)', opacity: 0 }], { duration: 120, fill: 'forwards' }), 480);
       const comi = h('img.can-comi.ride', { src: asset('chars/comi.webp'), alt: '', style: `left: ${(canH * CAN - cw) / 2}px; top: ${-ch + canH * 0.06}px; width: ${cw}px; height: ${ch}px` });
       const big = canEl(cx, bottom, canH, comi);
       big.classList.add('big');
       const top = h('div.cans');
       host.appendChild(top);
       top.appendChild(big);
-      // 손으로 그리는 낙하: 캔 바닥이 화면 위끝을 지나면 가짜 화면이 캔 바닥에 붙어 같이 밀려 내려감
-      const D = bottom + ch + 40;     // 캔이 내려오는 거리
-      const T = 0.85;                 // 낙하 시간 (초)
-      let t0 = 0, phase = 0, revealed = false;
+      // 작은 캔처럼 가운데 자리로 떨어지고, 닿는 순간 가짜 화면(배경 · UI · 작은 캔)이 아래로 팍 내리꽂히며 코미 화면
+      const BIG_FALL = 480;
       sfx('swoosh');
-      const step = (now: number) => {
-        if (!t0) t0 = now;
-        const t = (now - t0) / 1000;
-        if (phase === 0) {
-          const p = Math.min(1, t / T), e = p * p; // 중력처럼 점점 빠르게
-          const ty = -D * (1 - e);
-          big.style.transform = `translateY(${ty}px)`;
-          const canBottom = bottom + ty;
-          if (canBottom > 0) {
-            if (!revealed) { revealed = true; real.classList.remove('prep'); sfx('thump'); sfx('clang'); }
-            fake.style.transform = `translateY(${canBottom}px)`;
-          }
-          if (p >= 1) {
-            phase = 1; t0 = now;
-            big.style.transform = '';
-            // 쿵 내려앉음 + 코미는 캔 위에서 통
-            big.animate([{ transform: 'scale(1.08, .8)' }, { transform: 'translateY(-5%) scale(.95, 1.07)', offset: 0.5 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
-            big.classList.add('landed');
-            sfx('thump'); sfx('pop'); setTimeout(() => sfx('reveal'), 160);
-            top.appendChild(h('div.can-spark', { style: `left: ${cx}px; top: ${bottom - canH - ch * 0.5}px` }));
-            // 큰 캔과 코미는 코미 승리 화면 속으로 옮겨 남김
-            const keep = h('div.cans.keep');
-            real.insertBefore(keep, real.querySelector('.end-list'));
-            keep.appendChild(big);
-            setTimeout(() => top.remove(), 700);
-          }
-        } else {
-          // 캔에서 떨어진 가짜 화면은 계속 아래로 떨어져 사라짐
-          const v = (2 * D) / T; // 낙하 끝 속도
-          fake.style.transform = `translateY(${bottom + v * t + 1800 * t * t}px)`;
-          if (bottom + v * t > H * 1.2) { done(); return; }
-        }
-        requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
+      big.animate([
+        { transform: `translateY(${-(bottom + ch + 60)}px)`, offset: 0 },
+        { transform: 'translateY(0) scale(1.08, .8)', offset: 0.7, easing: 'ease-out' },
+        { transform: 'translateY(-5%) scale(.95, 1.07)', offset: 0.85 },
+        { transform: 'none' },
+      ], { duration: BIG_FALL / 0.7, easing: 'cubic-bezier(.5,0,1,.6)', fill: 'backwards' });
+      setTimeout(() => {
+        if (!fake.isConnected) return done();
+        big.classList.add('landed');
+        sfx('thump'); sfx('clang');
+        real.classList.remove('prep');
+        fake.animate([{ transform: 'none' }, { transform: `translateY(${H * 1.15}px)` }], { duration: 300, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' });
+        real.animate([{ transform: 'translateY(-10px)' }, { transform: 'translateY(4px)', offset: 0.5 }, { transform: 'none' }], { duration: 320, delay: 200 });
+        setTimeout(() => sfx('pop'), 120); setTimeout(() => sfx('reveal'), 280);
+        top.appendChild(h('div.can-spark', { style: `left: ${cx}px; top: ${bottom - canH - ch * 0.5}px` }));
+        // 큰 캔과 코미는 코미 승리 화면 속으로 옮겨 남김
+        setTimeout(() => {
+          const keep = h('div.cans.keep');
+          real.insertBefore(keep, real.querySelector('.end-list'));
+          keep.appendChild(big);
+          top.remove();
+          done();
+        }, 650);
+      }, BIG_FALL);
     }, t2);
   }, START);
 }

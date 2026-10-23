@@ -823,3 +823,4 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
 .end-screen.canned .end-champ > img { visibility: hidden; }
 .cans.keep { z-index: 2; }
 .can-comi.ride { animation: canBob .9s ease-in-out infinite alternate; }
+.end-screen.canned .end-photo { z-index: 3; }
