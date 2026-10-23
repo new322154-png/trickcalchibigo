@@ -585,7 +585,7 @@ export class GameUI {
     this.el.appendChild(fake);
     if (winner === 'elena') droneRaid(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid'); this.el.insertBefore(ov, fake); }, () => fake.remove());
     // 코미 승리: 이긴 줄 알았던 캐릭터들이 사료캔에 하나씩 깔리고 → 코미가 캔 위에 → 코미 승리
-    else canDrop(this.el, fake, () => { real(); }, () => fake.remove());
+    else canDrop(this.el, fake, () => { const ov = real(); ov.classList.add('after-raid', 'prep', 'canned'); this.el.insertBefore(ov, fake); return ov; }, () => fake.remove());
   }
 
   /** 끝 화면 한 장 (fake: 엘레나 연출용 가짜 승리 화면 — 누를 수 없고 투표 · 시간 표시 없음) */

@@ -818,3 +818,7 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
   background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,190,220,.5) 35%, transparent 65%); animation: canSpark .6s ease-out forwards; }
 @keyframes canSpark { to { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
 .cans { font-size: 20px; } #stage.compact .cans { font-size: 14px; } #stage.mobile .cans { font-size: 9.6px; }
+/* 코미 승리 화면을 가짜 화면 뒤에 깔아 둘 때는 등장 애니메이션을 멈춰 두고(자리 재기), 드러나는 순간 시작 */
+.end-screen.prep, .end-screen.prep * { animation: none !important; }
+.end-screen.canned .end-champ > img { visibility: hidden; }
+.cans.keep { z-index: 2; }

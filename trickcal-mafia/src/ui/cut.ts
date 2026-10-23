@@ -473,9 +473,10 @@ export function droneRaid(host: HTMLElement, fake: HTMLElement, showReal: () => 
 
 /**
  * 코미 승리: 가짜 승리 화면(fake)의 이긴 캐릭터들 머리 위로 캐릭터만 한 사료캔이 하나씩 쿵 떨어져 덮어 버리고,
- * 마지막으로 가운데에 큰 캔이 떨어지면 그 위로 코미가 톡 올라선다. 잠깐 뒤 코미 승리 화면(showReal).
+ * 마지막 큰 캔이 쿵 떨어지는 순간 가짜 화면(배경 · UI · 작은 캔)이 아래로 찌그러지며 사라지고
+ * 그 뒤에 깔아 둔 코미 승리 화면(makeReal)이 드러난다. 큰 캔과 그 위에 올라선 코미는 승리 화면에 그대로 남는다.
  */
-export function canDrop(host: HTMLElement, fake: HTMLElement, showReal: () => void, done: () => void) {
+export function canDrop(host: HTMLElement, fake: HTMLElement, makeReal: () => HTMLElement, done: () => void) {
   const START = 2200;  // 가짜 승리 화면을 보여 주는 시간
   const GAP = 420;     // 캔 사이 간격
   const FALL = 420;    // 떨어지는 시간
@@ -488,14 +489,14 @@ export function canDrop(host: HTMLElement, fake: HTMLElement, showReal: () => vo
     const at = (r: DOMRect) => ({ x: (r.left - hr.left) * k, y: (r.top - hr.top) * k, w: r.width * k, h: r.height * k });
     const thud = (big = false) => {
       sfx('thump'); if (big) sfx('clang');
-      fake.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${big ? 10 : 6}px)` }, { transform: 'translateY(-2px)' }, { transform: 'none' }], { duration: 260 });
+      if (!big) fake.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(6px)' }, { transform: 'translateY(-2px)' }, { transform: 'none' }], { duration: 260 });
     };
     // 캔 하나 떨어뜨리기: 바닥 가운데(cx, bottom)에 높이 hgt 로 착지
-    const drop = (cx: number, bottom: number, hgt: number, delay: number, onLand?: () => void, big = false) => {
+    const drop = (into: HTMLElement, cx: number, bottom: number, hgt: number, delay: number, onLand?: () => void, big = false) => {
       const w = hgt * (322 / 420);
       const can = h('div.can', { style: `left: ${cx - w / 2}px; top: ${bottom - hgt}px; width: ${w}px; height: ${hgt}px` },
         h('img', { src: asset('ui/can.webp'), alt: '' }), h('i.can-dust'));
-      layer.appendChild(can);
+      into.appendChild(can);
       can.animate([
         { transform: `translateY(${-(bottom + 60)}px)`, offset: 0 },
         { transform: 'translateY(0) scale(1.06, .82)', offset: 0.72, easing: 'ease-out' },
@@ -507,39 +508,43 @@ export function canDrop(host: HTMLElement, fake: HTMLElement, showReal: () => vo
     };
     // ① 이긴 캐릭터들 위로 하나씩 (왼쪽부터)
     const champs = [...fake.querySelectorAll<HTMLElement>('.end-champ')].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
-    let rightmost = 0;
     champs.forEach((c, i) => {
       const img = c.querySelector('img') ?? c;
       const r = at(img.getBoundingClientRect());
-      rightmost = Math.max(rightmost, r.x + r.w / 2 + (r.h * 1.08 * (322 / 420)) / 2);
-      drop(r.x + r.w / 2, r.y + r.h + 4, r.h * 1.08, i * GAP, () => {
-        // 깔린 캐릭터는 납작하게 사라짐
+      drop(layer, r.x + r.w / 2, r.y + r.h + 4, r.h * 1.08, i * GAP, () => {
         img.animate([{ transform: 'none' }, { transform: 'scaleY(.2)', opacity: 0 }], { duration: 120, fill: 'forwards' });
       });
     });
-    // ② 마지막: 가운데에 큰 캔 → 그 위로 코미가 톡
-    const H = host.offsetHeight || 720, W = host.offsetWidth || 1280;
+    // ② 마지막 큰 캔: 코미 승리 화면을 가짜 화면 뒤에 미리 깔고(애니메이션 멈춤), 그 화면의 코미 자리에 떨어뜨린다
     const t2 = champs.length * GAP + 250;
-    // 큰 캔은 화면 가운데, 다른 캔과 겹치면 그 오른쪽 (오른쪽 정체 표는 넘지 않게)
-    const bigW = H * 0.42 * (322 / 420);
-    const bx = Math.min(Math.max(W * 0.5, rightmost + bigW / 2 + 12), W * 0.62);
-    const big = drop(bx, H * 0.86, H * 0.42, t2, undefined, true);
-    big.classList.add('big');
-    const comi = h('img.can-comi', { src: asset('chars/comi.webp'), alt: '' });
-    const ch = H * 0.36, cw = ch * (136 / 175);
-    comi.setAttribute('style', `left: ${bx - cw / 2}px; top: ${H * 0.86 - H * 0.42 - ch + H * 0.03}px; width: ${cw}px; height: ${ch}px`);
-    setTimeout(() => {
-      if (!fake.isConnected) return;
-      layer.appendChild(comi);
-      layer.appendChild(h('div.can-spark', { style: `left: ${bx}px; top: ${H * 0.86 - H * 0.42 - ch * 0.5}px` }));
-      sfx('pop'); setTimeout(() => sfx('reveal'), 150);
-    }, t2 + FALL + 280);
-    // ③ 코미 승리 화면
     setTimeout(() => {
       if (!fake.isConnected) return done();
-      showReal();
-      layer.classList.add('out');
-      setTimeout(() => { done(); layer.remove(); }, 650);
-    }, t2 + FALL + 280 + 1300);
+      const real = makeReal();
+      const W = host.offsetWidth || 1280, H = host.offsetHeight || 720;
+      const spot = real.querySelector<HTMLElement>('.end-champ img');
+      const sr = spot ? at(spot.getBoundingClientRect()) : { x: W * 0.4, y: H * 0.3, w: H * 0.3, h: H * 0.5 };
+      const canH = Math.max(H * 0.3, sr.h * 0.78), bottom = sr.y + sr.h;
+      const keep = h('div.cans.keep');
+      real.insertBefore(keep, real.querySelector('.end-list'));
+      const cx = sr.x + sr.w / 2;
+      const bigCan = drop(layer, cx, bottom, canH, 0, () => {
+        keep.appendChild(bigCan); // 떨어지는 동안엔 맨 위, 내려앉으면 코미 화면 속으로 옮겨 남김
+        // 쿵! 가짜 화면과 작은 캔들이 아래로 찌그러지며 사라지고 코미 화면이 드러남
+        const crush = [{ transform: 'none', opacity: 1 }, { transform: 'scale(1.03, .9)', opacity: 1, offset: 0.25 }, { transform: 'scale(1.08, .02)', opacity: 0.2 }];
+        const opt = { duration: 420, easing: 'cubic-bezier(.6,0,.9,.4)', fill: 'forwards' as FillMode };
+        fake.style.transformOrigin = '50% 100%'; layer.style.transformOrigin = '50% 100%';
+        fake.animate(crush, opt); layer.animate(crush, opt);
+        real.classList.remove('prep');
+        real.animate([{ transform: 'translateY(8px)' }, { transform: 'translateY(-3px)', offset: 0.5 }, { transform: 'none' }], { duration: 300 });
+        // 코미가 캔 위로 톡
+        const ch = Math.max(H * 0.3, sr.h * 0.82), cw = ch * (136 / 175);
+        keep.append(
+          h('div.can-spark', { style: `left: ${cx}px; top: ${bottom - canH - ch * 0.5}px` }),
+          h('img.can-comi', { src: asset('chars/comi.webp'), alt: '', style: `left: ${cx - cw / 2}px; top: ${bottom - canH - ch + canH * 0.06}px; width: ${cw}px; height: ${ch}px` }));
+        sfx('pop'); setTimeout(() => sfx('reveal'), 150);
+        setTimeout(() => { done(); layer.remove(); }, 450);
+      }, true);
+      bigCan.classList.add('big');
+    }, t2);
   }, START);
 }
