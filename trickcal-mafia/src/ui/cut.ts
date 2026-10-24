@@ -141,10 +141,9 @@ const CUT_CHAR: Partial<Record<CutKind, string>> = {
   p_kill: 'nifel', p_seal: 'mute', p_identify: 'bella', p_agitate: 'joan', p_protect: 'hilde', p_investigate: 'polan',
   p_track: 'butter', p_disguise: 'spiky', saved: 'hilde', counter: 'diana', blast: 'mari', wish: 'ui', reveal: 'heidi', overturn: 'rion',
 };
-/** 능력 그림이 크게 나오는 때 (초). 처형은 그림이 캐릭터가 아니라서 없음 */
-const FINALE: Partial<Record<Layout, number>> = {
-  kill: 2.9, hack: 2.8, wish: 3.0, inv: 2.5, heal: 2.0, saved: 2.0, track: 2.6, disg: 2.4, tarot: 2.3, agit: 2.4, void: 2.0, parry: 2.6, boom: 2.3, flash: 2.9,
-};
+/** 이드처럼 두 장면: ① 능력 그림 컷인 → ② 그 능력으로 벌어지는 장면. 처형은 캐릭터 능력이 아니라 바로 장면 */
+const INTRO = 1.5;
+const TWO_STAGE = new Set<Layout>(['kill', 'hack', 'wish', 'inv', 'heal', 'saved', 'track', 'disg', 'tarot', 'agit', 'void', 'parry', 'boom', 'flash']);
 
 /** 소품 장면들 (크기를 em 으로 맞추고 제목을 아래 가운데에) */
 const SCENES = new Set<Layout>(['kill', 'hack', 'wish', 'inv', 'heal', 'saved', 'track', 'disg', 'tarot', 'agit', 'verdict', 'void', 'parry', 'boom', 'flash']);
@@ -220,10 +219,9 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
     const layout = def.layout ?? 'char';
     const el = h(`div.cut2.lay-${layout}.k-${kind}${kind.startsWith('p_') ? '.mine' : ''}${SCENES.has(layout) ? '.scn' : ''}`, { style: `--c: ${def.color}` });
     const file = def.file ? cutImg(def.file) : fallbackImg;
-    // 장면 속 배우는 서 있는 캐릭터 그림, 능력 그림(file)은 마지막에 화면 가득 (우로스처럼)
+    // 장면 속 배우는 서 있는 캐릭터 그림 (능력 그림은 앞의 컷인에서)
     const actor = CUT_CHAR[kind] ? asset(`chars/${CUT_CHAR[kind]}.webp`) : file;
-    const fin = FINALE[layout];
-    if (fin !== undefined) el.style.cssText += `; --fin: ${fin}s; --tt: ${(fin + 0.4).toFixed(2)}s`;
+    const two = TWO_STAGE.has(layout);
     let after: (() => void) | null = null;
     let stop: (() => void) | null = null;
     switch (layout) {
@@ -461,13 +459,13 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
           h('div.hk-glitch'),
           h('div.cx-stamp.hk-stamp', 'LOCKED'),
           title(def, text));
-        const t0 = performance.now();
+        let t0 = 0;
         const tick = () => {
           const p = Math.min(100, Math.max(0, Math.round(((performance.now() - t0) / 1000 / cutSpeed() - 0.5) / 1.4 * 100)));
           pct.textContent = `${p}%`;
           if (p < 100 && el.isConnected) requestAnimationFrame(tick);
         };
-        requestAnimationFrame(tick);
+        after = () => { t0 = performance.now(); requestAnimationFrame(tick); };
         break;
       }
       case 'wish': {
@@ -543,10 +541,22 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         img.onerror = () => { img.onerror = null; img.src = fallbackImg; img.classList.add('still'); };
       }
     }
-    if (fin !== undefined) {
-      // 마무리: 장면이 끝나면 능력 그림이 크게 (번쩍 · 살짝 당겨졌다 자리 잡기) — 제목은 그 위에
-      el.append(h('div.sc-finale', h('div.sf-glow'), h('img.sf-img', { src: file, alt: '' })));
-      setTimeout(() => !done && sfx('reveal'), fin * 1000 / cutSpeed());
+    // 두 장면: 지금까지 만든 장면은 잠시 빼 두고, 먼저 능력 그림 컷인 → INTRO 뒤 번쩍하며 장면을 붙임 (그때부터 장면 연출이 시작)
+    let mount: (() => void) | null = null;
+    if (two) {
+      const scene = h('div.st-b', ...Array.from(el.childNodes));
+      const intro = h('div.st-a', ...charStage(def, file, false, text));
+      el.append(intro);
+      const run = after;
+      after = null;
+      mount = () => {
+        if (done) return;
+        el.insertBefore(scene, intro);
+        el.append(h('div.st-flash'));
+        intro.classList.add('gone');
+        setTimeout(() => intro.remove(), 400 / cutSpeed());
+        run?.();
+      };
     }
     el.append(h('div.cut2-skip', '눌러서 넘기기'));
     let done = false;
@@ -554,8 +564,13 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
     el.onclick = close;
     host.appendChild(el);
     after?.();
-    for (const [s, d] of SE[kind] ?? [['skill', 0]]) d ? setTimeout(() => !done && sfx(s), d) : sfx(s);
-    setTimeout(close, (fin !== undefined ? (fin + 2.4) * 1000 : def.ms ?? 2800) / cutSpeed());
+    const off = two ? INTRO * 1000 : 0;
+    if (two) { sfx('skill'); setTimeout(() => mount?.(), off / cutSpeed()); }
+    for (const [s, d] of SE[kind] ?? [['skill', 0]]) {
+      if (two && s === 'skill' && d === 0) continue;
+      d + off ? setTimeout(() => !done && sfx(s), d + off) : sfx(s);
+    }
+    setTimeout(close, ((def.ms ?? 2800) + off) / cutSpeed());
   });
   if (!playing) next();
 }
