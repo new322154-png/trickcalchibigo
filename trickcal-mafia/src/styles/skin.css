@@ -1151,3 +1151,17 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
 .dr-msg { background: var(--paper-bg) !important; color: var(--p-ink) !important; font-family: var(--p-head) !important; border-radius: 2px !important; box-shadow: var(--p-shadow) !important; transform: translateX(-50%) rotate(-1.5deg) !important; }
 .dr-msg { padding: 10px 28px; }
 .lay-kill { --st: 2.4s; --tt: 2.5s; } .lay-hack { --st: 2.35s; --tt: 2.5s; } .lay-wish { --st: 2.4s; --tt: 2.6s; }
+
+/* ===== 장면 마무리: 능력 그림이 화면 가득 (우로스처럼) ===== */
+.sc-finale { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, var(--c) 55%, #1a1410) 0%, #120d0a 78%);
+  opacity: 0; animation: sfIn .22s var(--fin, 2.5s) ease-out forwards; }
+.sc-finale::before { content: ''; position: absolute; inset: 0; background: #fff; opacity: 0; animation: sfFlash .45s var(--fin, 2.5s) ease-out; }
+.sf-glow { position: absolute; left: 50%; top: 50%; width: 70%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 60%, #fff) 0%, transparent 62%); mix-blend-mode: screen; opacity: .45; }
+.sf-img { position: absolute; left: 50%; top: 46%; height: 86%; max-width: 94%; object-fit: contain; transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 .8em rgba(0,0,0,.6)); animation: sfSettle .55s var(--fin, 2.5s) cubic-bezier(.2,1.3,.4,1) both; }
+@keyframes sfIn { to { opacity: 1; } }
+@keyframes sfFlash { 0% { opacity: .85; } 100% { opacity: 0; } }
+@keyframes sfSettle { from { transform: translate(-50%, -50%) scale(1.22); filter: brightness(1.9) drop-shadow(0 0 1.5em var(--c)); } to { transform: translate(-50%, -50%); } }
+#stage.mobile .sf-img { height: 70%; max-width: 98%; }

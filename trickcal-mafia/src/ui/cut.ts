@@ -136,6 +136,16 @@ function teamEmo(side: 'm' | 'c') {
     h('i.win', '🎉'), h('i.sad', '😢'));
 }
 
+/** 장면에 나오는 서 있는 캐릭터 (chars/*.webp) */
+const CUT_CHAR: Partial<Record<CutKind, string>> = {
+  p_kill: 'nifel', p_seal: 'mute', p_identify: 'bella', p_agitate: 'joan', p_protect: 'hilde', p_investigate: 'polan',
+  p_track: 'butter', p_disguise: 'spiky', saved: 'hilde', counter: 'diana', blast: 'mari', wish: 'ui', reveal: 'heidi', overturn: 'rion',
+};
+/** 능력 그림이 크게 나오는 때 (초). 처형은 그림이 캐릭터가 아니라서 없음 */
+const FINALE: Partial<Record<Layout, number>> = {
+  kill: 2.9, hack: 2.8, wish: 3.0, inv: 2.5, heal: 2.0, saved: 2.0, track: 2.6, disg: 2.4, tarot: 2.3, agit: 2.4, void: 2.0, parry: 2.6, boom: 2.3, flash: 2.9,
+};
+
 /** 소품 장면들 (크기를 em 으로 맞추고 제목을 아래 가운데에) */
 const SCENES = new Set<Layout>(['kill', 'hack', 'wish', 'inv', 'heal', 'saved', 'track', 'disg', 'tarot', 'agit', 'verdict', 'void', 'parry', 'boom', 'flash']);
 
@@ -210,6 +220,10 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
     const layout = def.layout ?? 'char';
     const el = h(`div.cut2.lay-${layout}.k-${kind}${kind.startsWith('p_') ? '.mine' : ''}${SCENES.has(layout) ? '.scn' : ''}`, { style: `--c: ${def.color}` });
     const file = def.file ? cutImg(def.file) : fallbackImg;
+    // 장면 속 배우는 서 있는 캐릭터 그림, 능력 그림(file)은 마지막에 화면 가득 (우로스처럼)
+    const actor = CUT_CHAR[kind] ? asset(`chars/${CUT_CHAR[kind]}.webp`) : file;
+    const fin = FINALE[layout];
+    if (fin !== undefined) el.style.cssText += `; --fin: ${fin}s; --tt: ${(fin + 0.4).toFixed(2)}s`;
     let after: (() => void) | null = null;
     let stop: (() => void) | null = null;
     switch (layout) {
@@ -263,7 +277,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('night_room.webp')}` }),
           h('div.iv-board', h('i.iv-note.a'), h('i.iv-note.b'), polaroid(extra.target ?? fallbackImg, nm), h('i.iv-string.a'), h('i.iv-string.b')),
-          h('img.sc-char.iv-polan', { src: file, alt: '' }),
+          h('img.sc-char.iv-polan', { src: actor, alt: '' }),
           h('div.iv-lens', h('i')),
           h('div.cx-stamp.iv-stamp', res === 'nifel' ? 'NIFEL' : res === 'clear' ? 'CLEAR' : '???'),
           title(def, res === 'nifel' ? `${nm}는 니펠이다!` : res === 'clear' ? `${nm}는 니펠이 아니다` : text));
@@ -276,7 +290,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('corridor.webp')}` }),
           h('div.cx-door.hl-door', polaroid(extra.target ?? fallbackImg, nm), h('div.hl-band', h('i.a'), h('i.b'))),
           h('div.hl-aura'),
-          h('img.sc-char.hl-hilde', { src: file, alt: '' }),
+          h('img.sc-char.hl-hilde', { src: actor, alt: '' }),
           h('div.cx-stamp.hl-stamp', 'PROTECTED'),
           title(def, text));
         break;
@@ -286,7 +300,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         const nm = extra.name || '';
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_night.webp')}` }),
-          h('img.sc-char.sv-hilde', { src: file, alt: '' }),
+          h('img.sc-char.sv-hilde', { src: actor, alt: '' }),
           h('div.sv-photo', polaroid(extra.target ?? fallbackImg, nm)),
           h('div.sv-shield'),
           svgEl('sv-claw', '0 0 100 100', [0, 1, 2].map((i) => `<path d="M${96 - i * 4} ${20 + i * 12} L ${70 - i * 2} ${34 + i * 12}" style="--i:${i}"/>`).join('')),
@@ -307,7 +321,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('corridor.webp')}` }),
           paws,
           h('div.tr-photo', polaroid(extra.target ?? fallbackImg, nm)),
-          h('img.sc-char.tr-butter', { src: file, alt: '' }),
+          h('img.sc-char.tr-butter', { src: actor, alt: '' }),
           h('div.cx-stamp.tr-stamp', 'TRACKING'),
           title(def, text));
         break;
@@ -320,7 +334,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('night_room.webp')}` }),
           h('div.dg-photo', polaroid(extra.target ?? fallbackImg, nm)),
-          h('img.sc-char.dg-spiky', { src: file, alt: '' }),
+          h('img.sc-char.dg-spiky', { src: actor, alt: '' }),
           h('div.dg-smoke', h('i'), h('i'), h('i'), h('i')),
           h('div.dg-mirror', h('div.dg-glass', !fail && extra.roleImg ? h('img', { src: extra.roleImg, alt: '' }) : h('b', '?')), h('small', fail ? '변장 실패' : extra.roleName ?? '')),
           h('div.cx-stamp.dg-stamp', fail ? 'FAILED' : 'COPIED'),
@@ -334,7 +348,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         el.classList.toggle('killer', killer);
         el.append(
           h('div.ta-bg'),
-          h('img.sc-char.ta-bella', { src: file, alt: '' }),
+          h('img.sc-char.ta-bella', { src: actor, alt: '' }),
           h('div.ta-card', h('div.ta-back', h('img', { src: extra.target ?? fallbackImg, alt: '' })),
             h('div.ta-front', extra.roleImg ? h('img', { src: extra.roleImg, alt: '' }) : h('b', '?'), h('b.ta-name', extra.roleName ?? ''), h('small', nm))),
           title(def, extra.roleName ? `${nm}의 직업은 ${extra.roleName}` : text));
@@ -345,7 +359,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         const nm = extra.name || text.replace(/ 선동!$/, '');
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('trial.webp')}` }),
-          h('img.sc-char.ag-joan', { src: file, alt: '' }),
+          h('img.sc-char.ag-joan', { src: actor, alt: '' }),
           h('div.ag-waves', h('i'), h('i'), h('i')),
           h('div.ag-photo', polaroid(extra.target ?? fallbackImg, nm), h('i.ag-tape.a'), h('i.ag-tape.b')),
           h('div.cx-stamp.ag-stamp', 'VOICE STOLEN'),
@@ -371,7 +385,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('trial.webp')}` }),
           h('div.vo-half.l', doc()), h('div.vo-half.r', doc()),
-          h('img.sc-char.vo-rion', { src: file, alt: '' }),
+          h('img.sc-char.vo-rion', { src: actor, alt: '' }),
           h('div.cx-stamp.vo-stamp', 'VOID'),
           title(def, text));
         break;
@@ -381,7 +395,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         const nm2 = extra.name2 ?? '';
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_night.webp')}` }),
-          h('img.sc-char.pr-diana', { src: file, alt: '' }),
+          h('img.sc-char.pr-diana', { src: actor, alt: '' }),
           svgEl('pr-claw', '0 0 100 100', [0, 1, 2].map((i) => `<path d="M${98 - i * 3} ${18 + i * 10} L ${52 - i * 2} ${40 + i * 10}" style="--i:${i}"/>`).join('')),
           h('div.pr-hit', POW()),
           h('div.pr-flash'),
@@ -395,7 +409,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         const nm2 = extra.name2 ?? '';
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_night.webp')}` }),
-          h('img.sc-char.bm-mari', { src: file, alt: '' }),
+          h('img.sc-char.bm-mari', { src: actor, alt: '' }),
           h('div.bm-fuse', h('i.bm-spark')),
           h('div.bm-photo', polaroid(extra.target2 ?? fallbackImg, nm2)),
           h('div.bm-fire'), h('div.bm-flash'), h('div.bm-soot'),
@@ -407,7 +421,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         const nm = extra.name || text.replace(/의 정체$/, '');
         el.append(
           h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_day.webp')}` }),
-          h('img.sc-char.fl-heidi', { src: file, alt: '' }),
+          h('img.sc-char.fl-heidi', { src: actor, alt: '' }),
           h('div.fl-flash'),
           h('div.fl-photo', polaroid(extra.roleImg ?? extra.target ?? fallbackImg, nm), h('small.fl-role', extra.roleName ?? '')),
           h('div.cx-stamp.fl-stamp', 'REVEALED'),
@@ -422,7 +436,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
           h('div.kl-door', polaroid(extra.target ?? fallbackImg, nm), h('i.kl-knob')),
           h('img.kl-shadow', { src: asset('chars/nifel.webp'), alt: '' }),
           h('div.kl-dark'), h('div.kl-candle'),
-          h('img.kl-nifel', { src: file, alt: '' }),
+          h('img.kl-nifel', { src: actor, alt: '' }),
           svgEl('kl-claw', '0 0 100 100', [0, 1, 2].map((i) => `<path d="M${18 + i * 14} 18 Q ${40 + i * 14} 48 ${62 + i * 12} 86" style="--i:${i}"/>`).join('')),
           h('div.kl-flash'),
           h('div.cx-stamp.kl-stamp', 'TARGET'),
@@ -441,7 +455,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         const pct = h('b', '0%');
         el.append(
           h('div.hk-bg'), rain,
-          h('img.hk-mute', { src: file, alt: '' }),
+          h('img.hk-mute', { src: actor, alt: '' }),
           h('div.hk-door', polaroid(extra.target ?? fallbackImg, nm), h('div.hk-lock', h('i.hk-shackle'), h('i.hk-body'))),
           h('div.hk-bar', h('small.en', 'ACCESS'), h('div.hk-fill'), pct),
           h('div.hk-glitch'),
@@ -468,7 +482,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         el.append(
           h('div.cut2-scene.ws-bg', { style: `--bg: ${bgUrl('farm.webp')}` }),
           h('div.ws-glow'),
-          h('img.ws-ui', { src: file, alt: '' }),
+          h('img.ws-ui', { src: actor, alt: '' }),
           h('div.ws-photo', polaroid(extra.target ?? fallbackImg, nm)),
           leaves,
           h('div.ws-burst'),
@@ -529,6 +543,11 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         img.onerror = () => { img.onerror = null; img.src = fallbackImg; img.classList.add('still'); };
       }
     }
+    if (fin !== undefined) {
+      // 마무리: 장면이 끝나면 능력 그림이 크게 (번쩍 · 살짝 당겨졌다 자리 잡기) — 제목은 그 위에
+      el.append(h('div.sc-finale', h('div.sf-glow'), h('img.sf-img', { src: file, alt: '' })));
+      setTimeout(() => !done && sfx('reveal'), fin * 1000 / cutSpeed());
+    }
     el.append(h('div.cut2-skip', '눌러서 넘기기'));
     let done = false;
     const close = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => { stop?.(); el.remove(); next(); }, 300); };
@@ -536,7 +555,7 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
     host.appendChild(el);
     after?.();
     for (const [s, d] of SE[kind] ?? [['skill', 0]]) d ? setTimeout(() => !done && sfx(s), d) : sfx(s);
-    setTimeout(close, (def.ms ?? 2800) / cutSpeed());
+    setTimeout(close, (fin !== undefined ? (fin + 2.4) * 1000 : def.ms ?? 2800) / cutSpeed());
   });
   if (!playing) next();
 }
