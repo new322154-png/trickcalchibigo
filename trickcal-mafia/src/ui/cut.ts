@@ -8,44 +8,50 @@ import { asset, bgUrl, h } from './dom';
 import { sfx } from './sfx';
 import { cutSpeed, shatter, type ShatterPlan } from './shatter';
 
-type Layout = 'char' | 'contact' | 'paper' | 'impact' | 'farm' | 'bat' | 'news' | 'drone' | 'droneTry' | 'shatter' | 'kill' | 'hack' | 'wish';
+type Layout = 'char' | 'contact' | 'paper' | 'impact' | 'farm' | 'bat' | 'news' | 'drone' | 'droneTry' | 'shatter' | 'kill' | 'hack' | 'wish' | 'inv' | 'heal' | 'saved' | 'track' | 'disg' | 'tarot' | 'agit' | 'verdict' | 'void' | 'parry' | 'boom' | 'flash';
 interface CutDef { file?: string; title: string; en: string; color: string; layout?: Layout; ms?: number }
 
 export const CUTS: Record<CutKind, CutDef> = {
   p_kill: { file: 'p_kill.webp', title: '습격', en: 'ASSAULT', color: '#ff3355', layout: 'kill', ms: 3900 },
   p_seal: { file: 'p_seal.webp', title: '해킹', en: 'HACKING', color: '#2fe6c8', layout: 'hack', ms: 3900 },
-  p_identify: { file: 'p_identify.webp', title: '직업 탐지', en: 'IDENTIFY', color: '#8a6bff' },
-  p_agitate: { file: 'p_agitate.webp', title: '선동', en: 'AGITATE', color: '#ff8a3d' },
-  p_protect: { file: 'p_protect.webp', title: '치유', en: 'HEAL', color: '#5fd38a' },
-  p_investigate: { file: 'p_investigate.webp', title: '조사', en: 'INVESTIGATE', color: '#4da3ff' },
-  p_track: { file: 'p_track.webp', title: '추적', en: 'TRACKING', color: '#ffb648' },
-  p_disguise: { file: 'p_disguise.webp', title: '변장', en: 'DISGUISE', color: '#ff7ad9' },
+  p_identify: { file: 'p_identify.webp', title: '직업 탐지', en: 'IDENTIFY', color: '#8a6bff', layout: 'tarot', ms: 3800 },
+  p_agitate: { file: 'p_agitate.webp', title: '선동', en: 'AGITATE', color: '#ff8a3d', layout: 'agit', ms: 3800 },
+  p_protect: { file: 'p_protect.webp', title: '치유', en: 'HEAL', color: '#5fd38a', layout: 'heal', ms: 3400 },
+  p_investigate: { file: 'p_investigate.webp', title: '조사', en: 'INVESTIGATE', color: '#4da3ff', layout: 'inv', ms: 3800 },
+  p_track: { file: 'p_track.webp', title: '추적', en: 'TRACKING', color: '#ffb648', layout: 'track', ms: 3600 },
+  p_disguise: { file: 'p_disguise.webp', title: '변장', en: 'DISGUISE', color: '#ff7ad9', layout: 'disg', ms: 3800 },
   p_farm: { file: 'p_farm.webp', title: '주말농장', en: 'WEEKEND FARM', color: '#9be37a', layout: 'farm', ms: 4800 },
   p_bat: { file: 'p_bat.webp', title: '편 고르기', en: 'CHOOSE A SIDE', color: '#b57bff', layout: 'bat', ms: 5600 },
   p_contact: { title: '접선 성공', en: 'CONTACT', color: '#ff5a5a', layout: 'contact', ms: 3200 },
   p_drone_ok: { file: 'drone_fail.webp', title: '드론 완성!', en: 'SUCCESS', color: '#4da3ff', layout: 'droneTry', ms: 2200 },
   p_drone_fail: { file: 'drone_ok.webp', title: '조립 실패', en: 'FAILED', color: '#8890b0', layout: 'droneTry', ms: 2000 },
-  execute: { file: 'execute.webp', title: '처형', en: 'EXECUTION', color: '#ff3355', layout: 'paper' },
-  overturn: { file: 'overturn.webp', title: '판결 뒤집기', en: 'OVERTURN', color: '#7ac8ff' },
+  execute: { file: 'execute.webp', title: '처형', en: 'EXECUTION', color: '#ff3355', layout: 'verdict', ms: 3600 },
+  overturn: { file: 'overturn.webp', title: '판결 뒤집기', en: 'OVERTURN', color: '#7ac8ff', layout: 'void', ms: 3800 },
   vanish: { title: '실종', en: 'MISSING', color: '#b0342b', layout: 'news', ms: 4800 },
-  saved: { file: 'p_protect.webp', title: '치유', en: 'HEALED', color: '#5fd38a', layout: 'impact', ms: 2600 },
-  counter: { file: 'counter.webp', title: '반격', en: 'COUNTER', color: '#ffb648', layout: 'impact', ms: 2600 },
-  blast: { file: 'blast.webp', title: '폭사', en: 'EXPLOSION', color: '#ff5a2a' },
+  saved: { file: 'p_protect.webp', title: '치유', en: 'HEALED', color: '#5fd38a', layout: 'saved', ms: 3600 },
+  counter: { file: 'counter.webp', title: '반격', en: 'COUNTER', color: '#ffb648', layout: 'parry', ms: 4000 },
+  blast: { file: 'blast.webp', title: '폭사', en: 'EXPLOSION', color: '#ff5a2a', layout: 'boom', ms: 3800 },
   wish: { file: 'wish.webp', title: '소원', en: 'WISH', color: '#9be37a', layout: 'wish', ms: 4800 },
   uros: { file: 'uros.webp', title: '부활', en: 'REVIVAL', color: '#c0405a', layout: 'shatter', ms: 9000 },
   drone: { title: '드론 소리', en: 'BZZZZ…', color: '#4da3ff', layout: 'drone', ms: 3400 },
-  reveal: { file: 'reveal.webp', title: '정체 공개', en: 'REVEAL', color: '#ffd38a' },
+  reveal: { file: 'reveal.webp', title: '정체 공개', en: 'REVEAL', color: '#ffd38a', layout: 'flash', ms: 4000 },
 };
 
 /** 내 직업의 개인 컷씬 */
 /** 컷씬이 뜰 때 나는 소리 [소리, 지연 ms] */
 const SE: Partial<Record<CutKind, [string, number][]>> = {
+  p_investigate: [['skill', 0], ['swoosh', 600], ['swoosh', 1100], ['gavel', 1900]],
+  p_protect: [['skill', 0], ['pop', 900], ['heal', 1050], ['gavel', 1600]],
+  p_track: [['skill', 0], ['tick', 500], ['tick', 750], ['tick', 1000], ['tick', 1250], ['tick', 1500], ['tick', 1750], ['gavel', 2100]],
+  p_disguise: [['skill', 0], ['pop', 1000], ['reveal', 1350]],
+  p_identify: [['skill', 0], ['note', 700], ['reveal', 1250]],
+  p_agitate: [['skill', 0], ['thump', 1000], ['thump', 1150], ['contact', 1500]],
   p_seal: [['skill', 0], ['tick', 600], ['tick', 900], ['tick', 1200], ['tick', 1500], ['clang', 2050]],
   p_kill: [['door', 0], ['night', 1000], ['slash', 1900], ['slash', 2020], ['slash', 2140]], p_contact: [['contact', 0]], p_drone_ok: [['droneOk', 0]], p_drone_fail: [['fizzle', 0]],
   p_farm: [['skill', 0], ['bang', 3450]], p_bat: [['skill', 0], ['pop', 4700]],
-  execute: [['execute', 0]], vanish: [['paper', 0], ['vanish', 700], ['gavel', 1250]], saved: [['heal', 0]], counter: [['clang', 0]],
-  blast: [['boom', 0]], wish: [['skill', 0], ['note', 900], ['revive', 2000]], uros: [], drone: [['buzz', 0]],
-  reveal: [['reveal', 0]], overturn: [['reveal', 0], ['gavel', 200]],
+  execute: [['paper', 0], ['gavel', 800], ['execute', 1200], ['swoosh', 1800]], vanish: [['paper', 0], ['vanish', 700], ['gavel', 1250]], saved: [['skill', 0], ['slash', 700], ['clang', 950], ['heal', 1100], ['gavel', 1500]], counter: [['slash', 500], ['punch', 800], ['clang', 820], ['swoosh', 1300], ['gavel', 1900]],
+  blast: [['skill', 0], ['tick', 400], ['tick', 700], ['tick', 1000], ['tick', 1250], ['boom', 1500], ['shatter', 1520]], wish: [['skill', 0], ['note', 900], ['revive', 2000]], uros: [], drone: [['buzz', 0]],
+  reveal: [['skill', 0], ['pop', 900], ['bang', 1000], ['reveal', 1900]], overturn: [['paper', 300], ['swoosh', 900], ['paper', 1000], ['gavel', 1400]],
 };
 
 export const MY_CUT: Record<string, CutKind[]> = {
@@ -130,6 +136,9 @@ function teamEmo(side: 'm' | 'c') {
     h('i.win', '🎉'), h('i.sad', '😢'));
 }
 
+/** 소품 장면들 (크기를 em 으로 맞추고 제목을 아래 가운데에) */
+const SCENES = new Set<Layout>(['kill', 'hack', 'wish', 'inv', 'heal', 'saved', 'track', 'disg', 'tarot', 'agit', 'verdict', 'void', 'parry', 'boom', 'flash']);
+
 /** SVG 요소 (h() 는 HTML 이라 SVG 는 따로) */
 function svgEl(cls: string, viewBox: string, inner: string) {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -192,14 +201,14 @@ export function playNews(host: HTMLElement, day: number) {
   if (!playing) next();
 }
 
-export interface CutExtra { n?: number; myImg?: string; /** 아침 신문의 날짜 */ day?: number; /** 장면 속 대상 얼굴 · 이름 */ target?: string; name?: string }
+export interface CutExtra { n?: number; myImg?: string; /** 아침 신문의 날짜 */ day?: number; /** 장면 속 대상 얼굴 · 이름 */ target?: string; name?: string; target2?: string; name2?: string; role?: string; roleImg?: string; roleName?: string }
 
 export function playCut(host: HTMLElement, kind: CutKind, text: string, fallbackImg: string, extra: CutExtra = {}) {
   const def = CUTS[kind];
   if (!def) return;
   queue.push(() => {
     const layout = def.layout ?? 'char';
-    const el = h(`div.cut2.lay-${layout}.k-${kind}${kind.startsWith('p_') ? '.mine' : ''}`, { style: `--c: ${def.color}` });
+    const el = h(`div.cut2.lay-${layout}.k-${kind}${kind.startsWith('p_') ? '.mine' : ''}${SCENES.has(layout) ? '.scn' : ''}`, { style: `--c: ${def.color}` });
     const file = def.file ? cutImg(def.file) : fallbackImg;
     let after: (() => void) | null = null;
     let stop: (() => void) | null = null;
@@ -246,6 +255,165 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         // 아침 신문: 빙글빙글 돌며 날아와 탁 놓이고, 사진 위에 MISSING 도장
         el.append(...newsPaper('missing', text || '누군가 사라졌다!', extra.day ?? 0, fallbackImg));
         break;
+      case 'inv': {
+        // 폴랑 조사: 코르크 판의 대상 사진 위로 돋보기가 훑다가 멈추면 NIFEL / CLEAR 도장
+        const nm = extra.name || text.replace(/ 조사!$/, '');
+        const res = extra.n === 1 ? 'nifel' : extra.n === 0 ? 'clear' : '';
+        el.classList.add('res-' + (res || 'none'));
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('night_room.webp')}` }),
+          h('div.iv-board', h('i.iv-note.a'), h('i.iv-note.b'), polaroid(extra.target ?? fallbackImg, nm), h('i.iv-string.a'), h('i.iv-string.b')),
+          h('img.sc-char.iv-polan', { src: file, alt: '' }),
+          h('div.iv-lens', h('i')),
+          h('div.cx-stamp.iv-stamp', res === 'nifel' ? 'NIFEL' : res === 'clear' ? 'CLEAR' : '???'),
+          title(def, res === 'nifel' ? `${nm}는 니펠이다!` : res === 'clear' ? `${nm}는 니펠이 아니다` : text));
+        break;
+      }
+      case 'heal': {
+        // 힐데 치유 (본인): 대상 방문에 십자 반창고가 착, 초록 빛이 감싸고 PROTECTED
+        const nm = extra.name || text.replace(/ 치유!$/, '');
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('corridor.webp')}` }),
+          h('div.cx-door.hl-door', polaroid(extra.target ?? fallbackImg, nm), h('div.hl-band', h('i.a'), h('i.b'))),
+          h('div.hl-aura'),
+          h('img.sc-char.hl-hilde', { src: file, alt: '' }),
+          h('div.cx-stamp.hl-stamp', 'PROTECTED'),
+          title(def, text));
+        break;
+      }
+      case 'saved': {
+        // 살려냄 (모두): 할퀴기 자국이 날아오다 초록 방패에 튕겨 부서짐 → SAVED
+        const nm = extra.name || '';
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_night.webp')}` }),
+          h('img.sc-char.sv-hilde', { src: file, alt: '' }),
+          h('div.sv-photo', polaroid(extra.target ?? fallbackImg, nm)),
+          h('div.sv-shield'),
+          svgEl('sv-claw', '0 0 100 100', [0, 1, 2].map((i) => `<path d="M${96 - i * 4} ${20 + i * 12} L ${70 - i * 2} ${34 + i * 12}" style="--i:${i}"/>`).join('')),
+          h('div.sv-flash'),
+          h('div.cx-stamp.sv-stamp', 'SAVED'),
+          title(def, text));
+        break;
+      }
+      case 'track': {
+        // 버터 추적: 복도 바닥에 발자국이 하나씩 찍히고 버터가 킁킁 따라감 → TRACKING
+        const nm = extra.name || text.replace(/ 추적!$/, '');
+        const paws = h('div.tr-paws');
+        for (let i = 0; i < 8; i++) {
+          const paw = svgEl('', '-10 -10 20 20', '<ellipse cx="0" cy="3" rx="5" ry="4.2"/><ellipse cx="-5.5" cy="-3.5" rx="2" ry="2.6"/><ellipse cx="-1.8" cy="-6.5" rx="2" ry="2.6"/><ellipse cx="1.8" cy="-6.5" rx="2" ry="2.6"/><ellipse cx="5.5" cy="-3.5" rx="2" ry="2.6"/>');
+          paws.appendChild(h('i', { style: `--i: ${i}; --y: ${i % 2 ? 17 : 12}%` }, paw));
+        }
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('corridor.webp')}` }),
+          paws,
+          h('div.tr-photo', polaroid(extra.target ?? fallbackImg, nm)),
+          h('img.sc-char.tr-butter', { src: file, alt: '' }),
+          h('div.cx-stamp.tr-stamp', 'TRACKING'),
+          title(def, text));
+        break;
+      }
+      case 'disg': {
+        // 스피키 변장: 대상 사진 앞에서 연기 펑 → 거울 속에 대상 직업 캐릭터 (니펠 팀이면 거울이 깨지고 실패)
+        const nm = extra.name || text.replace(/ 변장!$/, '');
+        const fail = extra.role === 'x';
+        el.classList.toggle('fail', fail);
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('night_room.webp')}` }),
+          h('div.dg-photo', polaroid(extra.target ?? fallbackImg, nm)),
+          h('img.sc-char.dg-spiky', { src: file, alt: '' }),
+          h('div.dg-smoke', h('i'), h('i'), h('i'), h('i')),
+          h('div.dg-mirror', h('div.dg-glass', !fail && extra.roleImg ? h('img', { src: extra.roleImg, alt: '' }) : h('b', '?')), h('small', fail ? '변장 실패' : extra.roleName ?? '')),
+          h('div.cx-stamp.dg-stamp', fail ? 'FAILED' : 'COPIED'),
+          title(def, text));
+        break;
+      }
+      case 'tarot': {
+        // 벨라 직업 탐지: 타로 카드가 놓이고 빙글 뒤집히면 대상 직업 캐릭터
+        const nm = extra.name || text.replace(/ 직업 탐지$/, '');
+        const killer = extra.role === 'nifel';
+        el.classList.toggle('killer', killer);
+        el.append(
+          h('div.ta-bg'),
+          h('img.sc-char.ta-bella', { src: file, alt: '' }),
+          h('div.ta-card', h('div.ta-back', h('img', { src: extra.target ?? fallbackImg, alt: '' })),
+            h('div.ta-front', extra.roleImg ? h('img', { src: extra.roleImg, alt: '' }) : h('b', '?'), h('b.ta-name', extra.roleName ?? ''), h('small', nm))),
+          title(def, extra.roleName ? `${nm}의 직업은 ${extra.roleName}` : text));
+        break;
+      }
+      case 'agit': {
+        // 죠안 선동: 법정, 대상 사진의 입에 테이프 X → 죠안의 목소리 물결이 대신 퍼짐
+        const nm = extra.name || text.replace(/ 선동!$/, '');
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('trial.webp')}` }),
+          h('img.sc-char.ag-joan', { src: file, alt: '' }),
+          h('div.ag-waves', h('i'), h('i'), h('i')),
+          h('div.ag-photo', polaroid(extra.target ?? fallbackImg, nm), h('i.ag-tape.a'), h('i.ag-tape.b')),
+          h('div.cx-stamp.ag-stamp', 'VOICE STOLEN'),
+          title(def, text));
+        break;
+      }
+      case 'verdict': {
+        // 처형: 판결문에 대상 사진이 클립으로 물리고 판사봉 쾅 EXECUTION, 사진에 붉은 X → 흑백으로 바람에 날아감
+        const nm = extra.name || text.replace(/ 처형$/, '');
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('trial.webp')}` }),
+          h('div.vd-doc', h('small.en', 'VERDICT'), h('b', '판결문'), h('p', `피고 ${nm}`), h('i.vd-lines'),
+            h('div.vd-photo', polaroid(extra.target ?? fallbackImg, nm), svgEl('vd-x', '0 0 100 100', '<path d="M12 12 L88 88"/><path d="M88 12 L12 88"/>'))),
+          h('div.cx-stamp.vd-stamp', 'EXECUTION'),
+          title(def, text));
+        break;
+      }
+      case 'void': {
+        // 판결 뒤집기: EXECUTION 이 찍힌 판결문을 리온이 반으로 찢고 VOID
+        const nm = extra.name || '';
+        const doc = () => h('div.vd-doc', h('small.en', 'VERDICT'), h('b', '판결문'), h('p', `피고 ${nm}`), h('i.vd-lines'),
+          h('div.vd-photo', polaroid(extra.target ?? fallbackImg, nm)), h('span.vd-old', 'EXECUTION'));
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('trial.webp')}` }),
+          h('div.vo-half.l', doc()), h('div.vo-half.r', doc()),
+          h('img.sc-char.vo-rion', { src: file, alt: '' }),
+          h('div.cx-stamp.vo-stamp', 'VOID'),
+          title(def, text));
+        break;
+      }
+      case 'parry': {
+        // 디아나 반격: 할퀴기가 날아오다 디아나가 막아치기 → 번쩍 · 멈칫 → 습격자 가면이 벗겨져 정체 공개
+        const nm2 = extra.name2 ?? '';
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_night.webp')}` }),
+          h('img.sc-char.pr-diana', { src: file, alt: '' }),
+          svgEl('pr-claw', '0 0 100 100', [0, 1, 2].map((i) => `<path d="M${98 - i * 3} ${18 + i * 10} L ${52 - i * 2} ${40 + i * 10}" style="--i:${i}"/>`).join('')),
+          h('div.pr-hit', POW()),
+          h('div.pr-flash'),
+          h('div.pr-attacker', polaroid(extra.target2 ?? fallbackImg, nm2), h('img.pr-mask', { src: asset(`ui/mask${((extra.n ?? 0) % 4) + 1}.webp`), alt: '' })),
+          h('div.cx-stamp.pr-stamp', 'UNMASKED'),
+          title(def, nm2 ? `습격한 자는 ${nm2}!` : text));
+        break;
+      }
+      case 'boom': {
+        // 마리 길동무: 도화선 불꽃이 끌려갈 사람 사진까지 타들어 가서 쾅
+        const nm2 = extra.name2 ?? '';
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_night.webp')}` }),
+          h('img.sc-char.bm-mari', { src: file, alt: '' }),
+          h('div.bm-fuse', h('i.bm-spark')),
+          h('div.bm-photo', polaroid(extra.target2 ?? fallbackImg, nm2)),
+          h('div.bm-fire'), h('div.bm-flash'), h('div.bm-soot'),
+          title(def, text));
+        break;
+      }
+      case 'flash': {
+        // 하이디 공개: 카메라 찰칵 → 플래시 → 사진이 인화되며 정체가 드러남
+        const nm = extra.name || text.replace(/의 정체$/, '');
+        el.append(
+          h('div.cut2-scene.sc-dim', { style: `--bg: ${bgUrl('hall_day.webp')}` }),
+          h('img.sc-char.fl-heidi', { src: file, alt: '' }),
+          h('div.fl-flash'),
+          h('div.fl-photo', polaroid(extra.roleImg ?? extra.target ?? fallbackImg, nm), h('small.fl-role', extra.roleName ?? '')),
+          h('div.cx-stamp.fl-stamp', 'REVEALED'),
+          title(def, extra.roleName ? `${nm}의 정체는 ${extra.roleName}` : text));
+        break;
+      }
       case 'kill': {
         // 니펠 습격: 촛불 켜진 복도의 대상 방문 → 그림자가 스며들고 촛불이 꺼짐 → 붉은 니펠 → 할퀴기 세 줄
         const nm = extra.name || text.replace(/ 습격!$/, '');

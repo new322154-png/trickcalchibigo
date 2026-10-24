@@ -256,9 +256,9 @@ export class MafiaGame {
   private secret(pid: number, text: string) { this.log(pid, 'secret', text); }
   /** 나만 보는 컷씬 */
   /** 내 직업 컷씬 (target: 장면에 얼굴을 그릴 대상, 본인에게만 감) */
-  private pcut(pid: number, kind: CutKind, text: string, target?: number) { this.host.send(pid, { t: 'cut', kind, text, pid: target }); }
+  private pcut(pid: number, kind: CutKind, text: string, target?: number, n?: number, role?: string) { this.host.send(pid, { t: 'cut', kind, text, pid: target, n, role }); }
   private killCut = new Set<number>();
-  private cutAll(kind: CutKind, text: string, pid?: number, n?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text, n }); }
+  private cutAll(kind: CutKind, text: string, pid?: number, n?: number, role?: string) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text, n, role }); }
 
   view(pid: number): GameView {
     const p = this.ps.get(pid)!;
@@ -472,7 +472,12 @@ export class MafiaGame {
       investigate: ['p_investigate', '조사!'], track: ['p_track', '추적!'], disguise: ['p_disguise', '변장!'],
     };
     const pc = PC[a.kind];
-    if (pc && !copying) this.pcut(p.pid, pc[0], `${t.name} ${pc[1]}`, t.pid);
+    if (pc && !copying) {
+      // 장면용 결과 (본인에게만): 조사 = 니펠 여부, 직업 탐지 = 보이는 직업, 변장 = 대상 직업 (니펠 팀이면 실패 'x')
+      const n = a.kind === 'investigate' ? (this.isKiller(t) ? 1 : 0) : undefined;
+      const role = a.kind === 'identify' ? (t.shownRole ?? t.role) : a.kind === 'disguise' ? (this.isKiller(t) ? 'x' : t.role) : undefined;
+      this.pcut(p.pid, pc[0], `${t.name} ${pc[1]}`, t.pid, n, role);
+    }
     // 즉발형
     switch (a.kind) {
       case 'investigate':
@@ -659,7 +664,7 @@ export class MafiaGame {
     for (const [mari, nifel] of m.blasts) {
       this.kill(nifel, 'blast');
       this.unmask(mari, 'avenger'); // 따로 발표 없이 목록의 정체만 바뀐다
-      this.cutAll('blast', '폭사!', mari);
+      this.cutAll('blast', '폭사!', mari, nifel);
       this.logAll('event', `💥 ${this.name(mari)}가 쓰러지며 폭발했다! 습격한 ${this.name(nifel)}도 함께 사라졌다.`);
     }
     for (const s of m.saved) { this.cutAll('saved', `힐데가 니펠로부터 ${this.name(s)}을(를) 살려내었다!`, s); this.logAll('event', `💚 힐데가 니펠로부터 ${this.name(s)}을(를) 살려내었다!`); }
@@ -667,7 +672,7 @@ export class MafiaGame {
       const e = this.ps.get(ex)!;
       this.unmask(d, 'trap');
       this.unmask(ex, e.role);
-      this.cutAll('counter', '반격!', d);
+      this.cutAll('counter', '반격!', d, ex, e.role);
       this.logAll('event', `🛡 ${this.name(d)}가 습격을 반격해 막아냈다! 습격한 자는 ${e.name}, 정체는 ${label(e.role)}!`);
     }
     if (!m.deaths.length && !m.saved.length && !m.counters.length) this.logAll('event', '조용한 밤이었다.');
@@ -683,7 +688,7 @@ export class MafiaGame {
     for (const r of m.reveals) {
       const p = this.ps.get(r.who)!;
       this.unmask(p.pid, r.role);
-      this.cutAll('reveal', `${p.name}의 정체`, p.pid);
+      this.cutAll('reveal', `${p.name}의 정체`, p.pid, undefined, r.role);
       this.logAll('event', `📜 저택의 계시: ${p.name}의 직업은 ${label(r.role)}이다.`);
     }
     this.quietDays = m.deaths.length ? 0 : this.quietDays + 1;
@@ -764,7 +769,7 @@ export class MafiaGame {
           return;
         }
         this.proxy = { joan: joan.pid, target: v };
-        this.pcut(joan.pid, 'p_agitate', `${t.name} 선동!`);
+        this.pcut(joan.pid, 'p_agitate', `${t.name} 선동!`, t.pid);
         this.secret(joan.pid, `🗣 이제 ${t.name} 대신 말한다. 채팅은 ${t.name}의 이름으로 나간다.`);
         this.secret(v, '🤐 입이 막혔다… 누군가 당신의 목소리를 훔쳤다! 변론 시간 동안 말할 수 없다.');
         this.push();
@@ -846,7 +851,7 @@ export class MafiaGame {
         if (typeof v === 'number' && opts.includes(v) && this.ps.get(v)!.alive) {
           // 길동무: 폭사 컷씬 + 마리 정체 공개 (따로 발표 없이 목록이 바뀜)
           this.unmask(pid, 'avenger');
-          this.cutAll('blast', `${p.name}가 ${this.name(v)}를 끌고 폭사했다!`, pid);
+          this.cutAll('blast', `${p.name}가 ${this.name(v)}를 끌고 폭사했다!`, pid, v);
           this.logAll('event', `💥 ${p.name}가 마지막 힘으로 ${this.name(v)}를 끌고 함께 폭사했다!`);
           this.kill(v, 'avenge');
           this.push();

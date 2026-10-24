@@ -178,7 +178,9 @@ export class GameUI {
       if (m.kind === 'p_bat' && this.batPick) { this.batPick.resolve(/니펠/.test(m.text) ? 'mafia' : 'citizen'); this.batPick = null; return; }
       const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? this.face(m.pid) : ANON;
       const who = m.pid !== undefined ? { target: this.face(m.pid), name: this.name(m.pid) } : {};
-      playCut(this.el, m.kind, m.text, fb, { n: m.n, day: this.newsDay, ...who });
+      // 두 번째 사람 (반격한 습격자 · 폭사에 끌려간 사람)
+      const two = (m.kind === 'counter' || m.kind === 'blast') && m.n !== undefined ? { target2: m.kind === 'counter' && m.role ? roleImg(m.role) ?? this.face(m.n) : this.face(m.n), name2: this.name(m.n) } : {};
+      playCut(this.el, m.kind, m.text, fb, { n: m.n, day: this.newsDay, role: m.role, roleImg: m.role && m.role !== 'x' ? roleImg(m.role) ?? undefined : undefined, roleName: m.role && m.role !== 'x' ? roleName(m.role as RoleId) : undefined, ...who, ...two });
     }
   }
 

@@ -132,7 +132,7 @@ export type S2C =
   /** 낮 광장(나무 아래) 위치 — 화면 배경 기준 %(0~100) */
   | { t: 'pmove'; pid: number; x: number; y: number }
   /** 모두가 보는 컷씬 (처형 등) */
-  | { t: 'cut'; kind: CutKind; pid?: number; text: string; /** 실종: 어젯밤 살아 있던 인원 */ n?: number }
+  | { t: 'cut'; kind: CutKind; pid?: number; text: string; /** 실종: 어젯밤 살아 있던 인원 · 조사: 1=니펠 0=아님 · 반격/폭사: 함께 나오는 사람 번호 */ n?: number; /** 장면에 그릴 직업 (본인 장면이거나 이미 공개된 것만) */ role?: string }
   | { t: 'gend'; winner: Winner; roles: { pid: number; role: string; alive: boolean }[]; winners: number[]; /** 최고의 플레이어 투표 마감 (없으면 투표 없음) */ mvpAt?: number; day?: number }
   /** 최고의 플레이어 투표: 몇 명이 투표했는지 · 결과 (pids 가 정해지면 끝) */
   | { t: 'mvp'; voted: number; of: number; pids?: number[]; votes?: number };
