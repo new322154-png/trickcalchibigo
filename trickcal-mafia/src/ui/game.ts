@@ -177,7 +177,8 @@ export class GameUI {
       if (m.kind === 'execute') bgm('after_trial');
       if (m.kind === 'p_bat' && this.batPick) { this.batPick.resolve(/니펠/.test(m.text) ? 'mafia' : 'citizen'); this.batPick = null; return; }
       const fb = mine ? roleImg(this.v?.me.role ?? '') ?? ANON : m.pid !== undefined ? this.face(m.pid) : ANON;
-      playCut(this.el, m.kind, m.text, fb, { n: m.n, day: this.newsDay });
+      const who = m.pid !== undefined ? { target: this.face(m.pid), name: this.name(m.pid) } : {};
+      playCut(this.el, m.kind, m.text, fb, { n: m.n, day: this.newsDay, ...who });
     }
   }
 

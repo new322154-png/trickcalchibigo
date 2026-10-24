@@ -8,12 +8,12 @@ import { asset, bgUrl, h } from './dom';
 import { sfx } from './sfx';
 import { cutSpeed, shatter, type ShatterPlan } from './shatter';
 
-type Layout = 'char' | 'contact' | 'paper' | 'impact' | 'farm' | 'bat' | 'news' | 'drone' | 'droneTry' | 'shatter';
+type Layout = 'char' | 'contact' | 'paper' | 'impact' | 'farm' | 'bat' | 'news' | 'drone' | 'droneTry' | 'shatter' | 'kill' | 'hack' | 'wish';
 interface CutDef { file?: string; title: string; en: string; color: string; layout?: Layout; ms?: number }
 
 export const CUTS: Record<CutKind, CutDef> = {
-  p_kill: { file: 'p_kill.webp', title: '습격', en: 'ASSAULT', color: '#ff3355' },
-  p_seal: { file: 'p_seal.webp', title: '해킹', en: 'HACKING', color: '#2fe6c8' },
+  p_kill: { file: 'p_kill.webp', title: '습격', en: 'ASSAULT', color: '#ff3355', layout: 'kill', ms: 3900 },
+  p_seal: { file: 'p_seal.webp', title: '해킹', en: 'HACKING', color: '#2fe6c8', layout: 'hack', ms: 3900 },
   p_identify: { file: 'p_identify.webp', title: '직업 탐지', en: 'IDENTIFY', color: '#8a6bff' },
   p_agitate: { file: 'p_agitate.webp', title: '선동', en: 'AGITATE', color: '#ff8a3d' },
   p_protect: { file: 'p_protect.webp', title: '치유', en: 'HEAL', color: '#5fd38a' },
@@ -31,7 +31,7 @@ export const CUTS: Record<CutKind, CutDef> = {
   saved: { file: 'p_protect.webp', title: '치유', en: 'HEALED', color: '#5fd38a', layout: 'impact', ms: 2600 },
   counter: { file: 'counter.webp', title: '반격', en: 'COUNTER', color: '#ffb648', layout: 'impact', ms: 2600 },
   blast: { file: 'blast.webp', title: '폭사', en: 'EXPLOSION', color: '#ff5a2a' },
-  wish: { file: 'wish.webp', title: '소원', en: 'WISH', color: '#9be37a' },
+  wish: { file: 'wish.webp', title: '소원', en: 'WISH', color: '#9be37a', layout: 'wish', ms: 4800 },
   uros: { file: 'uros.webp', title: '부활', en: 'REVIVAL', color: '#c0405a', layout: 'shatter', ms: 9000 },
   drone: { title: '드론 소리', en: 'BZZZZ…', color: '#4da3ff', layout: 'drone', ms: 3400 },
   reveal: { file: 'reveal.webp', title: '정체 공개', en: 'REVEAL', color: '#ffd38a' },
@@ -40,10 +40,11 @@ export const CUTS: Record<CutKind, CutDef> = {
 /** 내 직업의 개인 컷씬 */
 /** 컷씬이 뜰 때 나는 소리 [소리, 지연 ms] */
 const SE: Partial<Record<CutKind, [string, number][]>> = {
-  p_kill: [['slash', 0]], p_contact: [['contact', 0]], p_drone_ok: [['droneOk', 0]], p_drone_fail: [['fizzle', 0]],
+  p_seal: [['skill', 0], ['tick', 600], ['tick', 900], ['tick', 1200], ['tick', 1500], ['clang', 2050]],
+  p_kill: [['door', 0], ['night', 1000], ['slash', 1900], ['slash', 2020], ['slash', 2140]], p_contact: [['contact', 0]], p_drone_ok: [['droneOk', 0]], p_drone_fail: [['fizzle', 0]],
   p_farm: [['skill', 0], ['bang', 3450]], p_bat: [['skill', 0], ['pop', 4700]],
   execute: [['execute', 0]], vanish: [['paper', 0], ['vanish', 700], ['gavel', 1250]], saved: [['heal', 0]], counter: [['clang', 0]],
-  blast: [['boom', 0]], wish: [['revive', 0]], uros: [], drone: [['buzz', 0]],
+  blast: [['boom', 0]], wish: [['skill', 0], ['note', 900], ['revive', 2000]], uros: [], drone: [['buzz', 0]],
   reveal: [['reveal', 0]], overturn: [['reveal', 0], ['gavel', 200]],
 };
 
@@ -129,6 +130,19 @@ function teamEmo(side: 'm' | 'c') {
     h('i.win', '🎉'), h('i.sad', '😢'));
 }
 
+/** SVG 요소 (h() 는 HTML 이라 SVG 는 따로) */
+function svgEl(cls: string, viewBox: string, inner: string) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('class', cls); s.setAttribute('viewBox', viewBox); s.setAttribute('preserveAspectRatio', 'none');
+  s.innerHTML = inner;
+  return s;
+}
+
+/** 대상 폴라로이드 (얼굴 + 손글씨 이름) */
+function polaroid(img: string, name: string, cls = '') {
+  return h(`div.cx-pol${cls}`, h('div.cx-pic', h('img', { src: img, alt: '' })), h('b', name));
+}
+
 /** 캐릭터 컷인 한 장면 (기본 모양) */
 function charStage(def: CutDef, img: string, still: boolean, text: string) {
   const im = h(`img.cut2-char${still ? '.still' : ''}`, { src: img, alt: '' });
@@ -178,7 +192,7 @@ export function playNews(host: HTMLElement, day: number) {
   if (!playing) next();
 }
 
-export interface CutExtra { n?: number; myImg?: string; /** 아침 신문의 날짜 */ day?: number }
+export interface CutExtra { n?: number; myImg?: string; /** 아침 신문의 날짜 */ day?: number; /** 장면 속 대상 얼굴 · 이름 */ target?: string; name?: string }
 
 export function playCut(host: HTMLElement, kind: CutKind, text: string, fallbackImg: string, extra: CutExtra = {}) {
   const def = CUTS[kind];
@@ -232,6 +246,68 @@ export function playCut(host: HTMLElement, kind: CutKind, text: string, fallback
         // 아침 신문: 빙글빙글 돌며 날아와 탁 놓이고, 사진 위에 MISSING 도장
         el.append(...newsPaper('missing', text || '누군가 사라졌다!', extra.day ?? 0, fallbackImg));
         break;
+      case 'kill': {
+        // 니펠 습격: 촛불 켜진 복도의 대상 방문 → 그림자가 스며들고 촛불이 꺼짐 → 붉은 니펠 → 할퀴기 세 줄
+        const nm = extra.name || text.replace(/ 습격!$/, '');
+        el.append(
+          h('div.cut2-scene.kl-bg', { style: `--bg: ${bgUrl('corridor.webp')}` }),
+          h('div.kl-door', polaroid(extra.target ?? fallbackImg, nm), h('i.kl-knob')),
+          h('img.kl-shadow', { src: asset('chars/nifel.webp'), alt: '' }),
+          h('div.kl-dark'), h('div.kl-candle'),
+          h('img.kl-nifel', { src: file, alt: '' }),
+          svgEl('kl-claw', '0 0 100 100', [0, 1, 2].map((i) => `<path d="M${18 + i * 14} 18 Q ${40 + i * 14} 48 ${62 + i * 12} 86" style="--i:${i}"/>`).join('')),
+          h('div.kl-flash'),
+          h('div.cx-stamp.kl-stamp', 'TARGET'),
+          title(def, text));
+        break;
+      }
+      case 'hack': {
+        // 뮤트 해킹: 초록 글자 비가 쏟아지고 접속률이 오르다가 100% → 대상 방문에 자물쇠 철컥, LOCKED
+        const nm = extra.name || text.replace(/ 해킹!$/, '');
+        const rain = h('div.hk-rain');
+        for (let i = 0; i < 18; i++) {
+          let t = '';
+          for (let j = 0; j < 26; j++) t += '01ABCDEF<>/#*'[Math.floor(Math.random() * 13)] + '\n';
+          rain.appendChild(h('i', { style: `left: ${i * 5.6 + Math.random() * 2}%; --d: ${(1.2 + Math.random() * 1.6).toFixed(2)}s; --o: ${(Math.random() * -2).toFixed(2)}s` }, t));
+        }
+        const pct = h('b', '0%');
+        el.append(
+          h('div.hk-bg'), rain,
+          h('img.hk-mute', { src: file, alt: '' }),
+          h('div.hk-door', polaroid(extra.target ?? fallbackImg, nm), h('div.hk-lock', h('i.hk-shackle'), h('i.hk-body'))),
+          h('div.hk-bar', h('small.en', 'ACCESS'), h('div.hk-fill'), pct),
+          h('div.hk-glitch'),
+          h('div.cx-stamp.hk-stamp', 'LOCKED'),
+          title(def, text));
+        const t0 = performance.now();
+        const tick = () => {
+          const p = Math.min(100, Math.max(0, Math.round(((performance.now() - t0) / 1000 / cutSpeed() - 0.5) / 1.4 * 100)));
+          pct.textContent = `${p}%`;
+          if (p < 100 && el.isConnected) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        break;
+      }
+      case 'wish': {
+        // 우이 소원: 주말농장 저녁, 개구리 탄 우이 주위로 네잎클로버가 날아올라 흑백 사진에 모이면 컬러로 되살아남
+        const nm = extra.name || '';
+        const leaves = h('div.ws-leaves');
+        for (let i = 0; i < 10; i++) {
+          const leaf = h('i', { style: `--i: ${i}; --x: ${(Math.random() * 30 - 15).toFixed(0)}%; --y: ${(Math.random() * 40 - 20).toFixed(0)}%; --r: ${(Math.random() * 720 - 360).toFixed(0)}deg` });
+          leaf.innerHTML = '<svg viewBox="-12 -12 24 24"><g fill="#6fd05a" stroke="#2f7a2a" stroke-width="1"><path d="M0 0C-2-7-9-6-7-1S0 0 0 0Z"/><path d="M0 0C7-2 6-9 1-7S0 0 0 0Z"/><path d="M0 0C2 7 9 6 7 1S0 0 0 0Z"/><path d="M0 0C-7 2-6 9-1 7S0 0 0 0Z"/></g><path d="M0 0q3 6 6 9" stroke="#2f7a2a" stroke-width="1.4" fill="none"/></svg>';
+          leaves.appendChild(leaf);
+        }
+        el.append(
+          h('div.cut2-scene.ws-bg', { style: `--bg: ${bgUrl('farm.webp')}` }),
+          h('div.ws-glow'),
+          h('img.ws-ui', { src: file, alt: '' }),
+          h('div.ws-photo', polaroid(extra.target ?? fallbackImg, nm)),
+          leaves,
+          h('div.ws-burst'),
+          h('div.cx-stamp.ws-stamp', 'ALIVE'),
+          title(def, nm ? `${nm} 되살아났다` : text));
+        break;
+      }
       case 'shatter': {
         // 주말농장의 우로스가 '…' 하더니 화면(유리)을 쾅! 맞은 곳부터 금 → 군데군데 떨어짐 → 와장창 → 능력 그림
         const me = h('img.su-img', { src: asset('chars/uros.webp'), alt: '' }) as HTMLImageElement;

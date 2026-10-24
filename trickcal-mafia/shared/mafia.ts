@@ -255,7 +255,8 @@ export class MafiaGame {
   private logAll(ch: LogCh, text: string, from = -1) { for (const p of this.all()) this.log(p.pid, ch, text, from); }
   private secret(pid: number, text: string) { this.log(pid, 'secret', text); }
   /** 나만 보는 컷씬 */
-  private pcut(pid: number, kind: CutKind, text: string) { this.host.send(pid, { t: 'cut', kind, text }); }
+  /** 내 직업 컷씬 (target: 장면에 얼굴을 그릴 대상, 본인에게만 감) */
+  private pcut(pid: number, kind: CutKind, text: string, target?: number) { this.host.send(pid, { t: 'cut', kind, text, pid: target }); }
   private killCut = new Set<number>();
   private cutAll(kind: CutKind, text: string, pid?: number, n?: number) { for (const p of this.all()) this.host.send(p.pid, { t: 'cut', kind, pid, text, n }); }
 
@@ -453,7 +454,7 @@ export class MafiaGame {
     if (!a || a.locked || this.phase !== 'night') return;
     if (target !== null && !a.targets.includes(target)) return;
     if (a.kind === 'kill') {
-      if (target !== null && p.role === 'nifel' && !this.killCut.has(p.pid)) { this.killCut.add(p.pid); this.pcut(p.pid, 'p_kill', `${this.name(target)} 습격!`); }
+      if (target !== null && p.role === 'nifel' && !this.killCut.has(p.pid)) { this.killCut.add(p.pid); this.pcut(p.pid, 'p_kill', `${this.name(target)} 습격!`, target); }
       this.killVotes.set(p.pid, target);
       a.choice = target;
       for (const [k] of this.killVotes) this.push(k);
@@ -471,7 +472,7 @@ export class MafiaGame {
       investigate: ['p_investigate', '조사!'], track: ['p_track', '추적!'], disguise: ['p_disguise', '변장!'],
     };
     const pc = PC[a.kind];
-    if (pc && !copying) this.pcut(p.pid, pc[0], `${t.name} ${pc[1]}`);
+    if (pc && !copying) this.pcut(p.pid, pc[0], `${t.name} ${pc[1]}`, t.pid);
     // 즉발형
     switch (a.kind) {
       case 'investigate':

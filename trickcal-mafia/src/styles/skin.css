@@ -877,3 +877,97 @@ svg.ink { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.
 .splash-text .en { font-size: 30px; letter-spacing: .3em; color: var(--p-red); border: 3px solid currentColor; padding: 4px 18px; transform: rotate(-3deg); -webkit-mask: var(--stamp-mask); mask: var(--stamp-mask); }
 .splash-text b { font-family: var(--p-head); font-weight: 700; font-size: 110px; line-height: 1.1; }
 .splash-text span { font-size: 30px; color: var(--p-ink2); }
+
+/* ═══════ 직업 장면 공용: 대상 폴라로이드 · 도장 (cut.ts polaroid) ═══════ */
+.lay-kill, .lay-hack, .lay-wish { font-size: 30px; }
+#stage.compact .lay-kill, #stage.compact .lay-hack, #stage.compact .lay-wish { font-size: 20px; }
+#stage.mobile .lay-kill, #stage.mobile .lay-hack, #stage.mobile .lay-wish { font-size: 12px; }
+.cx-pol { width: 9em; padding: .5em .5em .4em; background: #fbf8f0; box-shadow: 0 .2em .6em rgba(0,0,0,.45); text-align: center; }
+.cx-pic { height: 9.5em; background: #e2dccd; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.cx-pic img { height: 92%; width: auto; }
+.cx-pol b { display: block; margin-top: .25em; font-family: var(--p-head); font-weight: 700; font-size: 1.15em; color: var(--p-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-stamp { position: absolute; font-family: var(--p-type); font-size: 2em; letter-spacing: .14em; color: var(--p-red); border: .14em solid currentColor; border-radius: .15em; padding: .05em .45em;
+  background: rgba(246,238,219,.25); -webkit-mask: var(--stamp-mask); mask: var(--stamp-mask); opacity: 0; transform: rotate(-12deg) scale(2.4); }
+@keyframes cxStamp { to { opacity: .95; transform: rotate(-12deg) scale(1); } }
+.lay-kill .cut2-title, .lay-hack .cut2-title, .lay-wish .cut2-title { left: 50%; top: auto; bottom: 5%; transform: translateX(-50%); align-items: center; }
+.cx-door { position: absolute; }
+@keyframes cxShake { 20% { transform: translateX(-.4em) rotate(-.6deg); } 50% { transform: translateX(.4em) rotate(.5deg); } 80% { transform: translateX(-.2em); } }
+
+/* ── 니펠 습격: 복도 문 → 그림자 → 촛불 꺼짐 → 붉은 니펠 → 할퀴기 세 줄 ── */
+.kl-bg { filter: brightness(.55) saturate(.7); }
+.kl-door { position: absolute; right: 20%; top: 8%; width: 15em; height: 30em; background: linear-gradient(90deg, #5a3a22, #7a5232 50%, #5a3a22); border: .5em solid #3a2414; border-bottom: 0;
+  box-shadow: inset 0 0 2em rgba(0,0,0,.5), 0 1em 2em rgba(0,0,0,.5); display: flex; justify-content: center; padding-top: 3em; animation: cxShake .35s 1.95s; }
+.kl-door .cx-pol { transform: rotate(-3deg); }
+.kl-knob { position: absolute; left: 1.4em; top: 55%; width: 1.4em; height: 1.4em; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f0d48a, #8a6a2a); }
+.kl-shadow { position: absolute; left: -20%; bottom: 4%; height: 46%; filter: brightness(0); opacity: .85; transform-origin: 50% 100%; animation: klCreep 1s .15s cubic-bezier(.5,0,.7,1) forwards; }
+@keyframes klCreep { 70% { left: 52%; transform: none; opacity: .85; } 100% { left: 60%; transform: scale(1.3, .05); opacity: 0; } }
+.kl-candle { position: absolute; inset: 0; background: radial-gradient(ellipse at 70% 30%, rgba(255,190,110,.35), transparent 55%); mix-blend-mode: screen; animation: klFlicker .18s steps(2) 6, klOff .15s 1.05s forwards; }
+@keyframes klFlicker { 50% { opacity: .6; } }
+@keyframes klOff { to { opacity: 0; } }
+.kl-dark { position: absolute; inset: 0; background: #050002; opacity: 0; animation: klDark .25s 1.05s forwards; }
+@keyframes klDark { to { opacity: .78; } }
+.kl-nifel { position: absolute; left: 12%; bottom: 0; height: 82%; opacity: 0; filter: brightness(.75) drop-shadow(0 0 1.5em rgba(255,30,60,.85)); animation: klRise .55s 1.3s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes klRise { from { opacity: 0; transform: translateY(6%) scale(.95); } to { opacity: 1; transform: none; } }
+.kl-claw { position: absolute; right: 14%; top: 4%; width: 24em; height: 34em; overflow: visible; pointer-events: none; }
+.kl-claw path { fill: none; stroke: #ff2a40; stroke-width: 3.2; stroke-linecap: round; stroke-dasharray: 120; stroke-dashoffset: 120; filter: drop-shadow(0 0 .6em #ff1030);
+  animation: klSlash .14s calc(1.9s + var(--i) * .12s) ease-in forwards; }
+@keyframes klSlash { to { stroke-dashoffset: 0; } }
+.kl-flash { position: absolute; inset: 0; background: #ff1a3a; opacity: 0; animation: c2Flash .45s 1.92s ease-out; }
+.kl-stamp { right: 22%; top: 46%; animation: cxStamp .2s 2.4s cubic-bezier(.5,0,.8,.6) forwards; }
+.lay-kill .cut2-title { animation: c2TitleC .4s 2.5s cubic-bezier(.2,1.6,.4,1) both; }
+
+/* ── 뮤트 해킹: 초록 글자 비 → 접속률 100% → 자물쇠 철컥 · LOCKED ── */
+.hk-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 60% 50%, #04302a, #000 75%); }
+.hk-rain { position: absolute; inset: 0; overflow: hidden; }
+.hk-rain i { position: absolute; top: 0; font-style: normal; white-space: pre; font-family: var(--p-type); font-size: 1em; line-height: 1.1; color: #2fe6c8; opacity: .45; text-shadow: 0 0 .5em #2fe6c8;
+  animation: hkRain var(--d) var(--o) linear infinite; }
+@keyframes hkRain { from { transform: translateY(-100%); } to { transform: translateY(130%); } }
+.hk-mute { position: absolute; left: 5%; bottom: 0; height: 82%; opacity: 0; filter: drop-shadow(0 0 1.2em rgba(47,230,200,.6)); animation: hkIn .5s .15s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes hkIn { from { opacity: 0; transform: translateX(-30%); } to { opacity: 1; transform: none; } }
+.hk-door { position: absolute; right: 18%; top: 14%; width: 15em; height: 28em; background: linear-gradient(90deg, #26313a, #364450 50%, #26313a); border: .5em solid #141b21; border-bottom: 0;
+  display: flex; justify-content: center; padding-top: 2.6em; box-shadow: 0 0 2em rgba(47,230,200,.25); animation: cxShake .35s 2.05s; }
+.hk-lock { position: absolute; left: 50%; top: 58%; width: 6em; height: 8em; transform: translate(-50%, -400%); opacity: 0; animation: hkDrop .32s 1.75s cubic-bezier(.5,0,1,.6) forwards; }
+@keyframes hkDrop { 80% { transform: translate(-50%, 6%); opacity: 1; } 100% { transform: translate(-50%, 0); opacity: 1; } }
+.hk-shackle { position: absolute; left: 1em; top: 0; width: 4em; height: 4.2em; border: .8em solid #c8cdd4; border-bottom: 0; border-radius: 2em 2em 0 0; box-sizing: border-box; }
+.hk-body { position: absolute; left: 0; bottom: 0; width: 6em; height: 4.8em; border-radius: .5em; background: linear-gradient(170deg, #f0d48a, #b08a3a); box-shadow: 0 .3em .6em rgba(0,0,0,.5); }
+.hk-body::after { content: ''; position: absolute; left: 50%; top: 38%; width: .9em; height: 1.6em; transform: translateX(-50%); border-radius: .45em .45em .2em .2em; background: #3a2a10; }
+.hk-bar { position: absolute; left: 50%; top: 6%; width: 24em; transform: translateX(-50%); display: grid; grid-template-columns: auto 1fr auto; gap: .6em; align-items: center; color: #2fe6c8; font-family: var(--p-type); }
+.hk-bar .en { color: #2fe6c8; font-size: .9em; }
+.hk-bar b { font-weight: 400; font-size: 1.2em; min-width: 3.4em; text-align: right; }
+.hk-fill { height: .9em; border: 2px solid #2fe6c8; position: relative; overflow: hidden; }
+.hk-fill::after { content: ''; position: absolute; inset: 0; background: #2fe6c8; transform-origin: 0 50%; transform: scaleX(0); animation: hkFill 1.4s .5s linear forwards; }
+@keyframes hkFill { to { transform: scaleX(1); } }
+.hk-glitch { position: absolute; inset: 0; opacity: 0; background: repeating-linear-gradient(0deg, rgba(47,230,200,.25) 0 2px, transparent 2px 6px); animation: hkGlitch .35s 2.05s steps(3); }
+@keyframes hkGlitch { 0%, 100% { opacity: 0; transform: none; } 33% { opacity: 1; transform: translateX(-1em); } 66% { opacity: .6; transform: translateX(.8em); } }
+.hk-stamp { right: 20%; top: 50%; animation: cxStamp .2s 2.35s cubic-bezier(.5,0,.8,.6) forwards; }
+.lay-hack .cut2-title { animation: c2TitleC .4s 2.5s cubic-bezier(.2,1.6,.4,1) both; }
+
+/* ── 우이 소원: 네잎클로버가 날아올라 흑백 사진에 모이면 컬러로 되살아남 ── */
+.ws-bg { filter: brightness(.55) saturate(.8) hue-rotate(-15deg); }
+.ws-glow { position: absolute; left: 4%; bottom: 0; width: 40%; height: 90%; background: radial-gradient(ellipse at 50% 70%, rgba(150,240,120,.45), transparent 65%); mix-blend-mode: screen; animation: wsGlow 1.2s ease-in-out infinite alternate; }
+@keyframes wsGlow { to { opacity: .5; } }
+.ws-ui { position: absolute; left: 6%; bottom: 0; height: 80%; opacity: 0; filter: drop-shadow(0 0 1.2em rgba(150,240,120,.7)); animation: hkIn .5s .1s cubic-bezier(.2,1.4,.4,1) forwards; }
+.ws-photo { position: absolute; right: 18%; top: 18%; transform: rotate(5deg); }
+.ws-photo .cx-pol { filter: grayscale(1) brightness(.75); animation: wsAlive .6s 2s ease-out forwards; }
+@keyframes wsAlive { 0% { filter: grayscale(1) brightness(.75); transform: none; } 40% { filter: grayscale(0) brightness(1.6); transform: translateY(-.8em) scale(1.12) rotate(-4deg); } 100% { filter: none; transform: translateY(-.4em) scale(1.05) rotate(-2deg); box-shadow: 0 0 2em rgba(150,240,120,.8); } }
+.ws-leaves i { position: absolute; left: 22%; top: 60%; width: 3.2em; height: 3.2em; opacity: 0; animation: wsLeaf 1.3s calc(.5s + var(--i) * .1s) cubic-bezier(.4,.1,.5,1) forwards; }
+.ws-leaves svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 .4em rgba(160,255,120,.8)); }
+@keyframes wsLeaf {
+  0% { left: 22%; top: 62%; opacity: 0; transform: scale(.3); }
+  15% { opacity: 1; transform: scale(1); }
+  55% { left: calc(46% + var(--x)); top: calc(26% + var(--y)); transform: rotate(calc(var(--r) * .6)) scale(1.1); }
+  100% { left: 72%; top: 40%; opacity: 0; transform: rotate(var(--r)) scale(.3); } }
+.ws-burst { position: absolute; left: 72%; top: 42%; width: 0; height: 0; }
+.ws-burst::before { content: ''; position: absolute; left: 0; top: 0; width: 26em; height: 26em; border-radius: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0;
+  background: radial-gradient(circle, rgba(255,255,230,.95), rgba(160,255,120,.5) 35%, transparent 65%); animation: wsBurst .7s 1.95s ease-out; }
+@keyframes wsBurst { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
+.ws-stamp { right: 15%; top: 56%; color: var(--p-green); animation: cxStamp .2s 2.4s cubic-bezier(.5,0,.8,.6) forwards; }
+.lay-wish .cut2-title { animation: c2TitleC .4s 2.6s cubic-bezier(.2,1.6,.4,1) both; }
+/* 어두워져도 문과 이름표는 희미하게 보이게, 도장은 또렷하게 */
+.kl-door { z-index: 2; animation: cxShake .35s 1.95s, klDim .25s 1.05s forwards; }
+@keyframes klDim { to { filter: brightness(.6); box-shadow: inset 0 0 2em rgba(0,0,0,.5), 0 0 2.5em rgba(255,30,60,.45); } }
+.kl-nifel, .kl-claw { z-index: 3; }
+.kl-flash, .kl-stamp, .lay-kill .cut2-title { z-index: 4; }
+.cx-stamp { background: rgba(246,238,219,.88); }
+.hk-stamp { top: auto; bottom: 18%; right: 17%; z-index: 3; }
+.hk-stamp, .kl-stamp, .ws-stamp { -webkit-mask: none; mask: none; }
